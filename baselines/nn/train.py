@@ -6,15 +6,19 @@ import wandb
 import sys
 
 sys.path.append("./utils")
-from dataset import MNISTDataset
+from data_utils import get_mnist_loaders
 
 
-@hydra.main(config_name="configurations/config.yaml")
+@hydra.main(config_path="./configurations", config_name="basic.yaml")
 def train(cfg):
-    wandb.init(project="test-project", entity="model-driven-models")
-    wandb.config = cfg
-    dataset = MNISTDataset('../dataset/mnist.npz', digits=[0,1,2])
-    train()
+    # wandb.init(project="test-project", entity="model-driven-models")
+    # wandb.config = cfg
+    data_path = cfg.hyperparameters.data_path
+    digits = cfg.hyperparameters.digits
+    dataset = cfg.hyperparameters.dataset
+
+    if dataset == 'MNIST':
+        train_loader, val_loader, test_loader = get_mnist_loaders(data_path, digits)
 
 
 if __name__ == "__main__":

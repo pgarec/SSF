@@ -1,29 +1,11 @@
 import numpy as np
 import torch
 from torchvision import datasets, transforms
+import torch.utils.data as data_utils
 
 
-class MNISTDataset:
-    def __init__(self, data_path, digits=None):
-        self.data_path = data_path
-        self.digits = digits
-        self.data = np.load(self.data_path)
-        self.X_train, self.y_train, self.X_test, self.y_test = self.split_data()
-
-    def split_data(self):
-        X_train, y_train, X_test, y_test = self.data['X_train'], self.data['y_train'], self.data['X_test'], self.data['y_test']
-        if self.digits:
-            mask = np.isin(y_train, self.digits)
-            X_train, y_train = X_train[mask], y_train[mask]
-            mask = np.isin(y_test, self.digits)
-            X_test, y_test = X_test[mask], y_test[mask]
-            
-        return X_train, y_train, X_test, y_test
-
-
-
-def get_mnist_loaders(data_path, batch_size=512, model_class='MLP',
-                      train_batch_size=128, val_size=2000, download=False, device='cpu'):
+def get_mnist_loaders(data_path, digits, batch_size=512, model_class='MLP',
+                      train_batch_size=128, val_size=2000, download=True, device='cpu'):
     """
     Source: https://github.com/runame/laplace-refinement/blob/308a3ff1f16b69dcb5bcea6ea302cf986e07350b/utils/data_utils.py#L605
     """
@@ -47,6 +29,36 @@ def get_mnist_loaders(data_path, batch_size=512, model_class='MLP',
 
     return train_loader, val_loader, test_loader
 
+
+def val_test_split(dataset, val_size=5000, batch_size=512, num_workers=0, pin_memory=False):
+    # Split into val and test sets
+    test_size = len(dataset) - val_size
+    dataset_val, dataset_test = data_utils.random_split(
+        dataset, (val_size, test_size), generator=torch.Generator().manual_seed(42)
+    )
+    val_loader = data_utils.DataLoader(dataset_val, batch_size=batch_size, shuffle=False,
+                                       num_workers=num_workers, pin_memory=pin_memory)
+    test_loader = data_utils.DataLoader(dataset_test, batch_size=batch_size, shuffle=False,
+                                        num_workers=num_workers, pin_memory=pin_memory)
+    return val_loader, test_loader
+
+
+# https://discuss.pytorch.org/t/missing-reshape-in-torchvision/9452/6
+class ReshapeTransform:
+    def __init__(self, new_size):
+        self.new_size = new_size
+
+    def __call__(self, img):
+        return torch.reshape(img, self.new_size)
+
+
+class RotationTransform:
+    """Rotate the given angle."""
+    def __init__(self, angle):
+        self.angle = angle
+
+    def __call__(self, x):
+        return TF.rotate(x, self.angle)
 
 
 class FastTensorDataLoader:
