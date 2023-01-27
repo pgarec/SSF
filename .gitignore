@@ -1,1 +1,4 @@
 data/
+baselines/nn/wandb/
+outputs/
+wandb/

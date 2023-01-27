@@ -1,0 +1,10 @@
+hyperparameters:
+  data_path: "./data"
+  batch_size: 64
+  lr: 0.01
+  epochs: 10
+  step_size: 212
+  gamma: 0.1
+  n_classes: 7
+  digits: [0,1]
+  dataset: "MNIST"
