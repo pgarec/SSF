@@ -1,5 +1,15 @@
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+
 data:
-  data_path: "../../../data"
+  data_path: "./data"
   n_classes: 10
   dataset: "MNIST"
   digits: [0,1]

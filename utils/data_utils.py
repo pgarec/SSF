@@ -6,7 +6,7 @@ import torch.utils.data as data_utils
 
 def get_mnist_loaders(
     data_path,
-    digits,
+    digits=[],
     batch_size=512,
     model_class="MLP",
     train_batch_size=128,
