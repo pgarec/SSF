@@ -7,6 +7,7 @@
 
 import tqdm
 import torch
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.distributions import kl_divergence
@@ -24,36 +25,42 @@ plt.rc('font', **font)
 plt.rc('text.latex', preamble=r'\usepackage{bm}')
 
 
-K = 3
-S = 20
-N = 1000
-epochs = 3000
-beta = 0.1
-alpha = 1.0
-plot = True
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--num_k', '-k', type=int, default=2)
+parser.add_argument('--post_samples', '-s', type=int, default=20)
+parser.add_argument('--nof', '-n', type=int, default=1000)
+parser.add_argument('--epochs', '-e', type=int, default=2000)
+parser.add_argument('--beta', '-b', type=float, default=0.1)
+parser.add_argument('--alpha', '-a', type=float, default=1.0)
+parser.add_argument('--plot', '-p', type=bool, default=True)
+args = parser.parse_args()
+
+
 ############################################
 # DATA - 3 Linear Regression problems
 ############################################
 
 # Set up true curves and models
-X = torch.rand(N,K)
-W = torch.randn(2,K)
+X = torch.rand(args.nof,args.num_k)
+W = torch.randn(2,args.num_k)
 
-if plot:
+if args.plot:
     plt.figure()
 
 datasets = []
-for k in range(K):
+for k in range(args.num_k):
     f_k = W[0,k] + W[1,k]*X[:,k]
-    y_k = f_k + beta*torch.randn_like(f_k)
+    y_k = f_k + args.beta*torch.randn_like(f_k)
 
     datasets.append({'x': X[:,k], 'y': y_k})
 
-    if plot:
+    if args.plot:
         plt.plot(X[:,k], f_k, c=palette[k])
         plt.scatter(X[:,k], y_k, s=8, c=palette[k], alpha=0.25)
 
-if plot:
+if args.plot:
     plt.xlabel('$X$')
     plt.ylabel('$Y$')
     plt.show()
@@ -62,36 +69,36 @@ if plot:
 # Models - Bayesian Linear Regression
 ############################################
 
-if plot:
+if args.plot:
     plt.figure()
 
 models = []
-for k in range(K):
+for k in range(args.num_k):
     x_k = datasets[k]['x']
     y_k = datasets[k]['y']
 
-    phi_k = torch.ones(N,2)
+    phi_k = torch.ones(args.nof,2)
     phi_k[:,1] = x_k
 
-    iS_k = alpha*torch.eye(2) + beta * phi_k.T @ phi_k
+    iS_k = args.alpha*torch.eye(2) + args.beta * phi_k.T @ phi_k
     S_k = torch.inverse(iS_k)
-    m_k = beta*S_k @ phi_k.T @ y_k
+    m_k = args.beta*S_k @ phi_k.T @ y_k
 
     models.append({'m': m_k.unsqueeze(1), 'iS': iS_k})
 
-    if plot:
+    if args.plot:
         
         f_m =  m_k[0] + m_k[1]*x_k
         plt.plot(x_k, f_m, c=palette[k], ls='--')
         plt.scatter(X[:,k], y_k, s=8, c=palette[k], alpha=0.25)
         model_k = Normal(loc=m_k, covariance_matrix=S_k)
 
-        W_s = model_k.rsample((1,S))[0,:,:].T
-        for s in range(S):
+        W_s = model_k.rsample((1, args.post_samples))[0,:,:].T
+        for s in range(args.post_samples):
             f_s = W_s[0,s] + W_s[1,s]*x_k
             plt.plot(x_k, f_s, c=palette[k], alpha=0.2, lw=1.0)
 
-if plot:
+if args.plot:
     plt.title('Bayesian Linear Regression -- Posteriors')
     plt.xlabel('$X$')
     plt.ylabel('$Y$')
@@ -103,6 +110,7 @@ if plot:
 # Models from models
 ############################################
 
+# Meta Posterior
 class MetaPosterior(torch.nn.Module):
     def __init__(self, models):
         super(MetaPosterior, self).__init__()
@@ -122,9 +130,7 @@ class MetaPosterior(torch.nn.Module):
 
             # Expectation on terms -- E[log_p()] and E[log_q()]
             E_log_q = -torch.trace(iS_k.mm(meta_S)) - (meta_m - m_k).t().mm(iS_k).mm(meta_m - m_k) - torch.logdet(2*np.pi*S_k)
-
-
-            E_log_p = -torch.trace((1/alpha)*torch.eye(2).mm(meta_S)) - meta_m.t().mm((1/alpha)*torch.eye(2)).mm(meta_m) - torch.logdet(2*np.pi*alpha*torch.eye(2))
+            E_log_p = -torch.trace((1/args.alpha)*torch.eye(2).mm(meta_S)) - meta_m.t().mm((1/args.alpha)*torch.eye(2)).mm(meta_m) - torch.logdet(2*np.pi*args.alpha*torch.eye(2))
 
             # General Expectation -- E[sum_k E[log_q_k] - E[log_p_k]]
             E += 0.5*(E_log_q - E_log_p) #+ model_k.logZ
@@ -139,7 +145,7 @@ class MetaPosterior(torch.nn.Module):
         meta_S = torch.mm(meta_L, meta_L.t())
 
         q_dist = Normal(meta_m.flatten(), meta_S)
-        p_dist = Normal(torch.zeros(2), alpha*torch.eye(2))
+        p_dist = Normal(torch.zeros(2), args.alpha*torch.eye(2))
 
         # Expectation --
         expectation = self.expectation(meta_m, meta_S)
@@ -149,11 +155,16 @@ class MetaPosterior(torch.nn.Module):
         # Calls ELBO
         elbo = expectation - kl
         return -elbo
+
+
+############################################
+# Definition of Meta-Model and ELBO fitting
+############################################
     
 meta_model = MetaPosterior(models)
 # optimizer = torch.optim.SGD([{'params':meta_model.m, 'lr':1e-3},{'params':meta_model.L,'lr':1e-6}], lr=1e-4, momentum=0.9)
 optimizer = torch.optim.Adam(meta_model.parameters(), lr=1e-3)
-pbar = tqdm.trange(epochs)
+pbar = tqdm.trange(args.epochs)
 
 
 elbo_its = []
@@ -168,9 +179,9 @@ for it in pbar:
     # print('  \__ elbo =', meta_model().item())
 
 
-if plot:
+if args.plot:
     # plt.figure()
-    S_meta = 5*S
+    S_meta = 5*args.post_samples
     meta_m = meta_model.m.detach().flatten()
     meta_L = torch.tril(meta_model.L.detach())
     meta_S = torch.mm(meta_L, meta_L.t())
