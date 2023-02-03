@@ -25,9 +25,8 @@ plt.rc('font', **font)
 plt.rc('text.latex', preamble=r'\usepackage{bm}')
 
 
-
-
 parser = argparse.ArgumentParser()
+parser.add_argument('--overlapping', '-over', type=bool, default=False)
 parser.add_argument('--num_k', '-k', type=int, default=2)
 parser.add_argument('--post_samples', '-s', type=int, default=20)
 parser.add_argument('--nof', '-n', type=int, default=1000)
@@ -43,7 +42,13 @@ args = parser.parse_args()
 ############################################
 
 # Set up true curves and models
-X = torch.rand(args.nof,args.num_k)
+if args.overlapping:
+    X = torch.rand(args.nof,args.num_k)
+else:
+    X = torch.zeros(args.nof,args.num_k)
+    for k in range(args.num_k):
+        X[:,k] = (1/args.num_k)*torch.rand(args.nof,1).flatten() + k*(1/args.num_k)
+
 W = torch.randn(2,args.num_k)
 
 if args.plot:
@@ -181,18 +186,19 @@ for it in pbar:
 
 if args.plot:
     # plt.figure()
+    x_meta = torch.rand(args.nof,1)
     S_meta = 5*args.post_samples
     meta_m = meta_model.m.detach().flatten()
     meta_L = torch.tril(meta_model.L.detach())
     meta_S = torch.mm(meta_L, meta_L.t())
 
-    f_meta =  meta_model.m[0] + meta_model.m[1]*x_k
-    plt.plot(x_k, f_meta.detach().numpy(), c=meta_color, ls='--')
+    f_meta =  meta_model.m[0] + meta_model.m[1]*x_meta
+    plt.plot(x_meta, f_meta.detach().numpy(), c=meta_color, ls='--')
     meta_model = Normal(loc=meta_m, covariance_matrix=meta_S)
 
     W_s = meta_model.rsample((1,S_meta))[0,:,:].T
     for s in range(S_meta):
-        f_s = W_s[0,s] + W_s[1,s]*x_k
-        plt.plot(x_k, f_s, c=meta_color, alpha=0.2, lw=1.0)
+        f_s = W_s[0,s] + W_s[1,s]*x_meta
+        plt.plot(x_meta, f_s, c=meta_color, alpha=0.2, lw=1.0)
 
     plt.show()
