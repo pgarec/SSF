@@ -36,7 +36,7 @@ def train(cfg):
     model.train()
 
     for epoch in trange(n_epochs):
-        training_loss = 0
+        epoch_loss = 0
         num_batches = train_loader.n_batches
         num_data = train_loader.dataset_len
 
@@ -49,9 +49,10 @@ def train(cfg):
             loss.backward()
             optimizer.step()
             scheduler.step()
+            epoch_loss += loss
 
-            print(f" Training loss:{loss/len(train_loader):.4f}")
             # wandb.log({"Training loss": loss/len(train_loader)})
+        print(f" Training loss:{loss/len(train_loader):.4f}")
 
         with torch.no_grad():
             loss_val = 0

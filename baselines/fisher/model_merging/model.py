@@ -3,13 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Model(nn.Module):
+class MLP(nn.Module):
     def __init__(self, cfg):
-        super(Model, self).__init__()
+        super(MLP, self).__init__()
         
         self.image_shape = cfg.data.image_shape
         self.num_classes = cfg.data.n_classes
-        self.hidden_dim = cfg.hyperparameters.hidden_dim
+        self.hidden_dim = cfg.train.hidden_dim
 
         self.feature_map = nn.Sequential(
             nn.Linear(cfg.data.image_shape, self.hidden_dim),
