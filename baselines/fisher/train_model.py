@@ -50,7 +50,6 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
 
 def inference(cfg, name, test_loader):
     model = MLP(cfg)
-    
     model.load_state_dict(torch.load(name))
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
