@@ -17,6 +17,7 @@ data:
   n_classes: 4
   image_shape: 784
   model_name: "mnist_0123_epoch9.pt"
+  fisher_path: "./fisher_diags/"
 
 train:
   lr: 0.01
