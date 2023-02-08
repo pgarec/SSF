@@ -1,6 +1,7 @@
 import torch
 import hydra
 import torchvision
+import pickle
 
 
 class ReshapeTransform:
@@ -55,3 +56,13 @@ class MNIST:
     def create_dataloaders(self):
         self.load_mnist()
         return self.train_loader, self.test_loader
+
+
+def store_fisher(fisher, file_name):
+    with open(file_name, 'wb') as f:
+        pickle.dump(fisher, f)
+
+
+def load_fisher(file_name):
+    with open(file_name, 'rb') as f:
+        return pickle.load(f)
