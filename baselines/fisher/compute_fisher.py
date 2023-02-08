@@ -14,7 +14,7 @@ from model_merging.data import store_fisher
 def main(cfg):
     model_name = cfg.data.model_name
     model = MLP(cfg)
-    model.load_state_dict(torch.load('./models/'+model_name))
+    model.load_state_dict(torch.load("./models/" + model_name))
 
     dataset = MNIST(cfg)
     train_loader, _ = dataset.create_dataloaders()
@@ -22,11 +22,10 @@ def main(cfg):
     print("Starting Fisher computation")
     fisher_diag = fisher.compute_fisher_for_model(model, train_loader)
     print("Fisher computed. Saving to file...")
-    fisher_name = "mnist_{}".format(''.join(map(str, cfg.data.digits)))
-    store_fisher(fisher_diag, cfg.data.fisher_path+fisher_name)
+    fisher_name = "mnist_{}".format("".join(map(str, cfg.data.digits)))
+    store_fisher(fisher_diag, cfg.data.fisher_path + fisher_name)
     print("Fisher saved to file")
+
 
 if __name__ == "__main__":
     main()
-
-

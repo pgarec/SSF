@@ -6,12 +6,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import wandb
 
-from model_merging.data import MNIST   
+from model_merging.data import MNIST
 from model_merging.model import MLP
 
 
-def train(cfg, train_loader, test_loader, model, optimizer, criterion): 
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg.train.step_size, gamma=cfg.train.gamma)
+def train(cfg, train_loader, test_loader, model, optimizer, criterion):
+    scheduler = optim.lr_scheduler.StepLR(
+        optimizer, step_size=cfg.train.step_size, gamma=cfg.train.gamma
+    )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
@@ -21,15 +23,17 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
         for batch_idx, (x, y) in enumerate(train_loader):
             optimizer.zero_grad()
             out = model(x.to(device))
-       
+
             loss = criterion(out, F.one_hot(y, cfg.data.n_classes).to(torch.float))
             loss.backward()
             optimizer.step()
             train_loss += loss
             scheduler.step()
-            # wandb.log({"Training loss": loss/len(train_loader)})
-        
-        print(f"Epoch [{epoch + 1}/{cfg.train.epochs}], Training Loss: {train_loss/len(train_loader):.4f}")
+            # wandb.log({"Training loss": loss/len(train_loader)})
+
+        print(
+            f"Epoch [{epoch + 1}/{cfg.train.epochs}], Training Loss: {train_loss/len(train_loader):.4f}"
+        )
 
         val_loss = 0
         with torch.no_grad():
@@ -38,14 +42,18 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
                 out = model(x.to(device))
                 loss = criterion(out, F.one_hot(y, cfg.data.n_classes).to(torch.float))
                 val_loss += loss
-            # wandb.log({"Validation loss": loss/len(val_loader)})
-            print(f"Epoch [{epoch + 1}/{cfg.train.epochs}], Validation Loss: {val_loss/len(test_loader):.4f}")    
-    
-    print('')
-    name = './models/mnist_{}_epoch{}.pt'.format(''.join(map(str, cfg.data.digits)), epoch)
+            # wandb.log({"Validation loss": loss/len(val_loader)})
+            print(
+                f"Epoch [{epoch + 1}/{cfg.train.epochs}], Validation Loss: {val_loss/len(test_loader):.4f}"
+            )
+
+    print("")
+    name = "./models/mnist_{}_epoch{}.pt".format(
+        "".join(map(str, cfg.data.digits)), epoch
+    )
     torch.save(model.state_dict(), name)
 
-    return name 
+    return name
 
 
 def inference(cfg, name, test_loader):
@@ -60,8 +68,8 @@ def inference(cfg, name, test_loader):
 
             # Plot the distribution of the output
             probs = torch.softmax(out[0], dim=-1)
-            print('The target number is {}'.format(y[0]))
-            print('The predicted number is {}'.format(torch.argmax(probs)))
+            print("The target number is {}".format(y[0]))
+            print("The predicted number is {}".format(torch.argmax(probs)))
 
             plt.bar(np.arange(len(cfg.data.digits)), probs.cpu().numpy())
             plt.xlabel("Number of classes")
@@ -80,7 +88,9 @@ def main(cfg):
     dataset = MNIST(cfg)
     train_loader, test_loader = dataset.create_dataloaders()
     model = MLP(cfg)
-    optimizer = optim.SGD(model.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(
+        model.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum
+    )
     criterion = torch.nn.CrossEntropyLoss()
 
     name = train(cfg, train_loader, test_loader, model, optimizer, criterion)

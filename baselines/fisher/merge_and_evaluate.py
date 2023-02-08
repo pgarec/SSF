@@ -18,15 +18,15 @@ def load_models(cfg):
 
 def load_fishers(cfg):
     fishers = []
-    
+
     for model_name in cfg.models:
-        model_name = model_name.split('_')[:1]
+        model_name = model_name.split("_")[:1]
         path = cfg.data.fisher_path + model_name
         fisher = load_fisher(path)
         fishers.append(fisher)
-    
+
     return fishers
-    
+
 
 @hydra.main(config_path="./configurations", config_name="merge.yaml")
 def main(cfg):
