@@ -8,14 +8,16 @@ import wandb
 
 from model_merging.data import MNIST
 from model_merging.model import MLP
+from compute_fisher import main as compute_fisher
 
 
-def train(cfg, train_loader, test_loader, model, optimizer, criterion):
+def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalanced=False, unb_digits=[]):
     scheduler = optim.lr_scheduler.StepLR(
         optimizer, step_size=cfg.train.step_size, gamma=cfg.train.gamma
     )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
+    min_class = min(cfg.data.digits)
 
     for epoch in range(cfg.train.epochs):
         model.train()
@@ -24,7 +26,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
             optimizer.zero_grad()
             out = model(x.to(device))
 
-            loss = criterion(out, F.one_hot(y, cfg.data.n_classes).to(torch.float))
+            loss = criterion(out, F.one_hot(y-min_class, cfg.data.n_classes).to(torch.float))
             loss.backward()
             optimizer.step()
             train_loss += loss
@@ -40,7 +42,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
             model.eval()
             for batch_idx, (x, y) in enumerate(test_loader):
                 out = model(x.to(device))
-                loss = criterion(out, F.one_hot(y, cfg.data.n_classes).to(torch.float))
+                loss = criterion(out, F.one_hot(y-min_class, cfg.data.n_classes).to(torch.float))
                 val_loss += loss
             # wandb.log({"Validation loss": loss/len(val_loader)})
             print(
@@ -48,9 +50,15 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
             )
 
     print("")
-    name = "./models/mnist_{}_epoch{}.pt".format(
-        "".join(map(str, cfg.data.digits)), epoch
-    )
+    if unbalanced:
+        name = "./models/mnist_{}_epoch{}.pt".format(
+            "".join(map(str, cfg.data.digits)), epoch
+        )
+    else:
+        name = "./models/mnist_{}_epoch{}_{}.pt".format(
+            "".join(map(str, cfg.data.digits)), epoch,
+            "".join(map(str, unb_digits))
+        )
     torch.save(model.state_dict(), name)
 
     return name
@@ -73,29 +81,37 @@ def inference(cfg, name, test_loader):
 
             plt.bar(np.arange(len(cfg.data.digits)), probs.cpu().numpy())
             plt.xlabel("Number of classes")
-            plt.ylabel("Class probabilities (for y={})".format(y[0]))
+            # TODO: check how to do the min
+            t = y[0]
+            if min(cfg.data.digits) > 0:
+                t = y[0]%min(cfg.data.digits)
+            plt.ylabel("Class probabilities (for y={})".format(t))
             plt.xticks(np.arange(len(cfg.data.digits)))
             plt.show()
 
             break
+    print("")
 
 
-@hydra.main(config_path="./configurations", config_name="data.yaml")
+@hydra.main(config_path="./configurations", config_name="train.yaml")
 def main(cfg):
     # wandb.init(project="test-project", entity="model-driven-models")
     # wandb.config = cfg
 
     dataset = MNIST(cfg)
-    train_loader, test_loader = dataset.create_dataloaders()
+    train_loader, test_loader = dataset.create_dataloaders(unbalanced=[0,1])
     model = MLP(cfg)
     optimizer = optim.SGD(
         model.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum
     )
     criterion = torch.nn.CrossEntropyLoss()
 
-    name = train(cfg, train_loader, test_loader, model, optimizer, criterion)
+    name = train(cfg, train_loader, test_loader, model, optimizer, criterion, unb_digits=[2,3])
     inference(cfg, name, test_loader)
 
+    if cfg.train.fisher:
+        cfg.train.name = name
+        compute_fisher(cfg)
 
 if __name__ == "__main__":
     main()

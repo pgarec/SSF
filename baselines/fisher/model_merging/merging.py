@@ -1,8 +1,9 @@
 import collections
 import torch
-import datasets as hfds
 import torch.nn as nn
 import torch.distributions as dist
+
+from .model import clone_model, get_mergeable_variables
 
 MergeResult = collections.namedtuple("MergeResult", ["coefficients", "score"])
 
@@ -40,6 +41,7 @@ def _merge_with_coeffs(
     favor_target_model=True,
     normalization_constants=None,
 ):
+    
     n_models = len(variables_to_merge)
     assert len(coefficients) == n_models
 
@@ -59,27 +61,33 @@ def _merge_with_coeffs(
         ):
             diag = fisher if isinstance(fisher, float) else fisher[i]
             if not favor_target_model or j == 0:
-                diag = max(diag, fisher_floor)
+                # ensure that fisher diagonal doesn't vanish
+                diag = torch.clamp(diag, min=fisher_floor, max=float("inf"))
             mvar = mvars[i]
+
             tmp = coeff * diag
+            # coeff * diag
             lhs.append(tmp)
+            # coeff * diag * parameter
             rhs.append(tmp * mvar.data)
         rhs = torch.stack(rhs).sum(dim=0)
         lhs = sum(lhs)
+        # closed-form form solution of argmax
         var.data = rhs / lhs
 
 
 def _l2_norm_of_fisher(fisher):
     norm_const = sum([torch.sum(d**2) for d in fisher]).item()
 
-    return torch.sqrt(norm_const)
+    return torch.sqrt(torch.tensor(norm_const))
 
 
 def generate_merged_for_coeffs_set(
+    cfg,
     mergeable_models,
-    coefficients_set: List[List[float]],
+    coefficients_set,
     fishers=None,
-    fisher_floor: float = 1e-6,
+    fisher_floor=1e-6,
     favor_target_model=True,
     normalize_fishers=True,
 ):
@@ -91,10 +99,9 @@ def generate_merged_for_coeffs_set(
 
     # The first model in the list of mergeable models is the "target" model and
     # the rest are "donor" models.
-    output_model = hf_util.clone_model(mergeable_models[0])
-    output_variables = hf_util.get_mergeable_variables(output_model)
-
-    variables_to_merge = [hf_util.get_mergeable_variables(m) for m in mergeable_models]
+    output_model = clone_model(mergeable_models[0], cfg)
+    output_variables = get_mergeable_variables(output_model)
+    variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
 
     # Make sure that all of the variable lists contain exactly the same number
     # of variables.
@@ -111,6 +118,11 @@ def generate_merged_for_coeffs_set(
             normalization_constants=norm_constants,
         )
         yield coefficients, output_model
+
+
+def evaluate_model(merged_model, dataset, metric):
+    # TODO
+    return 0
 
 
 def merging_coefficients_search(
@@ -133,10 +145,38 @@ def merging_coefficients_search(
         normalize_fishers=normalize_fishers,
     )
     results = []
+
     for coeffs, merged_model in merged_models:
-        score = evaluation.evaluate_model(merged_model, dataset, metric)
+        score = evaluate_model(merged_model, dataset, metric)
         result = MergeResult(coefficients=coeffs, score=score)
         results.append(result)
         if print_results:
             print_merge_result(result)
+
     return results
+
+
+def merging_models(
+        cfg,
+        mergeable_models,
+        fishers=None,
+        fisher_floor=1e-6,
+        favor_target_model=True,
+        normalize_fishers=True,
+):
+    coefficients_set = [[1.0 for i in range(len(mergeable_models))]]
+
+    merged_models = generate_merged_for_coeffs_set(
+        cfg,
+        mergeable_models,
+        coefficients_set,
+        fishers,
+        fisher_floor=fisher_floor,
+        favor_target_model=favor_target_model,
+        normalize_fishers=normalize_fishers,
+    )
+
+    _, merged_model = next(merged_models)
+
+    return merged_model
+

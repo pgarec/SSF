@@ -17,11 +17,13 @@ data:
   n_classes: 4
   image_shape: 784
   model_name: "mnist_0123_epoch9.pt"
+  model_path: "./models/"
   fisher_path: "./fisher_diags/"
 
 
 models:
-  model1: "mnist_0123"
+  model1: "mnist_0123_epoch9_01"
+  model2: "mnist_0123_epoch9_23"
 
 train:
   lr: 0.01

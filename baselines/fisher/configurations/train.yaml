@@ -16,7 +16,8 @@ data:
   digits: [0,1,2,3]
   n_classes: 4
   image_shape: 784
-  model_name: "mnist_0123_epoch9.pt"
+  unbalanced: [2,3]
+  fisher_path: "./fisher_diags/"
 
 train:
   lr: 0.01
@@ -26,6 +27,8 @@ train:
   w_dc: 0
   gamma: 0.1
   momentum: 0.5
+  fisher: True
+  name: ""
 
   
  
