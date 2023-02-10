@@ -27,6 +27,9 @@ def main(cfg):
         u = "".join(map(str, cfg.data.unbalanced))
         fisher_name = "mnist_{}_{}".format(d, u)
 
+    else:
+        d = "".join(map(str, cfg.data.digits))
+        fisher_name = "mnist_{}".format(d)
     store_fisher(fisher_diag, cfg.data.fisher_path + fisher_name)
     print("Fisher saved to file")
 

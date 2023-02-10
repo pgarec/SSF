@@ -156,7 +156,7 @@ def merging_coefficients_search(
     return results
 
 
-def merging_models(
+def merging_models_ensemble(
         cfg,
         mergeable_models,
         fishers=None,

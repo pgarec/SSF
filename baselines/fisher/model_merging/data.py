@@ -2,6 +2,9 @@ import torch
 import hydra
 import torchvision
 import pickle
+import torchvision.transforms as transforms
+import numpy as np
+from PIL import Image
 
 
 class ReshapeTransform:
@@ -15,6 +18,12 @@ class ReshapeTransform:
 class MNIST:
     def __init__(self, cfg):
         self.cfg = cfg.data
+        self.transform = transforms.Compose([
+            ReshapeTransform((28,28,1)),
+            transforms.RandomRotation(30),
+            transforms.RandomHorizontalFlip(),
+            ReshapeTransform((-1,)),
+        ])
 
     def load_mnist(self, unbalanced_digits=[]):
         # Load the MNIST dataset
@@ -49,36 +58,45 @@ class MNIST:
         filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.digits]
 
         # Check if we need to add more data to specific digits
-        if unbalanced_digits:
+        if unbalanced_digits != []:
             digit_counts = {digit: 0 for digit in self.digits}
             for x, y in filtered_dataset:
                 digit_counts[y] += 1
-
-            # Find the minimum count of any digit
-            min_count = min(digit_counts.values())
+            print("digit_counts {}".format(digit_counts))
 
             # Keep track of the new filtered dataset
             new_filtered_dataset = []
+            print("unbalanced digits {}".format(unbalanced_digits))
 
             for digit in self.digits:
                 if digit in unbalanced_digits:
-                    # Load more data for this digit
-                    desired_count = min_count * 2
+                    # Load double data for this digit
                     additional_data = [
                         (x, y)
-                        for x, y in dataset
-                        if y == digit and digit_counts[digit] < desired_count
+                        for x, y in filtered_dataset
+                        if y == digit
                     ]
-                    digit_counts[digit] += len(additional_data)
-                    new_filtered_dataset.extend(additional_data)
+                    additional_data_transformed = [
+                        (self.transform(x), y)
+                        for x, y in filtered_dataset
+                        if y == digit
+                    ]
+                    digit_counts[digit] += len(additional_data*2)
+                    new_filtered_dataset.extend(additional_data) 
+                    new_filtered_dataset.extend(additional_data_transformed) 
                 else:
-                    # Use the existing data for this digit
-                    new_filtered_dataset.extend(
-                        [(x, y) for x, y in filtered_dataset if y == digit]
-                    )
+                    # Use the half of the data for this digit
+                    l = [(x, y) for x, y in filtered_dataset if y == digit]
+                    new_filtered_dataset.extend(l[:(int(len(l)/2))])
 
             filtered_dataset = new_filtered_dataset
 
+        digit_counts = {digit: 0 for digit in self.digits}
+        for x, y in filtered_dataset:
+            digit_counts[y] += 1
+        print("digit_counts extended{}".format(digit_counts))
+        print("")
+            
         # Create the train and test loaders
         self.train_loader = torch.utils.data.DataLoader(
             filtered_dataset,
@@ -91,7 +109,7 @@ class MNIST:
         )
 
     def create_dataloaders(self, unbalanced=[]):
-        if unbalanced:
+        if unbalanced != []:
             self.load_mnist(unbalanced)
         else:
             self.load_mnist()

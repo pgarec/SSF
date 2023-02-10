@@ -12,9 +12,9 @@ from compute_fisher import main as compute_fisher
 
 
 def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalanced=False, unb_digits=[]):
-    scheduler = optim.lr_scheduler.StepLR(
-        optimizer, step_size=cfg.train.step_size, gamma=cfg.train.gamma
-    )
+    # scheduler = optim.lr_scheduler.StepLR(
+    #     optimizer, step_size=cfg.train.step_size, gamma=cfg.train.gamma
+    # )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     min_class = min(cfg.data.digits)
@@ -30,7 +30,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             loss.backward()
             optimizer.step()
             train_loss += loss
-            scheduler.step()
+            # scheduler.step()
             # wandb.log({"Training loss": loss/len(train_loader)})
 
         print(
@@ -42,6 +42,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             model.eval()
             for batch_idx, (x, y) in enumerate(test_loader):
                 out = model(x.to(device))
+                # TODO: check how to reset all classes to min 0
                 loss = criterion(out, F.one_hot(y-min_class, cfg.data.n_classes).to(torch.float))
                 val_loss += loss
             # wandb.log({"Validation loss": loss/len(val_loader)})
@@ -64,32 +65,42 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
     return name
 
 
-def inference(cfg, name, test_loader):
+def inference(cfg, name, test_loader, criterion, plot_sample=False):
     model = MLP(cfg)
     model.load_state_dict(torch.load(name))
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    avg_loss = [0] * len(cfg.data.digits)
+    count = [0] * len(cfg.data.digits)
+
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(test_loader):
             out = model(x.to(device))
+            loss = criterion(out, y.to(device))
+            avg_loss[y[0].item()] += loss.item()
+            count[y[0].item()] += 1
+            if batch_idx == 0 and plot_sample:
+                # Plot the distribution of the output
+                probs = torch.softmax(out[0], dim=-1)
+                plt.bar(np.arange(len(cfg.data.digits)), probs.cpu().numpy())
+                plt.xlabel("Number of classes")
+                # TODO: check how to do the min
+                t = y[0]
+                if min(cfg.data.digits) > 0:
+                    t = y[0]%min(cfg.data.digits)
+                plt.ylabel("Class probabilities (for y={})".format(t))
+                plt.xticks(np.arange(len(cfg.data.digits)))
+                plt.show()
+            
+    avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.digits))]
+    
+    plt.bar(np.arange(len(cfg.data.digits)), avg_loss)
+    plt.xlabel("Number of classes")
+    plt.ylabel("Average Test Loss")
+    plt.xticks(np.arange(len(cfg.data.digits)))
+    plt.show()
 
-            # Plot the distribution of the output
-            probs = torch.softmax(out[0], dim=-1)
-            print("The target number is {}".format(y[0]))
-            print("The predicted number is {}".format(torch.argmax(probs)))
-
-            plt.bar(np.arange(len(cfg.data.digits)), probs.cpu().numpy())
-            plt.xlabel("Number of classes")
-            # TODO: check how to do the min
-            t = y[0]
-            if min(cfg.data.digits) > 0:
-                t = y[0]%min(cfg.data.digits)
-            plt.ylabel("Class probabilities (for y={})".format(t))
-            plt.xticks(np.arange(len(cfg.data.digits)))
-            plt.show()
-
-            break
     print("")
 
 
@@ -99,15 +110,15 @@ def main(cfg):
     # wandb.config = cfg
 
     dataset = MNIST(cfg)
-    train_loader, test_loader = dataset.create_dataloaders(unbalanced=[0,1])
+    train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
     model = MLP(cfg)
     optimizer = optim.SGD(
         model.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum
     )
     criterion = torch.nn.CrossEntropyLoss()
 
-    name = train(cfg, train_loader, test_loader, model, optimizer, criterion, unb_digits=[2,3])
-    inference(cfg, name, test_loader)
+    name = train(cfg, train_loader, test_loader, model, optimizer, criterion, unb_digits=cfg.data.unbalanced)
+    inference(cfg, name, test_loader, criterion)
 
     if cfg.train.fisher:
         cfg.train.name = name
