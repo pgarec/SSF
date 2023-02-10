@@ -156,7 +156,7 @@ def merging_coefficients_search(
     return results
 
 
-def merging_models_ensemble(
+def merging_models_fisher(
         cfg,
         mergeable_models,
         fishers=None,
@@ -179,4 +179,27 @@ def merging_models_ensemble(
     _, merged_model = next(merged_models)
 
     return merged_model
+
+
+def merging_models_isotropic(
+        cfg,
+        mergeable_models,
+):
+    # The first model in the list of mergeable models is the "target" model and
+    # the rest are "donor" models.
+    output_model = clone_model(mergeable_models[0], cfg)
+    output_variables = get_mergeable_variables(output_model)
+    variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
+
+    for i, var in enumerate(output_variables):
+        s = []
+        for j, mvars in enumerate(zip(variables_to_merge)):
+            mvar = mvars[i]
+            s.append(mvar)
+
+        s = torch.stack(s).sum(dim=0)
+        # closed-form form solution of argmax
+        var.data = s / len(mergeable_models)
+
+    return output_model
 

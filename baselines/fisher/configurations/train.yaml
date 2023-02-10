@@ -13,10 +13,10 @@ data:
   batch_size_test: 64
   data_path: "./data"
   dataset: "MNIST"
-  digits: [0,1,2,3]
-  n_classes: 4
+  digits: [0,1]
+  n_classes: 2
   image_shape: 784
-  unbalanced: [2,3]
+  unbalanced: [1]
   fisher_path: "./fisher_diags/"
 
 train:

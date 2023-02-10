@@ -87,6 +87,7 @@ class MNIST:
                 else:
                     # Use the half of the data for this digit
                     l = [(x, y) for x, y in filtered_dataset if y == digit]
+                    # new_filtered_dataset.extend([])
                     new_filtered_dataset.extend(l[:(int(len(l)/2))])
 
             filtered_dataset = new_filtered_dataset

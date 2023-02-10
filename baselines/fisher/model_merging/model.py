@@ -59,7 +59,7 @@ class MLP(nn.Module):
 
         else:
             x = self.feature_map(x)
-
+        
         return self.clf(x)
     
     def get_trainable_parameters(self):
