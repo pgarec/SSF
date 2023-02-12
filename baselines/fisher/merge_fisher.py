@@ -53,6 +53,7 @@ def evaluate(cfg, merged_model, models, criterion, test_loader):
 
     avg_loss = [0] * len(cfg.data.digits)
     count = [0] * len(cfg.data.digits)
+    y_classes = dict(zip(cfg.data.digits, range(len(cfg.data.digits))))
 
     avg_loss_models = [[0] * len(cfg.data.digits) for m in models]
     count_models = [[0] * len(cfg.data.digits) for m in models]
@@ -60,17 +61,19 @@ def evaluate(cfg, merged_model, models, criterion, test_loader):
     with torch.no_grad():
         merged_model.eval()
         for _, (x, y) in enumerate(test_loader):
+            # batch size 1 for evaluation
             out = merged_model(x.to(device))
-            loss = criterion(out, F.one_hot(y-min_class, cfg.data.n_classes).to(torch.float))
-            avg_loss[y[0].item()] += loss.item()
-            count[y[0].item()] += 1
+            batch_onehot = y.apply_(lambda i: y_classes[i])
+            loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
+            avg_loss[y] += loss.item()
+            count[y] += 1
             val_loss += loss
 
             for m in range(len(models)):
                 out = models[m](x.to(device))
-                loss = criterion(out, F.one_hot(y-min_class, cfg.data.n_classes).to(torch.float))
-                avg_loss_models[m][y[0].item()] += loss.item()
-                count_models[m][y[0].item()] += 1
+                loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
+                avg_loss_models[m][y] += loss.item()
+                count_models[m][y] += 1
 
         print(f"Validation Loss: {val_loss/len(test_loader):.4f}")
 
@@ -106,6 +109,7 @@ def main(cfg):
     criterion = torch.nn.CrossEntropyLoss()
 
     merged_model = merging_models_fisher(cfg, models, fishers)
+    test_loader = dataset.create_inference_dataloader()
     evaluate(cfg, merged_model, models, criterion, test_loader)
 
 

@@ -17,7 +17,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
     # )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
-    min_class = min(cfg.data.digits)
+    y_classes = dict(zip(cfg.data.digits, range(len(cfg.data.digits))))
 
     for epoch in range(cfg.train.epochs):
         model.train()
@@ -25,8 +25,8 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
         for batch_idx, (x, y) in enumerate(train_loader):
             optimizer.zero_grad()
             out = model(x.to(device))
-
-            loss = criterion(out, F.one_hot(y-min_class, cfg.data.n_classes).to(torch.float))
+            batch_onehot = y.apply_(lambda x: y_classes[x])
+            loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
             loss.backward()
             optimizer.step()
             train_loss += loss
@@ -42,8 +42,8 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             model.eval()
             for batch_idx, (x, y) in enumerate(test_loader):
                 out = model(x.to(device))
-                # TODO: check how to reset all classes to min 0
-                loss = criterion(out, F.one_hot(y-min_class, cfg.data.n_classes).to(torch.float))
+                batch_onehot = y.apply_(lambda x: y_classes[x])
+                loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
                 val_loss += loss
             # wandb.log({"Validation loss": loss/len(val_loader)})
             print(
@@ -73,32 +73,31 @@ def inference(cfg, name, test_loader, criterion, plot_sample=False):
 
     avg_loss = [0] * len(cfg.data.digits)
     count = [0] * len(cfg.data.digits)
+    y_classes = dict(zip(cfg.data.digits, range(len(cfg.data.digits))))
 
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(test_loader):
             out = model(x.to(device))
-            loss = criterion(out, y.to(device))
-            avg_loss[y[0].item()] += loss.item()
-            count[y[0].item()] += 1
+            batch_onehot = y.apply_(lambda i: y_classes[i])
+            loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
+            avg_loss[y] += loss.item()
+            count[y] += 1
+
             if batch_idx == 0 and plot_sample:
                 # Plot the distribution of the output
                 probs = torch.softmax(out[0], dim=-1)
                 plt.bar(np.arange(len(cfg.data.digits)), probs.cpu().numpy())
                 plt.xlabel("Number of classes")
-                # TODO: check how to do the min
-                t = y[0]
-                if min(cfg.data.digits) > 0:
-                    t = y[0]%min(cfg.data.digits)
-                plt.ylabel("Class probabilities (for y={})".format(t))
+                plt.ylabel("Class probabilities (for y={})".format(y))
                 plt.xticks(np.arange(len(cfg.data.digits)))
                 plt.show()
             
     avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.digits))]
     
-    plt.bar(np.arange(len(cfg.data.digits)), avg_loss)
+    plt.bar(list(y_classes.keys()), avg_loss)
     plt.xlabel("Number of classes")
     plt.ylabel("Average Test Loss")
-    plt.xticks(np.arange(len(cfg.data.digits)))
+    plt.xticks(list(y_classes.keys()))
     plt.show()
 
     print("")
@@ -118,6 +117,8 @@ def main(cfg):
     criterion = torch.nn.CrossEntropyLoss()
 
     name = train(cfg, train_loader, test_loader, model, optimizer, criterion, unb_digits=cfg.data.unbalanced)
+    
+    test_loader = dataset.create_inference_dataloader()
     inference(cfg, name, test_loader, criterion)
 
     if cfg.train.fisher:

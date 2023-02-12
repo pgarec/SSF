@@ -14,7 +14,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_log
             log_prob = log_probs[0][i]
             grad = torch.autograd.grad(log_prob, variables, retain_graph=True)
 
-            # square of gradients == hessian
+            # hessian approximation
             sq_grad = [probs[0][i] * g**2 for g in grad]
             sq_grads.append(sq_grad)
 

@@ -192,12 +192,11 @@ def merging_models_isotropic(
     variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
 
     for i, var in enumerate(output_variables):
-        s = []
-        for j, mvars in enumerate(zip(variables_to_merge)):
+        s = 0
+        for mvars in variables_to_merge:
             mvar = mvars[i]
-            s.append(mvar)
+            s += mvar.data
 
-        s = torch.stack(s).sum(dim=0)
         # closed-form form solution of argmax
         var.data = s / len(mergeable_models)
 

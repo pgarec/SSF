@@ -5,6 +5,11 @@ import pickle
 import torchvision.transforms as transforms
 import numpy as np
 from PIL import Image
+import random
+
+np.random.seed(0)
+random.seed(0)
+torch.manual_seed(0)
 
 
 class ReshapeTransform:
@@ -24,6 +29,27 @@ class MNIST:
             transforms.RandomHorizontalFlip(),
             ReshapeTransform((-1,)),
         ])
+
+    def create_inference_dataloader(self):
+        self.digits = self.cfg.digits
+        test_dataset = torchvision.datasets.MNIST(
+            "./data/",
+            train=False,
+            download=True,
+            transform=torchvision.transforms.Compose(
+                [
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
+                    ReshapeTransform((-1,)),
+                ]
+            ),
+        )
+        filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.digits]
+        test_loader = torch.utils.data.DataLoader(
+            filtered_test_dataset, batch_size=1, shuffle=True
+        )
+
+        return test_loader
 
     def load_mnist(self, unbalanced_digits=[]):
         # Load the MNIST dataset
