@@ -19,11 +19,15 @@ data:
   model_name: "mnist_0123_epoch9.pt"
   model_path: "./models/"
   fisher_path: "./fisher_diags/"
+  plot: False
 
 
 models:
-  model1: "mnist_0278_epoch9_02"
-  model2: "mnist_0278_epoch9_78"
+  model1: "mnist_0123_epoch10"
+  model2: "mnist_0123_epoch15"
+  model3: "mnist_0123_epoch20"
+  model4: "mnist_0123_epoch25"
+  model5: "mnist_0123_epoch30"
 
 train:
   lr: 0.01

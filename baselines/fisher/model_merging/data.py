@@ -12,6 +12,17 @@ random.seed(0)
 torch.manual_seed(0)
 
 
+def load_models(cfg):
+    models = []
+
+    for model_name in cfg.models:
+        model = MLP(cfg)
+        model.load_state_dict(torch.load(cfg.data.model_path+cfg.models[model_name]+".pt"))
+        models.append(model)
+
+    return models
+
+
 class ReshapeTransform:
     def __init__(self, new_size):
         self.new_size = new_size
@@ -121,7 +132,7 @@ class MNIST:
         digit_counts = {digit: 0 for digit in self.digits}
         for x, y in filtered_dataset:
             digit_counts[y] += 1
-        print("digit_counts extended{}".format(digit_counts))
+        print("digit_counts extended {}".format(digit_counts))
         print("")
             
         # Create the train and test loaders

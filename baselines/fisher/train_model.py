@@ -53,11 +53,11 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
     print("")
     if unbalanced:
         name = "./models/mnist_{}_epoch{}.pt".format(
-            "".join(map(str, cfg.data.digits)), epoch
+            "".join(map(str, cfg.data.digits)), epoch+1
         )
     else:
         name = "./models/mnist_{}_epoch{}_{}.pt".format(
-            "".join(map(str, cfg.data.digits)), epoch,
+            "".join(map(str, cfg.data.digits)), epoch+1,
             "".join(map(str, unb_digits))
         )
     torch.save(model.state_dict(), name)

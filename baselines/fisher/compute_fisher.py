@@ -25,11 +25,11 @@ def main(cfg):
     if cfg.data.unbalanced:
         d = "".join(map(str, cfg.data.digits))
         u = "".join(map(str, cfg.data.unbalanced))
-        fisher_name = "mnist_{}_{}".format(d, u)
+        fisher_name = "mnist_{}_epoch{}_{}".format(d, cfg.train.epochs, u)
 
     else:
         d = "".join(map(str, cfg.data.digits))
-        fisher_name = "mnist_{}".format(d)
+        fisher_name = "mnist_{}_epoch{}".format(d, cfg.train.epochs)
     store_fisher(fisher_diag, cfg.data.fisher_path + fisher_name)
     print("Fisher saved to file")
 
