@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 import numpy as np
 from PIL import Image
 import random
+from model_merging.model import MLP
 
 np.random.seed(0)
 random.seed(0)

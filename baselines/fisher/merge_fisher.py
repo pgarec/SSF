@@ -10,22 +10,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def load_models(cfg):
-    models = []
-
-    for model_name in cfg.models:
-        model = MLP(cfg)
-        model.load_state_dict(torch.load(cfg.data.model_path+cfg.models[model_name]+".pt"))
-        models.append(model)
-
-    return models
-
-
 def load_fishers(cfg):
     fishers = []
 
     for model_name in cfg.models:
-        path = cfg.data.fisher_path + model_name
+        path = cfg.data.fisher_path + cfg.models[model_name]
         fisher = load_fisher(path)
         fishers.append(fisher)
 
@@ -42,6 +31,28 @@ def get_coeffs_set(cfg):
     else:
         raise ValueError
 
+
+def evaluate_metamodel(cfg, merged_model, criterion, test_loader):
+    val_loss = 0
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    merged_model.to(device)
+    y_classes = dict(zip(cfg.data.digits, range(len(cfg.data.digits))))
+
+    with torch.no_grad():
+        merged_model.eval()
+        for _, (x, y) in enumerate(test_loader):
+            out = merged_model(x.to(device))
+            batch_onehot = y.apply_(lambda i: y_classes[i])
+            loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
+            print("loss fisher metamodel")
+            print(loss)
+            val_loss += loss
+            break
+
+    avg_loss = loss / len(test_loader)
+    
+    return avg_loss
+    
 
 def evaluate(cfg, merged_model, models, criterion, test_loader):
     val_loss = 0
@@ -94,6 +105,20 @@ def plot(cfg, avg_loss, avg_loss_models, count, models):
         plt.ylabel("Average Test Loss model {}".format(m))
         plt.xticks(np.arange(len(cfg.data.digits)))
         plt.show()
+
+
+def evaluate_fisher(cfg):
+    models = load_models(cfg)
+    fishers = load_fishers(cfg)
+    dataset = MNIST(cfg)
+    _, test_loader = dataset.create_dataloaders()
+    criterion = torch.nn.CrossEntropyLoss()
+
+    merged_model = merging_models_fisher(cfg, models, fishers)
+    test_loader = dataset.create_inference_dataloader()
+    avg_loss = evaluate_metamodel(cfg, merged_model, criterion, test_loader)
+
+    return avg_loss
 
 
 @hydra.main(config_path="./configurations", config_name="merge.yaml")

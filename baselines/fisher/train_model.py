@@ -26,6 +26,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             optimizer.zero_grad()
             out = model(x.to(device))
             batch_onehot = y.apply_(lambda x: y_classes[x])
+            print(out[0].shape)
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
             loss.backward()
             optimizer.step()
@@ -51,7 +52,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             )
 
     print("")
-    if unbalanced:
+    if unbalanced != []:
         name = "./models/mnist_{}_epoch{}.pt".format(
             "".join(map(str, cfg.data.digits)), epoch+1
         )
