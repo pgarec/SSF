@@ -8,9 +8,9 @@ from PIL import Image
 import random
 from model_merging.model import MLP
 
-np.random.seed(0)
-random.seed(0)
-torch.manual_seed(0)
+# np.random.seed(0)
+# random.seed(0)
+# torch.manual_seed(0)
 
 
 def load_models(cfg):

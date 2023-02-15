@@ -26,7 +26,6 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             optimizer.zero_grad()
             out = model(x.to(device))
             batch_onehot = y.apply_(lambda x: y_classes[x])
-            print(out[0].shape)
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
             loss.backward()
             optimizer.step()
@@ -52,7 +51,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             )
 
     print("")
-    if unbalanced != []:
+    if cfg.data.unbalanced == []:
         name = "./models/mnist_{}_epoch{}.pt".format(
             "".join(map(str, cfg.data.digits)), epoch+1
         )
@@ -66,7 +65,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
     return name
 
 
-def inference(cfg, name, test_loader, criterion, plot_sample=False):
+def inference(cfg, name, test_loader, criterion):
     model = MLP(cfg)
     model.load_state_dict(torch.load(name))
     model.eval()
@@ -84,7 +83,7 @@ def inference(cfg, name, test_loader, criterion, plot_sample=False):
             avg_loss[y] += loss.item()
             count[y] += 1
 
-            if batch_idx == 0 and plot_sample:
+            if batch_idx == 0 and cfg.train.plot_sample:
                 # Plot the distribution of the output
                 probs = torch.softmax(out[0], dim=-1)
                 plt.bar(np.arange(len(cfg.data.digits)), probs.cpu().numpy())
@@ -94,14 +93,15 @@ def inference(cfg, name, test_loader, criterion, plot_sample=False):
                 plt.show()
             
     avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.digits))]
-    
-    plt.bar(list(y_classes.keys()), avg_loss)
-    plt.xlabel("Number of classes")
-    plt.ylabel("Average Test Loss")
-    plt.xticks(list(y_classes.keys()))
-    plt.show()
 
-    print("")
+    if cfg.train.plot:
+        plt.bar(list(y_classes.keys()), avg_loss)
+        plt.xlabel("Number of classes")
+        plt.ylabel("Average Test Loss")
+        plt.xticks(list(y_classes.keys()))
+        plt.show()
+
+        print("")
 
 
 @hydra.main(config_path="./configurations", config_name="train.yaml")

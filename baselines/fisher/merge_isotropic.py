@@ -22,7 +22,8 @@ def evaluate_metamodel(cfg, merged_model, criterion, test_loader):
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
             val_loss += loss
 
-    avg_loss = loss / len(test_loader)
+    avg_loss = val_loss / len(test_loader)
+    print(avg_loss)
     
     return avg_loss
 
@@ -79,11 +80,10 @@ def plot(cfg, avg_loss, avg_loss_models, count, models):
         plt.show()
 
 
-def evaluate_isotropic(cfg):
-    models = load_models(cfg)
-    dataset = MNIST(cfg)
-    _, test_loader = dataset.create_dataloaders()
-    criterion = torch.nn.CrossEntropyLoss()
+def evaluate_isotropic(cfg, models, test_loader, criterion):
+
+    for m in models:
+        avg_loss = evaluate_metamodel(cfg, m, criterion, test_loader)
 
     merged_model = merging_models_isotropic(cfg, models)
     avg_loss = evaluate_metamodel(cfg, merged_model, criterion, test_loader)

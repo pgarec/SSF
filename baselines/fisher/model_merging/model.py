@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.init as init
 
 
 def get_featuremap_and_clf(model):
@@ -51,6 +52,11 @@ class MLP(nn.Module):
             nn.Linear(self.hidden_dim, self.num_classes, bias=False),
             nn.LogSoftmax(dim=-1),
         )
+
+        # Initialize all weights to 0.1, constant initialization for all models
+        # for m in self.modules():
+        #     if isinstance(m, nn.Linear):
+        #         init.constant_(m.weight, 0.1)
 
     def forward(self, x, training=True):
         if not training:

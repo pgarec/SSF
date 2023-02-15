@@ -89,7 +89,7 @@ def generate_merged_for_coeffs_set(
     fishers=None,
     fisher_floor=1e-6,
     favor_target_model=True,
-    normalize_fishers=True,
+    normalize_fishers=False,
 ):
     # Create the model to yield, then handle the norm_constants
     if normalize_fishers and fishers is not None:
@@ -133,7 +133,7 @@ def merging_coefficients_search(
     fishers=None,
     fisher_floor: float = 1e-6,
     favor_target_model=True,
-    normalize_fishers=True,
+    normalize_fishers=False,
     print_results=True,
 ):
     merged_models = generate_merged_for_coeffs_set(
@@ -162,7 +162,7 @@ def merging_models_fisher(
         fishers=None,
         fisher_floor=1e-6,
         favor_target_model=True,
-        normalize_fishers=True,
+        normalize_fishers=False,
 ):
     coefficients_set = [[1.0 for i in range(len(mergeable_models))]]
 
@@ -191,14 +191,13 @@ def merging_models_isotropic(
     output_variables = get_mergeable_variables(output_model)
     variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
 
-    for i, var in enumerate(output_variables):
-        s = 0
+    for i in range(len(output_variables)):
+        s = torch.zeros_like(variables_to_merge[0][i]) 
         for mvars in variables_to_merge:
-            mvar = mvars[i]
-            s += mvar.data
+            s = torch.add(s, mvars[i])
 
         # closed-form form solution of argmax
-        var.data = s / len(mergeable_models)
+        output_variables[i] = s / len(variables_to_merge)
 
     return output_model
 

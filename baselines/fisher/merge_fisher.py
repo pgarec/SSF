@@ -44,12 +44,9 @@ def evaluate_metamodel(cfg, merged_model, criterion, test_loader):
             out = merged_model(x.to(device))
             batch_onehot = y.apply_(lambda i: y_classes[i])
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
-            print("loss fisher metamodel")
-            print(loss)
             val_loss += loss
-            break
 
-    avg_loss = loss / len(test_loader)
+    avg_loss = val_loss / len(test_loader)
     
     return avg_loss
     
@@ -107,15 +104,9 @@ def plot(cfg, avg_loss, avg_loss_models, count, models):
         plt.show()
 
 
-def evaluate_fisher(cfg):
-    models = load_models(cfg)
+def evaluate_fisher(cfg, models, test_loader, criterion):
     fishers = load_fishers(cfg)
-    dataset = MNIST(cfg)
-    _, test_loader = dataset.create_dataloaders()
-    criterion = torch.nn.CrossEntropyLoss()
-
     merged_model = merging_models_fisher(cfg, models, fishers)
-    test_loader = dataset.create_inference_dataloader()
     avg_loss = evaluate_metamodel(cfg, merged_model, criterion, test_loader)
 
     return avg_loss
