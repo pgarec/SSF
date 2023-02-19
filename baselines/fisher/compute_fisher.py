@@ -17,10 +17,11 @@ def main(cfg):
     model.load_state_dict(torch.load(model_name))
 
     dataset = MNIST(cfg)
+    #cfg.data.batch_size_train = 10
     train_loader, _ = dataset.create_dataloaders()
 
     print("Starting Fisher computation")
-    fisher_diag = fisher.compute_fisher_for_model(model, train_loader)
+    fisher_diag = fisher.compute_fisher_for_model(model, train_loader, fisher_samples=cfg.data.fisher_samples)
     print("Fisher computed. Saving to file...")
     if cfg.data.unbalanced:
         d = "".join(map(str, cfg.data.digits))

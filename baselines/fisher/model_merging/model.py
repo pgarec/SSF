@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
+# Important!
+torch.manual_seed(42)
 
 def get_featuremap_and_clf(model):
     feature = model.feature_map
@@ -50,7 +52,6 @@ class MLP(nn.Module):
 
         self.clf = nn.Sequential(
             nn.Linear(self.hidden_dim, self.num_classes, bias=False),
-            nn.LogSoftmax(dim=-1),
         )
 
         # Initialize all weights to 0.1, constant initialization for all models

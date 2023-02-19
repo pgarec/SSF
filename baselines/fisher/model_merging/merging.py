@@ -55,23 +55,20 @@ def _merge_with_coeffs(
         coefficients = [w / n for w, n in zip(coefficients, normalization_constants)]
 
     for i, var in enumerate(output_variables):
-        lhs, rhs = [], []
-        for j, (mvars, coeff, fisher) in enumerate(
-            zip(variables_to_merge, coefficients, fishers)
-        ):
-            diag = fisher if isinstance(fisher, float) else fisher[i]
-            if not favor_target_model or j == 0:
+        # iterate over models
+        rhs = []
+        lhs = []
+        for m in range(len(variables_to_merge)):
+            diag = fishers[m] if isinstance(fishers[m], float) else fishers[m][i]
+            if not favor_target_model or m == 0:
                 # ensure that fisher diagonal doesn't vanish
                 diag = torch.clamp(diag, min=fisher_floor, max=float("inf"))
-            mvar = mvars[i]
+            mvar = variables_to_merge[m][i]    
+            rhs.append(mvar.data*diag) 
+            lhs.append(diag)
 
-            tmp = coeff * diag
-            # coeff * diag
-            lhs.append(tmp)
-            # coeff * diag * parameter
-            rhs.append(tmp * mvar.data)
         rhs = torch.stack(rhs).sum(dim=0)
-        lhs = sum(lhs)
+        lhs = torch.stack(lhs).sum(dim=0)
         # closed-form form solution of argmax
         var.data = rhs / lhs
 
@@ -91,6 +88,7 @@ def generate_merged_for_coeffs_set(
     favor_target_model=True,
     normalize_fishers=False,
 ):
+    normalize_fishers = False
     # Create the model to yield, then handle the norm_constants
     if normalize_fishers and fishers is not None:
         norm_constants = [_l2_norm_of_fisher(f) for f in fishers]
@@ -164,40 +162,56 @@ def merging_models_fisher(
         favor_target_model=True,
         normalize_fishers=False,
 ):
-    coefficients_set = [[1.0 for i in range(len(mergeable_models))]]
+    output_model = clone_model(mergeable_models[0], cfg)
+    output_variables = get_mergeable_variables(output_model)
+    variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
 
-    merged_models = generate_merged_for_coeffs_set(
-        cfg,
-        mergeable_models,
-        coefficients_set,
-        fishers,
-        fisher_floor=fisher_floor,
-        favor_target_model=favor_target_model,
-        normalize_fishers=normalize_fishers,
-    )
+    # Make sure that all of the variable lists contain exactly the same number
+    # of variables.
+    assert len({len(output_variables)} | set(len(v) for v in variables_to_merge)) == 1
 
-    _, merged_model = next(merged_models)
+    n_models = len(variables_to_merge)
 
-    return merged_model
+    if fishers is None:
+        fishers = n_models * [1.0]
+    else:
+        assert len(fishers) == n_models
+
+    d = dict(output_model.named_parameters())
+    for idx, k in enumerate(list(d.keys())):
+        # iterate over models
+        s = torch.zeros_like(output_model.get_parameter(k)) 
+        s_fisher = torch.zeros_like(output_model.get_parameter(k)) 
+
+        for m in range(len(mergeable_models)):
+            diag = fishers[m] if isinstance(fishers[m], float) else fishers[m][idx]
+            s = torch.add(s, mergeable_models[m].get_parameter(k)*diag)
+            if not favor_target_model or m == 0:
+                # ensure that fisher diagonal doesn't vanish
+                diag = torch.clamp(diag, min=fisher_floor, max=float("inf"))
+            s_fisher = torch.add(s_fisher, diag)
+        
+        d[k] = s / s_fisher
+    
+    output_model.load_state_dict(d)
+       
+    return output_model
 
 
 def merging_models_isotropic(
         cfg,
         mergeable_models,
 ):
-    # The first model in the list of mergeable models is the "target" model and
-    # the rest are "donor" models.
     output_model = clone_model(mergeable_models[0], cfg)
-    output_variables = get_mergeable_variables(output_model)
-    variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
+    d = dict(output_model.named_parameters())
+    for idx, k in enumerate(list(d.keys())):
+        s = torch.zeros_like(output_model.get_parameter(k)) 
+        for m in mergeable_models:
+            s = torch.add(s, m.get_parameter(k))
 
-    for i in range(len(output_variables)):
-        s = torch.zeros_like(variables_to_merge[0][i]) 
-        for mvars in variables_to_merge:
-            s = torch.add(s, mvars[i])
+        d[k].data = s / len(mergeable_models)
 
-        # closed-form form solution of argmax
-        output_variables[i] = s / len(variables_to_merge)
+    output_model.load_state_dict(d)
 
     return output_model
 

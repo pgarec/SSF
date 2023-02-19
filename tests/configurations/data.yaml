@@ -13,27 +13,28 @@ data:
   batch_size_test: 64
   data_path: "./data"
   dataset: "MNIST"
-  digits: [0,1,2,3,4,5,6,7,8,9]
-  n_classes: 10
+  digits: []
+  n_classes: 2
   image_shape: 784
-  model_name: "mnist_0123_epoch9.pt"
-  model_path: "./models/"
+  unbalanced: []
   fisher_path: "./fisher_diags/"
-  plot: True
-
 
 models:
   model1: "mnist_0123456789_epoch10"
-  model2: "mnist_0123456789_epoch15"  
-  model3: "mnist_0123456789_epoch20"
+  model2: "mnist_0123456789_epoch15"
 
 train:
   lr: 0.01
-  hidden_dim: 64
-  epochs: 10
+  hidden_dim: 32
+  epochs: 25
   step_size: 212
   w_dc: 0
   gamma: 0.1
   momentum: 0.5
+  fisher: True
+  name: ""
+  plot_sample: False
+  plot: False
 
   
+ 

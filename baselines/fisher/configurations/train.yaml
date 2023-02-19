@@ -18,11 +18,12 @@ data:
   image_shape: 784
   unbalanced: []
   fisher_path: "./fisher_diags/"
+  fisher_samples: 10000
 
 train:
   lr: 0.01
   hidden_dim: 64
-  epochs: 25
+  epochs: 20
   step_size: 212
   w_dc: 0
   gamma: 0.1

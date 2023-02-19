@@ -100,11 +100,9 @@ class MNIST:
             digit_counts = {digit: 0 for digit in self.digits}
             for x, y in filtered_dataset:
                 digit_counts[y] += 1
-            print("digit_counts {}".format(digit_counts))
 
             # Keep track of the new filtered dataset
             new_filtered_dataset = []
-            print("unbalanced digits {}".format(unbalanced_digits))
 
             for digit in self.digits:
                 if digit in unbalanced_digits:
@@ -129,12 +127,6 @@ class MNIST:
                     new_filtered_dataset.extend(l[:(int(len(l)/2))])
 
             filtered_dataset = new_filtered_dataset
-
-        digit_counts = {digit: 0 for digit in self.digits}
-        for x, y in filtered_dataset:
-            digit_counts[y] += 1
-        print("digit_counts extended {}".format(digit_counts))
-        print("")
             
         # Create the train and test loaders
         self.train_loader = torch.utils.data.DataLoader(

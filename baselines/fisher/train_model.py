@@ -32,6 +32,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             train_loss += loss
             # scheduler.step()
             # wandb.log({"Training loss": loss/len(train_loader)})
+            
 
         print(
             f"Epoch [{epoch + 1}/{cfg.train.epochs}], Training Loss: {train_loss/len(train_loader):.4f}"

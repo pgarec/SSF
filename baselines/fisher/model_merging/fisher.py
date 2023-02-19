@@ -5,47 +5,53 @@ def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_log
     num_classes = model.num_classes
 
     def fisher_single_example(single_example_batch):
-        log_probs = model(single_example_batch, training=True)
-        probs = torch.nn.functional.softmax(log_probs, dim=-1)
-
         # calculates the gradients of the log-probs with respect to the variables
         # (the parameters of the model), and squares them
+        log_probs = model(single_example_batch)
+        probs = torch.nn.functional.softmax(log_probs, dim=-1)
+        sq_grads = []
 
-        sq_grads = torch.Tensor()
         for i in range(num_classes):
             log_prob = log_probs[0][i]
-            grad = torch.autograd.grad(log_prob, variables, retain_graph=True)
-            # fisher approximation
-            sq_grad = [(probs[0][i] * g)**2 for g in grad]
-            sq_grads = [x + y for x, y in zip(sq_grad, sq_grads)]
+            log_prob.backward(retain_graph=True)
+            grad = [p.grad.clone() for p in model.parameters()]
+            sq_grad = [probs[0][i] * g**2 for g in grad]
+            sq_grads.append(sq_grad)
 
-        # The squared gradients are then summed over all classes, resulting in a list of scalars,
-        # which represents the Fisher information matrix for the single example
+        # l = [torch.sum(torch.stack(g), dim=0) for g in zip(*sq_grads)]
+        # return [x/num_classes for x in l]
+        return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
 
-        return [x/num_classes for x in sq_grads]
-
-    fishers = torch.Tensor()
+    fishers = torch.zeros((len(variables)),requires_grad=False)
     for element in batch:
-       fishers.sum(fisher_single_example(element.unsqueeze(0)))
+       model.zero_grad()
+       fish_elem = fisher_single_example(element.unsqueeze(0))
+       fish_elem = [x.detach() for x in fish_elem]
+       fishers = [x + y for (x,y) in zip(fishers, fish_elem)]
 
     return fishers
 
 
-def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True):
+def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher_samples=-1):
     variables = [p for p in model.parameters()]
     # list of the model variables initialized to zero
     fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
 
     n_examples = 0
+
     for batch, _ in dataset:
+        print(n_examples)
         n_examples += batch.shape[0]
         batch_fishers = _compute_exact_fisher_for_batch(
             batch, model, variables, expectation_wrt_logits
         )
-        for f, bf in zip(fishers, batch_fishers):
-            f.add_(bf)
+        fishers = [x+y for (x,y) in zip(fishers, batch_fishers)]
+
+        if fisher_samples != -1 and n_examples > fisher_samples:
+            break
 
     for i, fisher in enumerate(fishers):
         fishers[i] = fisher / n_examples
 
     return fishers
+
