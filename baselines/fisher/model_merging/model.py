@@ -43,21 +43,14 @@ class MLP(nn.Module):
 
         self.feature_map = nn.Sequential(
             nn.Linear(cfg.data.image_shape, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
         )
 
         self.clf = nn.Sequential(
             nn.Linear(self.hidden_dim, self.num_classes, bias=False),
         )
-
-        # Initialize all weights to 0.1, constant initialization for all models
-        # for m in self.modules():
-        #     if isinstance(m, nn.Linear):
-        #         init.constant_(m.weight, 0.1)
 
     def forward(self, x, training=True):
         if not training:

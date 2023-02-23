@@ -155,3 +155,14 @@ def store_fisher(fisher, file_name):
 def load_fisher(file_name):
     with open(file_name, "rb") as f:
         return pickle.load(f)
+
+
+def load_fishers(cfg):
+    fishers = []
+
+    for model_name in cfg.models:
+        path = cfg.data.fisher_path + cfg.models[model_name]
+        fisher = load_fisher(path)
+        fishers.append(fisher)
+
+    return fishers
