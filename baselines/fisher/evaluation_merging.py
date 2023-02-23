@@ -1,6 +1,6 @@
 import torch
 import hydra
-from model_merging.data import MNIST, load_models
+from model_merging.data import MNIST, load_models, store_file, load_file
 from merge_fisher import evaluate_fisher
 from merge_isotropic import evaluate_isotropic
 import torch.nn.functional as F
@@ -19,6 +19,13 @@ plt.rc('font', **font)
 plt.rc('text.latex', preamble=r'\usepackage{bm}')
 
 
+def store_results(cfg, isotropic_loss, fisher_loss, output_loss):
+    d = "".join(map(str, cfg.data.digits))
+    store_file(isotropic_loss, cfg.data.results_path + "isotropic_loss_{}".format(d))
+    store_file(fisher_loss, cfg.data.results_path + "fisher_loss_{}".format(d))
+    store_file(output_loss, cfg.data.results_path + "output_loss_{}".format(d))
+
+
 def plot_results(results):
     plt.bar(list(results.keys()), list(results.values()))
     plt.xlabel("Type of merging")
@@ -28,16 +35,13 @@ def plot_results(results):
 
 
 def plot_results_number(isotropic_loss, fisher_loss, output_loss):
-    # Set up the figure
     fig, ax = plt.subplots(figsize=(8, 6))
     fig.suptitle("Loss for each digit across merging techniques", fontsize=16)
     
-    # Plot the loss for each digit in each model
     width = 0.25
     labels = ["Isotropic", "Fisher", "Output"]
 
     for digit in range(len(isotropic_loss)):
-        #ax.set_title(f"Digit {digit}")
         ax.bar(digit, isotropic_loss[digit], label=f"Isotropic", color="b", width=0.25)
         ax.bar(digit + width, fisher_loss[digit], label=f"Fisher", color="g", width=0.25)
         ax.bar(digit + 2*width, output_loss[digit], label=f"Output", color="r", width=0.25)
@@ -89,6 +93,10 @@ def evaluate_techniques(cfg):
     fisher_loss_avg = [fisher_loss[i] / count[i] for i in range(len(cfg.data.digits))]
     output_loss_avg = [output_loss[i] / count[i] for i in range(len(cfg.data.digits))]
     plot_results_number(isotropic_loss_avg, fisher_loss_avg, output_loss_avg)
+
+    store_results(cfg, isotropic_loss, fisher_loss, output_loss)
+
+
 
 
 if __name__ == "__main__":

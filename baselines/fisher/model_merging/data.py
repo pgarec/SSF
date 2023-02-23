@@ -147,12 +147,12 @@ class MNIST:
 
         return self.train_loader, self.test_loader
     
-def store_fisher(fisher, file_name):
+def store_file(file, file_name):
     with open(file_name, "wb") as f:
-        pickle.dump(fisher, f)
+        pickle.dump(file, f)
 
 
-def load_fisher(file_name):
+def load_file(file_name):
     with open(file_name, "rb") as f:
         return pickle.load(f)
 
@@ -162,7 +162,7 @@ def load_fishers(cfg):
 
     for model_name in cfg.models:
         path = cfg.data.fisher_path + cfg.models[model_name]
-        fisher = load_fisher(path)
+        fisher = load_file(path)
         fishers.append(fisher)
 
     return fishers

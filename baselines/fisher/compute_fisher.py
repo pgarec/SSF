@@ -7,7 +7,7 @@ import pickle
 from model_merging.model import MLP
 from model_merging.data import MNIST
 from model_merging import fisher
-from model_merging.data import store_fisher
+from model_merging.data import store_file
 
 
 @hydra.main(config_path="./configurations", config_name="compute_fisher.yaml")
@@ -31,7 +31,7 @@ def main(cfg):
     else:
         d = "".join(map(str, cfg.data.digits))
         fisher_name = "mnist_{}_epoch{}".format(d, cfg.train.epochs)
-    store_fisher(fisher_diag, cfg.data.fisher_path + fisher_name)
+    store_file(fisher_diag, cfg.data.fisher_path + fisher_name)
     print("Fisher saved to file")
 
 
