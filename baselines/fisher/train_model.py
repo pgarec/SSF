@@ -10,6 +10,17 @@ from model_merging.model import MLP
 from compute_fisher import compute_fisher_diags 
 from model_merging.data import create_dataset
 
+palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
+meta_color = 'r'
+
+# This makes the figures look like LATEX / comment this if latex not installed
+font = {'family' : 'serif',
+        'size'   : 12}
+
+plt.rc('text', usetex=True)
+plt.rc('font', **font)
+plt.rc('text.latex', preamble=r'\usepackage{bm}')
+
 
 def train(cfg, train_loader, test_loader, model, optimizer, criterion):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
