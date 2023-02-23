@@ -3,6 +3,7 @@ import hydra
 from model_merging.data import MNIST, load_models, store_file, load_file
 from merge_fisher import evaluate_fisher
 from merge_isotropic import evaluate_isotropic
+from model_merging.evaluation import plot_avg_merging_techniques, plot_merging_techniques
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,33 +26,6 @@ def store_results(cfg, isotropic_loss, fisher_loss, output_loss):
     store_file(fisher_loss, cfg.data.results_path + "fisher_loss_{}".format(d))
     store_file(output_loss, cfg.data.results_path + "output_loss_{}".format(d))
 
-
-def plot_results(results):
-    plt.bar(list(results.keys()), list(results.values()))
-    plt.xlabel("Type of merging")
-    plt.ylabel("Average Test Loss")
-    plt.xticks(list(results.keys()))
-    plt.show()
-
-
-def plot_results_number(isotropic_loss, fisher_loss, output_loss):
-    fig, ax = plt.subplots(figsize=(8, 6))
-    fig.suptitle("Loss for each digit across merging techniques", fontsize=16)
-    
-    width = 0.25
-    labels = ["Isotropic", "Fisher", "Output"]
-
-    for digit in range(len(isotropic_loss)):
-        ax.bar(digit, isotropic_loss[digit], label=f"Isotropic", color="b", width=0.25)
-        ax.bar(digit + width, fisher_loss[digit], label=f"Fisher", color="g", width=0.25)
-        ax.bar(digit + 2*width, output_loss[digit], label=f"Output", color="r", width=0.25)
-        
-    ax.set_xticks(np.arange(len(isotropic_loss)) + width / 2)
-    ax.set_xticklabels([str(digit) for digit in range(10)])
-    ax.set_xlabel("Digit")
-    ax.set_ylabel("Loss")
-    ax.legend(labels)
-    plt.show()
 
 
 @hydra.main(config_path="./configurations", config_name="merge.yaml")
@@ -86,17 +60,15 @@ def evaluate_techniques(cfg):
     loss = sum(output_loss) / len(test_loader)
 
     results = {'isotropic loss': sum(isotropic_loss)/len(test_loader), 'fisher_loss': sum(fisher_loss)/len(test_loader), 'output_loss': loss}
-    plot_results(results)
+    plot_avg_merging_techniques(results)
     print(results)
     
     isotropic_loss_avg = [isotropic_loss[i] / count[i] for i in range(len(cfg.data.digits))]
     fisher_loss_avg = [fisher_loss[i] / count[i] for i in range(len(cfg.data.digits))]
     output_loss_avg = [output_loss[i] / count[i] for i in range(len(cfg.data.digits))]
-    plot_results_number(isotropic_loss_avg, fisher_loss_avg, output_loss_avg)
-
+    plot_merging_techniques(isotropic_loss_avg, fisher_loss_avg, output_loss_avg)
+    
     store_results(cfg, isotropic_loss, fisher_loss, output_loss)
-
-
 
 
 if __name__ == "__main__":

@@ -74,3 +74,31 @@ def plot(cfg, avg_loss, avg_loss_models, count, models):
         plt.ylabel("Average Test Loss model {}".format(m))
         plt.xticks(np.arange(len(cfg.data.digits)))
         plt.show()
+
+
+def plot_avg_merging_techniques(results):
+    plt.bar(list(results.keys()), list(results.values()))
+    plt.xlabel("Type of merging")
+    plt.ylabel("Average Test Loss")
+    plt.xticks(list(results.keys()))
+    plt.show()
+
+
+def plot_merging_techniques(isotropic_loss, fisher_loss, output_loss):
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.suptitle("Loss for each digit across merging techniques", fontsize=16)
+    
+    width = 0.25
+    labels = ["Isotropic", "Fisher", "Output"]
+
+    for digit in range(len(isotropic_loss)):
+        ax.bar(digit, isotropic_loss[digit], label=f"Isotropic", color="b", width=0.25)
+        ax.bar(digit + width, fisher_loss[digit], label=f"Fisher", color="g", width=0.25)
+        ax.bar(digit + 2*width, output_loss[digit], label=f"Output", color="r", width=0.25)
+        
+    ax.set_xticks(np.arange(len(isotropic_loss)) + width / 2)
+    ax.set_xticklabels([str(digit) for digit in range(10)])
+    ax.set_xlabel("Digit")
+    ax.set_ylabel("Loss")
+    ax.legend(labels)
+    plt.show()
