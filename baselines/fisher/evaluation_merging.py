@@ -21,7 +21,7 @@ plt.rc('text.latex', preamble=r'\usepackage{bm}')
 
 
 def store_results(cfg, isotropic_loss, fisher_loss, output_loss):
-    d = "".join(map(str, cfg.data.digits))
+    d = "".join(map(str, cfg.data.classes))
     store_file(isotropic_loss, cfg.data.results_path + "isotropic_loss_{}".format(d))
     store_file(fisher_loss, cfg.data.results_path + "fisher_loss_{}".format(d))
     store_file(output_loss, cfg.data.results_path + "output_loss_{}".format(d))
@@ -35,14 +35,14 @@ def evaluate_techniques(cfg):
     dataset = MNIST(cfg)
     cfg.data.batch_size_test = 1
     test_loader = dataset.create_inference_dataloader()
-    y_classes = dict(zip(cfg.data.digits, range(len(cfg.data.digits))))
+    y_classes = dict(zip(cfg.data.classes, range(len(cfg.data.classes))))
     criterion = torch.nn.CrossEntropyLoss()
     outputs = []
 
     isotropic_loss, count = evaluate_isotropic(cfg, models, test_loader, criterion)
     fisher_loss, count = evaluate_fisher(cfg, models, test_loader, criterion)
 
-    output_loss = [0] * len(cfg.data.digits)
+    output_loss = [0] * len(cfg.data.classes)
     with torch.no_grad():
         for _, (x, y) in enumerate(test_loader):
             batch_onehot = y.apply_(lambda i: y_classes[i])
@@ -63,9 +63,9 @@ def evaluate_techniques(cfg):
     plot_avg_merging_techniques(results)
     print(results)
     
-    isotropic_loss_avg = [isotropic_loss[i] / count[i] for i in range(len(cfg.data.digits))]
-    fisher_loss_avg = [fisher_loss[i] / count[i] for i in range(len(cfg.data.digits))]
-    output_loss_avg = [output_loss[i] / count[i] for i in range(len(cfg.data.digits))]
+    isotropic_loss_avg = [isotropic_loss[i] / count[i] for i in range(len(cfg.data.classes))]
+    fisher_loss_avg = [fisher_loss[i] / count[i] for i in range(len(cfg.data.classes))]
+    output_loss_avg = [output_loss[i] / count[i] for i in range(len(cfg.data.classes))]
     plot_merging_techniques(isotropic_loss_avg, fisher_loss_avg, output_loss_avg)
     
     store_results(cfg, isotropic_loss, fisher_loss, output_loss)

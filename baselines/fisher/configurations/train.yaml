@@ -12,26 +12,29 @@ data:
   batch_size_train: 64
   batch_size_test: 64
   data_path: "./data"
-  dataset: "MNIST"
-  digits: [5,6,7,8,9]
-  n_classes: 5
+
+  dataset: "FashionMNIST"
+  classes: [0,1,2,3,4,5,6,7,8,9]
+  n_classes: 10
+
+  subset_length: 0
   image_shape: 784
   unbalanced: []
   fisher_path: "./fisher_diags/"
-  fisher_samples: 20000
+  fisher_samples: 10000
 
 train:
   lr: 0.01
   hidden_dim: 64
-  epochs: 20
+  epochs: 50
   step_size: 212
   w_dc: 0
   gamma: 0.1
   momentum: 0.5
   fisher: True
   name: ""
-  plot_sample: False
-  plot: False
+  plot_sample: True
+  plot: True
 
   
  
