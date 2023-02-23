@@ -4,6 +4,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
+meta_color = 'r'
+
+# This makes the figures look like LATEX / comment this if latex not installed
+font = {'family' : 'serif',
+        'size'   : 12}
+
+plt.rc('text', usetex=True)
+plt.rc('font', **font)
+plt.rc('text.latex', preamble=r'\usepackage{bm}')
+
+
 def evaluate_metamodel(cfg, merged_model, criterion, test_loader):
     avg_loss = [0] * len(cfg.data.digits)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

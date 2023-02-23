@@ -20,11 +20,11 @@ import tqdm
 import torchbnn as bnn
 import torch.nn as nn
  
-from model_merging.model import MLP 
-from model_merging.data import MNIST, load_models
-from model_merging.data import load_fishers
-from model_merging.merging import merging_models_fisher_subsets
-from model_merging.evaluation import evaluate_metamodel, evaluate_minimodels, plot
+from fisher.model_merging.model import MLP 
+from fisher.model_merging.data import MNIST, load_models
+from fisher.model_merging.data import load_fishers
+from fisher.model_merging.merging import merging_models_fisher_subsets
+from fisher.model_merging.evaluation import evaluate_metamodel, evaluate_minimodels, plot
 
 
 @hydra.main(config_path="./configurations", config_name="subset.yaml")

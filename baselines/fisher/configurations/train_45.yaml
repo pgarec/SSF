@@ -1,0 +1,37 @@
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+
+data:
+  batch_size_train: 64
+  batch_size_test: 64
+  data_path: "./data"
+  dataset: "MNIST"
+  digits: [4,5]
+  n_classes: 2
+  image_shape: 784
+  unbalanced: []
+  fisher_path: "./fisher_diags/"
+  fisher_samples: 20000
+
+train:
+  lr: 0.01
+  hidden_dim: 64
+  epochs: 20
+  step_size: 212
+  w_dc: 0
+  gamma: 0.1
+  momentum: 0.5
+  fisher: True
+  name: ""
+  plot_sample: False
+  plot: False
+
+  
+ 

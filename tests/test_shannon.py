@@ -20,9 +20,9 @@ import tqdm
 import torchbnn as bnn
 import torch.nn as nn
  
-from model_merging.model import MLP 
-from model_merging.data import MNIST, load_models
-from model_merging.data import load_fishers
+from fisher.model_merging.model import MLP 
+from fisher.model_merging.data import MNIST, load_models
+from fisher.model_merging.data import load_fishers
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'

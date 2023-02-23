@@ -12,9 +12,6 @@ from compute_fisher import main as compute_fisher
 
 
 def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalanced=False, unb_digits=[]):
-    # scheduler = optim.lr_scheduler.StepLR(
-    #     optimizer, step_size=cfg.train.step_size, gamma=cfg.train.gamma
-    # )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     y_classes = dict(zip(cfg.data.digits, range(len(cfg.data.digits))))
@@ -30,7 +27,6 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion, unbalance
             loss.backward()
             optimizer.step()
             train_loss += loss
-            # scheduler.step()
             # wandb.log({"Training loss": loss/len(train_loader)})
             
 
@@ -85,7 +81,6 @@ def inference(cfg, name, test_loader, criterion):
             count[y] += 1
 
             if batch_idx == 0 and cfg.train.plot_sample:
-                # Plot the distribution of the output
                 probs = torch.softmax(out[0], dim=-1)
                 plt.bar(np.arange(len(cfg.data.digits)), probs.cpu().numpy())
                 plt.xlabel("Number of classes")
@@ -105,7 +100,7 @@ def inference(cfg, name, test_loader, criterion):
         print("")
 
 
-@hydra.main(config_path="./configurations", config_name="train.yaml")
+@hydra.main(config_path="./configurations", config_name="train_all.yaml")
 def main(cfg):
     # wandb.init(project="test-project", entity="model-driven-models")
     # wandb.config = cfg
