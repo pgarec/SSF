@@ -28,7 +28,6 @@ def plot_results(results):
 
 
 def plot_results_number(isotropic_loss, fisher_loss, output_loss):
-
     # Set up the figure
     fig, ax = plt.subplots(figsize=(8, 6))
     fig.suptitle("Loss for each digit across merging techniques", fontsize=16)
@@ -90,7 +89,6 @@ def evaluate_techniques(cfg):
     fisher_loss_avg = [fisher_loss[i] / count[i] for i in range(len(cfg.data.digits))]
     output_loss_avg = [output_loss[i] / count[i] for i in range(len(cfg.data.digits))]
     plot_results_number(isotropic_loss_avg, fisher_loss_avg, output_loss_avg)
-
 
 
 if __name__ == "__main__":
