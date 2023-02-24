@@ -12,8 +12,9 @@ class ReshapeTransform:
 
 
 class CIFAR10:
+    # Images with shape 32 x 32 x 3
     def __init__(self, cfg):
-        self.cfg = cfg.data
+        self.cfg = cfg
         # transformation for the unbalanced classes
         self.transform_unbalanced = transforms.Compose([
             ReshapeTransform((28,28,1)),
@@ -23,10 +24,12 @@ class CIFAR10:
         ])
         self.transform =transforms.Compose(
             [transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+            ReshapeTransform((-1,))])
 
     def create_inference_dataloader(self):
-        self.classes = self.cfg.classes
+        self.classes = self.cfg.data.classes
         test_dataset = torchvision.datasets.CIFAR10(
             "./data/",
             train=False,
@@ -42,7 +45,7 @@ class CIFAR10:
 
     def load_cifar10(self, unbalanced_digits=[]):
         # Load the CIFAR10 dataset
-        self.classes = self.cfg.classes
+        self.classes = self.cfg.data.classes
         dataset = torchvision.datasets.CIFAR10(
             "./data/",
             train=True,
@@ -96,26 +99,23 @@ class CIFAR10:
         # Create the train and test loaders
         self.train_loader = torch.utils.data.DataLoader(
             filtered_dataset,
-            batch_size=self.cfg.batch_size_train,
+            batch_size=self.cfg.data.batch_size_train,
             shuffle=True,
         )
 
         self.test_loader = torch.utils.data.DataLoader(
-            filtered_test_dataset, batch_size=self.cfg.batch_size_test, shuffle=True
+            filtered_test_dataset, batch_size=self.cfg.data.batch_size_test, shuffle=True
         )
 
     def create_dataloaders(self, unbalanced=[]):
-        if unbalanced != []:
-            self.load_mnist(unbalanced)
-        else:
-            self.load_mnist()
+        self.load_cifar10(unbalanced)
 
         return self.train_loader, self.test_loader
     
 
 class CIFAR100:
     def __init__(self, cfg):
-        self.cfg = cfg.data
+        self.cfg = cfg
         self.transform_unbalanced = transforms.Compose([
             ReshapeTransform((28,28,1)),
             transforms.RandomRotation(30),
@@ -124,7 +124,7 @@ class CIFAR100:
         ])
 
     def create_inference_dataloader(self):
-        self.classes = self.cfg.classes
+        self.classes = self.cfg.data.classes
         test_dataset = torchvision.datasets.CIFAR100(
             "./data/",
             train=False,
@@ -146,7 +146,7 @@ class CIFAR100:
 
     def load_mnist(self, unbalanced_digits=[]):
         # Load the MNIST dataset
-        self.classes = self.cfg.classes
+        self.classes = self.cfg.data.classes
         dataset = torchvision.datasets.MNIST(
             "./data/",
             train=True,
@@ -212,12 +212,12 @@ class CIFAR100:
         # Create the train and test loaders
         self.train_loader = torch.utils.data.DataLoader(
             filtered_dataset,
-            batch_size=self.cfg.batch_size_train,
+            batch_size=self.cfg.data.batch_size_train,
             shuffle=True,
         )
 
         self.test_loader = torch.utils.data.DataLoader(
-            filtered_test_dataset, batch_size=self.cfg.batch_size_test, shuffle=True
+            filtered_test_dataset, batch_size=self.cfg.data.batch_size_test, shuffle=True
         )
 
     def create_dataloaders(self, unbalanced=[]):

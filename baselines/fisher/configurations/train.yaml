@@ -18,7 +18,7 @@ data:
   n_classes: 10
 
   subset_length: 0
-  image_shape: 784
+  image_shape: 3072
   unbalanced: []
   fisher_path: "./fisher_diags/"
   fisher_samples: 10000

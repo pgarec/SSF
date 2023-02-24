@@ -40,15 +40,26 @@ def load_fishers(cfg):
 
 def create_dataset(cfg):
     if cfg.data.dataset == "MNIST":
+        assert len(cfg.data.classes) == 10
+        assert cfg.data.image_shape == 784
+
         dataset = MNIST(cfg)
 
     elif cfg.data.dataset == "FashionMNIST":  
+        assert len(cfg.data.classes) == 10
+        assert cfg.data.image_shape == 784
+
         dataset = FashionMNIST(cfg)
     
     elif cfg.data.dataset == "CIFAR10":
+        assert len(cfg.data.classes) == 10
+        assert cfg.data.image_shape == 3072
+
         dataset = CIFAR10(cfg)
     
     elif cfg.data.dataset == "CIFAR100":
+        assert len(cfg.data.classes) == 100
+
         dataset = CIFAR100(cfg)
 
     else:

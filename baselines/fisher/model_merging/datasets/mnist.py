@@ -13,7 +13,7 @@ class ReshapeTransform:
 
 class MNIST:
     def __init__(self, cfg):
-        self.cfg = cfg.data
+        self.cfg = cfg
         # transformation for the unbalanced classes
         self.transform_unbalanced = transforms.Compose([
             ReshapeTransform((28,28,1)),
@@ -28,7 +28,7 @@ class MNIST:
         )
 
     def create_inference_dataloader(self):
-        self.classes = self.cfg.classes
+        self.classes = self.cfg.data.classes
         test_dataset = torchvision.datasets.MNIST(
             "./data/",
             train=False,
@@ -44,7 +44,7 @@ class MNIST:
 
     def load_mnist(self, unbalanced_classes=[]):
         # Load the MNIST dataset
-        self.classes = self.cfg.classes
+        self.classes = self.cfg.data.classes
         dataset = torchvision.datasets.MNIST(
             "./data/",
             train=True,
@@ -99,12 +99,12 @@ class MNIST:
         # Create the train and test loaders
         self.train_loader = torch.utils.data.DataLoader(
             filtered_dataset,
-            batch_size=self.cfg.batch_size_train,
+            batch_size=self.cfg.data.batch_size_train,
             shuffle=True,
         )
 
         self.test_loader = torch.utils.data.DataLoader(
-            filtered_test_dataset, batch_size=self.cfg.batch_size_test, shuffle=True
+            filtered_test_dataset, batch_size=self.cfg.data.batch_size_test, shuffle=True
         )
 
     def create_dataloaders(self, unbalanced=[]):
