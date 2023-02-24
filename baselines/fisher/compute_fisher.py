@@ -22,14 +22,14 @@ def compute_fisher_diags(cfg):
     if cfg.data.unbalanced:
         d = "".join(map(str, cfg.data.classes))
         u = "".join(map(str, cfg.data.unbalanced))
-        fisher_name = "mnist_{}_epoch{}_{}".format(d, cfg.train.epochs, u)
+        fisher_name = "{}_{}_epoch{}_{}".format(cfg.data.dataset, d, cfg.train.epochs, u)
 
     else:
         d = "".join(map(str, cfg.data.classes))
-        fisher_name = "mnist_{}_epoch{}".format(d, cfg.train.epochs)
+        fisher_name = "{}_{}_epoch{}".format(cfg.data.dataset, d, cfg.train.epochs)
     store_file(fisher_diag, cfg.data.fisher_path + fisher_name)
     print("Fisher saved to file")
 
 
 if __name__ == "__main__":
-    main()
+    compute_fisher_diags()

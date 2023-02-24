@@ -1,8 +1,9 @@
 import torch
 import pickle
 from model_merging.model import MLP
-from model_merging.mnist import MNIST
-from model_merging.fmnist import FashionMNIST
+from model_merging.datasets.mnist import MNIST
+from model_merging.datasets.fmnist import FashionMNIST
+from model_merging.datasets.cifar import CIFAR10, CIFAR100
 
 
 def load_models(cfg):
@@ -45,9 +46,12 @@ def create_dataset(cfg):
         dataset = FashionMNIST(cfg)
     
     elif cfg.data.dataset == "CIFAR10":
-        raise "Invalid dataset"
+        dataset = CIFAR10(cfg)
     
     elif cfg.data.dataset == "CIFAR100":
-        raise "Invalid dataset"
+        dataset = CIFAR100(cfg)
+
+    else:
+        raise("invalid dataset")
     
     return dataset

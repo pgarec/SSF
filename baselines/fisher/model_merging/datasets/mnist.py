@@ -14,12 +14,18 @@ class ReshapeTransform:
 class MNIST:
     def __init__(self, cfg):
         self.cfg = cfg.data
-        self.transform = transforms.Compose([
+        # transformation for the unbalanced classes
+        self.transform_unbalanced = transforms.Compose([
             ReshapeTransform((28,28,1)),
             transforms.RandomRotation(30),
             transforms.RandomHorizontalFlip(),
             ReshapeTransform((-1,)),
         ])
+        self.transform = torchvision.transforms.Compose(
+            [torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize((0.1307,), (0.3081,)),
+            ReshapeTransform((-1,))]
+        )
 
     def create_inference_dataloader(self):
         self.classes = self.cfg.classes
@@ -27,13 +33,7 @@ class MNIST:
             "./data/",
             train=False,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.tranform
         )
         filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.classes]
         test_loader = torch.utils.data.DataLoader(
@@ -42,7 +42,7 @@ class MNIST:
 
         return test_loader
 
-    def load_mnist(self, unbalanced_digits=[]):
+    def load_mnist(self, unbalanced_classes=[]):
         # Load the MNIST dataset
         self.classes = self.cfg.classes
         dataset = torchvision.datasets.MNIST(
@@ -61,13 +61,7 @@ class MNIST:
             "./data/",
             train=False,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
 
         # Filter the dataset to only include the desired classes
@@ -75,16 +69,12 @@ class MNIST:
         filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.classes]
 
         # Check if we need to add more data to specific classes
-        if classes != []:
-            digit_counts = {digit: 0 for digit in self.classes}
-            for x, y in filtered_dataset:
-                digit_counts[y] += 1
-
+        if unbalanced_classes != []:
             # Keep track of the new filtered dataset
             new_filtered_dataset = []
 
             for digit in self.classes:
-                if digit in unbalanced_digits:
+                if digit in unbalanced_classes:
                     # Load double data for this digit
                     additional_data = [
                         (x, y)
@@ -92,11 +82,10 @@ class MNIST:
                         if y == digit
                     ]
                     additional_data_transformed = [
-                        (self.transform(x), y)
+                        (self.transform_unbalanced(x), y)
                         for x, y in filtered_dataset
                         if y == digit
                     ]
-                    digit_counts[digit] += len(additional_data*2)
                     new_filtered_dataset.extend(additional_data) 
                     new_filtered_dataset.extend(additional_data_transformed) 
                 else:
@@ -119,10 +108,7 @@ class MNIST:
         )
 
     def create_dataloaders(self, unbalanced=[]):
-        if unbalanced != []:
-            self.load_mnist(unbalanced)
-        else:
-            self.load_mnist()
+        self.load_mnist(unbalanced)
 
         return self.train_loader, self.test_loader
     

@@ -14,11 +14,17 @@ class ReshapeTransform:
 class FashionMNIST:
     def __init__(self, cfg):
         self.cfg = cfg.data
-        self.transform = transforms.Compose([
+        # transformation for the unbalanced classes
+        self.transform_unbalanced = transforms.Compose([
             ReshapeTransform((28,28,1)),
             transforms.RandomRotation(30),
             transforms.RandomHorizontalFlip(),
             ReshapeTransform((-1,)),
+        ])
+        self.transform = torchvision.transforms.Compose(
+            [torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize((0.5,), (0.5,)),
+            ReshapeTransform((-1,))
         ])
 
     def create_inference_dataloader(self):
@@ -27,13 +33,7 @@ class FashionMNIST:
             "./data/",
             train=False,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.5,), (0.5,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
         filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.classes]
         test_loader = torch.utils.data.DataLoader(
@@ -49,25 +49,13 @@ class FashionMNIST:
             "./data/",
             train=True,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.5,), (0.5,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
         test_dataset = torchvision.datasets.FashionMNIST(
             "./data/",
             train=False,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.5,), (0.5,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
 
         # Filter the dataset to only include the desired classes
@@ -76,10 +64,6 @@ class FashionMNIST:
 
         # Check if we need to add more data to specific classes
         if unbalanced_classes != []:
-            digit_counts = {digit: 0 for digit in self.classes}
-            for x, y in filtered_dataset:
-                digit_counts[y] += 1
-
             # Keep track of the new filtered dataset
             new_filtered_dataset = []
 
@@ -92,11 +76,10 @@ class FashionMNIST:
                         if y == digit
                     ]
                     additional_data_transformed = [
-                        (self.transform(x), y)
+                        (self.transform_unbalanced(x), y)
                         for x, y in filtered_dataset
                         if y == digit
                     ]
-                    digit_counts[digit] += len(additional_data*2)
                     new_filtered_dataset.extend(additional_data) 
                     new_filtered_dataset.extend(additional_data_transformed) 
                 else:
@@ -119,9 +102,6 @@ class FashionMNIST:
         )
 
     def create_dataloaders(self, unbalanced=[]):
-        if unbalanced != []:
-            self.load_fmnist(unbalanced)
-        else:
-            self.load_fmnist()
+        self.load_fmnist(unbalanced)
 
         return self.train_loader, self.test_loader
