@@ -114,14 +114,21 @@ class CIFAR10:
     
 
 class CIFAR100:
+    # Images with shape 32 x 32 x 3
     def __init__(self, cfg):
         self.cfg = cfg
+        # transformation for the unbalanced classes
         self.transform_unbalanced = transforms.Compose([
             ReshapeTransform((28,28,1)),
             transforms.RandomRotation(30),
             transforms.RandomHorizontalFlip(),
             ReshapeTransform((-1,)),
         ])
+        self.transform =transforms.Compose(
+            [transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+            ReshapeTransform((-1,))])
 
     def create_inference_dataloader(self):
         self.classes = self.cfg.data.classes
@@ -129,13 +136,7 @@ class CIFAR100:
             "./data/",
             train=False,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
         filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.classes]
         test_loader = torch.utils.data.DataLoader(
@@ -144,32 +145,20 @@ class CIFAR100:
 
         return test_loader
 
-    def load_mnist(self, unbalanced_digits=[]):
-        # Load the MNIST dataset
+    def load_cifar100(self, unbalanced_digits=[]):
+        # Load the CIFAR100 dataset
         self.classes = self.cfg.data.classes
-        dataset = torchvision.datasets.MNIST(
+        dataset = torchvision.datasets.CIFAR100(
             "./data/",
             train=True,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
-        test_dataset = torchvision.datasets.MNIST(
+        test_dataset = torchvision.datasets.CIFAR100(
             "./data/",
             train=False,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
 
         # Filter the dataset to only include the desired classes
@@ -194,7 +183,7 @@ class CIFAR100:
                         if y == digit
                     ]
                     additional_data_transformed = [
-                        (self.transform(x), y)
+                        (self.transform_unbalanced(x), y)
                         for x, y in filtered_dataset
                         if y == digit
                     ]
@@ -221,10 +210,9 @@ class CIFAR100:
         )
 
     def create_dataloaders(self, unbalanced=[]):
-        if unbalanced != []:
-            self.load_mnist(unbalanced)
-        else:
-            self.load_mnist()
+        self.load_cifar100(unbalanced)
 
         return self.train_loader, self.test_loader
+    
+
     
