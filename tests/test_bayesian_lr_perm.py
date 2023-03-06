@@ -50,7 +50,7 @@ else:
     for k in range(args.num_k):
         X[:, :, k] = (1/args.num_k)*torch.rand(args.nof,args.dim) + k*(1/args.num_k)
 
-W = torch.randn(args.dim, args.num_k)
+W = args.alpha*torch.randn(args.dim, args.num_k)
 
 if args.plot and args.dim<2:
     plt.figure()
@@ -126,14 +126,14 @@ def active_set_permutation(x, W):
 
 # Meta Posterior
 class MetaPosterior(torch.nn.Module):
-    def __init__(self, models):
+    def __init__(self, models, args):
         super(MetaPosterior, self).__init__()
 
         self.models = models
-        self.meta_theta = torch.nn.Parameter(torch.randn(args.dim+1,1), requires_grad=True)  # MAP of the meta-posterior
+        self.meta_theta = torch.nn.Parameter(args.alpha*torch.randn(args.dim+1,1), requires_grad=True)  # MAP of the meta-posterior
 
     def forward(self):
-        prior = Normal(loc=torch.zeros(args.dim+1), covariance_matrix=args.beta*torch.eye(args.dim+1))
+        prior = Normal(loc=torch.zeros(args.dim+1), covariance_matrix=args.alpha*torch.eye(args.dim+1))
         loss = (args.num_k - 1)*prior.log_prob(self.meta_theta.squeeze())
         for a in range(args.dim):
             # m = a+1
@@ -181,7 +181,7 @@ class MetaPosterior(torch.nn.Module):
 ############################################
 # Definition of Meta-Model and ELBO fitting
 ############################################
-meta_model = MetaPosterior(models)
+meta_model = MetaPosterior(models, args)
 # optimizer = torch.optim.SGD([{'params':meta_model.m, 'lr':1e-3},{'params':meta_model.L,'lr':1e-6}], lr=1e-4, momentum=0.9)
 optimizer = torch.optim.Adam(meta_model.parameters(), lr=1e-2)
 pbar = tqdm.trange(args.epochs)
