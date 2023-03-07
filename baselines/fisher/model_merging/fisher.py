@@ -20,6 +20,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_log
 
         # l = [torch.sum(torch.stack(g), dim=0) for g in zip(*sq_grads)]
         # return [x/num_classes for x in l]
+        print(sq_grads[0].shape)
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
 
     fishers = torch.zeros((len(variables)),requires_grad=False)

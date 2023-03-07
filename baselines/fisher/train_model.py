@@ -39,7 +39,6 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
             optimizer.step()
             train_loss += loss
             # wandb.log({"Training loss": loss/len(train_loader)})
-            
 
         print(
             f"Epoch [{epoch + 1}/{cfg.train.epochs}], Training Loss: {train_loss/len(train_loader):.4f}"
@@ -71,6 +70,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
             "".join(map(str, cfg.data.unbalanced))
         )
     torch.save(model.state_dict(), name)
+    print(name)
 
     return name
 

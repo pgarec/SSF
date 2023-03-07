@@ -1,12 +1,13 @@
 import torch
 import hydra
-from model_merging.data import MNIST, load_models, store_file, load_file
+from model_merging.data import load_models, store_file, create_dataset
 from merge_fisher import evaluate_fisher
 from merge_isotropic import evaluate_isotropic
 from model_merging.evaluation import plot_avg_merging_techniques, plot_merging_techniques
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
+from model_merging.model import MLP
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -27,14 +28,13 @@ def store_results(cfg, isotropic_loss, fisher_loss, output_loss):
     store_file(output_loss, cfg.data.results_path + "output_loss_{}".format(d))
 
 
-
 @hydra.main(config_path="./configurations", config_name="merge.yaml")
 def evaluate_techniques(cfg):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = load_models(cfg)
-    dataset = MNIST(cfg)
-    cfg.data.batch_size_test = 1
+    dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()
+    
     y_classes = dict(zip(cfg.data.classes, range(len(cfg.data.classes))))
     criterion = torch.nn.CrossEntropyLoss()
     outputs = []
@@ -58,7 +58,6 @@ def evaluate_techniques(cfg):
             output_loss[y] += loss
 
     loss = sum(output_loss) / len(test_loader)
-
     results = {'isotropic loss': sum(isotropic_loss)/len(test_loader), 'fisher_loss': sum(fisher_loss)/len(test_loader), 'output_loss': loss}
     plot_avg_merging_techniques(results)
     print(results)
@@ -67,7 +66,7 @@ def evaluate_techniques(cfg):
     fisher_loss_avg = [fisher_loss[i] / count[i] for i in range(len(cfg.data.classes))]
     output_loss_avg = [output_loss[i] / count[i] for i in range(len(cfg.data.classes))]
     plot_merging_techniques(isotropic_loss_avg, fisher_loss_avg, output_loss_avg)
-    
+
     store_results(cfg, isotropic_loss, fisher_loss, output_loss)
 
 

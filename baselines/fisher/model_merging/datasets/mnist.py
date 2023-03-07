@@ -27,21 +27,6 @@ class MNIST:
             ReshapeTransform((-1,))]
         )
 
-    def create_inference_dataloader(self):
-        self.classes = self.cfg.data.classes
-        test_dataset = torchvision.datasets.MNIST(
-            "./data/",
-            train=False,
-            download=True,
-            transform=self.tranform
-        )
-        filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.classes]
-        test_loader = torch.utils.data.DataLoader(
-            filtered_test_dataset, batch_size=1, shuffle=True
-        )
-
-        return test_loader
-
     def load_mnist(self, unbalanced_classes=[]):
         # Load the MNIST dataset
         self.classes = self.cfg.data.classes
@@ -49,13 +34,7 @@ class MNIST:
             "./data/",
             train=True,
             download=True,
-            transform=torchvision.transforms.Compose(
-                [
-                    torchvision.transforms.ToTensor(),
-                    torchvision.transforms.Normalize((0.1307,), (0.3081,)),
-                    ReshapeTransform((-1,)),
-                ]
-            ),
+            transform=self.transform
         )
         test_dataset = torchvision.datasets.MNIST(
             "./data/",
@@ -95,7 +74,14 @@ class MNIST:
                     new_filtered_dataset.extend(l[:(int(len(l)/2))])
 
             filtered_dataset = new_filtered_dataset
-            
+        
+        # max samples train
+        if self.cfg.data.max_samples_train > -1:
+            filtered_dataset = filtered_dataset[:self.cfg.data.max_samples_train]
+        
+        if self.cfg.data.max_samples_test > -1:
+            filtered_test_dataset = filtered_test_dataset[:self.cfg.data.max_samples_test]
+
         # Create the train and test loaders
         self.train_loader = torch.utils.data.DataLoader(
             filtered_dataset,
@@ -111,4 +97,19 @@ class MNIST:
         self.load_mnist(unbalanced)
 
         return self.train_loader, self.test_loader
+    
+    def create_inference_dataloader(self):
+        self.classes = self.cfg.data.classes
+        test_dataset = torchvision.datasets.MNIST(
+            "./data/",
+            train=False,
+            download=True,
+            transform=self.transform
+        )
+        filtered_test_dataset = [(x, y) for x, y in test_dataset if y in self.classes]
+        test_loader = torch.utils.data.DataLoader(
+            filtered_test_dataset, batch_size=1, shuffle=True
+        )
+
+        return test_loader
     

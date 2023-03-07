@@ -214,6 +214,7 @@ def merging_models_fisher_subsets(
 
     if fishers is None:
         fishers = n_models * [1.0]
+        fishers = torch.ones((n_models, len(variables_to_merge[0])))
     else:
         assert len(fishers) == n_models
 
@@ -236,12 +237,16 @@ def merging_models_fisher_subsets(
                         diag = torch.clamp(diag, min=fisher_floor, max=float("inf"))
                     s_fisher = torch.add(s_fisher, diag)
             
-            d[k] = s / s_fisher
+            if not 'clf' in k:
+                d[k] = s / s_fisher
     
     # assumption that the models are ordered in the config file
     d[clf_key] = torch.cat(clf, dim=0)
     output_model.load_state_dict(d)
-       
+    # cfg.data.n_classes = int(cfg.data.n_classes/cfg.data.n_models)
+    # print(cfg.data.n_classes)
+
+
     return output_model
 
 

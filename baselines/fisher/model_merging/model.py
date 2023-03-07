@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
-# Important!
+# Important for merging models!
 torch.manual_seed(42)
+
 
 def get_featuremap_and_clf(model):
     feature = model.feature_map
@@ -13,7 +14,7 @@ def get_featuremap_and_clf(model):
     return feature, clf
 
 
-def get_feaeturemap(model):
+def get_featuremap(model):
     return get_featuremap_and_clf(model)[0]
 
 
@@ -34,7 +35,7 @@ def clone_model(model, cfg):
 
 
 class MLP(nn.Module):
-    def __init__(self, cfg):
+    def __init__(self, cfg, normal=False):
         super(MLP, self).__init__()
 
         self.image_shape = cfg.data.image_shape
@@ -51,6 +52,14 @@ class MLP(nn.Module):
         self.clf = nn.Sequential(
             nn.Linear(self.hidden_dim, self.num_classes, bias=False),
         )
+
+        if normal:
+            self._init_weights()
+    
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                init.normal_(m.weight.data, mean=0, std=1)
 
     def forward(self, x, training=True):
         if not training:
