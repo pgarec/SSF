@@ -13,7 +13,7 @@ data:
   batch_size_test: 64
   data_path: "./data"
   dataset: "MNIST"
-  classes: [0,1,2,3,4]
+  classes: [0,1,2,3]
   n_classes: 4
   n_models: 2
   image_shape: 784
@@ -21,7 +21,7 @@ data:
   fisher_path: "./fisher/fisher_diags/"
   grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
-  permutations: 5
+  permutations: 10
 
 models:
   model1: "MNIST_0123_epoch30"
@@ -29,8 +29,8 @@ models:
 
 train:
   lr: 0.01
-  hidden_dim: 16
-  epochs: 25
+  hidden_dim: 4
+  epochs: 200
   step_size: 212
   w_dc: 0
   gamma: 0.1

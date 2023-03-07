@@ -15,7 +15,7 @@ import numpy as np
 from sklearn.manifold import TSNE
 import math
 
-from fisher.model_merging.model import MLP, clone_model
+from fisher.model_merging.model import MLP
 from fisher.model_merging.data import MNIST, load_models, load_fishers, load_grads, create_dataset
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
 
@@ -60,7 +60,6 @@ def inference(cfg, model, test_loader, criterion):
 
     avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.classes))]
 
-    print(avg_loss)
     print("Average loss {}".format(sum(avg_loss)/len(avg_loss)))
 
     if cfg.train.plot:
@@ -76,69 +75,76 @@ def inference(cfg, model, test_loader, criterion):
 # Permutation
 ###########################################
 
-def logprob_multivariate_gaussian(x, mu, var):
-    var += 0.000001
+def logprob_normal(x, mu, var):
+    var += 0.00001
     n = x.shape[0]    
 
-    return -0.5 * n * torch.log(2 * torch.tensor([math.pi])) - 0.5 * n * torch.log(var) - 0.5 * torch.sum((x - mu)**2 / var)
+    # return -0.5 * n * torch.log(2 * torch.tensor([math.pi])) - 0.5 * n * torch.log(var) - 0.5 * torch.sum((x - mu)**2 / var)
+    log_p = -0.5 * n * torch.log(2 * torch.tensor([math.pi])) -n/2 * torch.log(var).sum() - 0.5 * torch.sum((x - mu)**2 / var)
 
+    return log_p
 
 def perm_loss(cfg, metamodel, models, grads):
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params)
     prior_mean = torch.zeros(metatheta.shape[0])
-    prior_cov = 10e-4 * torch.ones(metatheta.shape[0])
+    prior_cov = 0.1 * torch.ones(metatheta.shape[0])
 
-    prior = ((len(models)-1)/len(models))*logprob_multivariate_gaussian(metatheta, prior_mean, prior_cov).sum()
+    prior = ((len(models)-1)/len(models))*logprob_normal(metatheta, prior_mean, prior_cov).sum()
 
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
     n_models = cfg.data.n_models
     l = 0
 
-    for d in range(n_dim):
+    for m in range(10,30):
         perm = torch.randperm(n_dim)
         perm_loss = 0
 
         for p in range(1,n_perm):
             models_loss = 0
-            for m in range(n_models):
-                model = models[m]
-                grad = grads[m]
+            for k in range(n_models):
+                model = models[k]
+                grad = grads[k]
                 params = model.get_trainable_parameters()
                 theta = nn.utils.parameters_to_vector(params)
                 grad =  nn.utils.parameters_to_vector(grad)
 
-                minitheta = theta[perm[:p]]
-                metatheta_perm = metatheta[perm[:p]]
-                grads_mm = grad[perm[:p]]
-                cov = torch.outer(grads_mm, grads_mm)
+                theta_r = theta[perm[m:]]
+                theta_m = theta[perm[:m]]
+                metatheta_r = metatheta[perm[m:]]
+                metatheta_m = metatheta[perm[:m]]
+                
+                grads_r = grad[perm[m:]]
+                grads_m = grad[perm[:m]]
+                precision_m = grads_m ** 2
+                precision_mr = torch.outer(grads_m, grads_r)
 
-                models_loss += logprob_multivariate_gaussian(metatheta_perm, minitheta, cov).sum()
+                m_pred = theta_m + 1/precision_m @ precision_mr @ (metatheta_r - theta_r)
+                l += logprob_normal(metatheta_m, m_pred, precision_m).sum()
             
-            perm_loss += models_loss / n_models
-
-        l += perm_loss / n_perm
-
-    loss = prior + perm_loss/n_dim
+    loss = prior + perm_loss/(n_models*n_perm*20)
 
     return -loss
 
 
 def merging_models_permutation(cfg, metamodel, models, grads):
-    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
+    optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs)
 
-    shannon_losses = []
+    perm_losses = []
 
     for it in pbar:
         optimizer.zero_grad()
         l = perm_loss(cfg, metamodel, models, grads)
-        print(l)
         l.backward()      # Backward pass <- computes gradients
         optimizer.step()
-        shannon_losses.append(l.item())
+        perm_losses.append(l.item())
         pbar.set_description(f'[Loss: {l.item():.3f}')
+    
+    perm_losses = [-x for x in perm_losses if x < 0]
+    plt.plot(perm_losses)
+    plt.show()
     
     return metamodel
 
@@ -164,7 +170,8 @@ def main(cfg):
     inference(cfg, isotropic_model, test_loader, criterion)
 
     # PERMUTATION
-    perm_model = merging_models_permutation(cfg, isotropic_model, models, grads)
+    metamodel = MLP(cfg)
+    perm_model = merging_models_permutation(cfg, metamodel, models, grads)
     inference(cfg, perm_model, test_loader, criterion)
 
 

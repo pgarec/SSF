@@ -35,7 +35,7 @@ plt.rc('text.latex', preamble=r'\usepackage{bm}')
 ############################################
 
 def logprob_multivariate_gaussian(x, mu, var):
-    var += 0.000001
+    var += 0.1
     n = x.shape[0]    
 
     return - n * torch.log((1/var)) -0.5 * n * np.log(2*torch.pi) -0.5 * (x-mu)**2 * var

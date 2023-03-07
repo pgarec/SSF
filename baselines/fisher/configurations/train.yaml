@@ -29,8 +29,8 @@ data:
 
 train:
   lr: 0.01
-  hidden_dim: 16
-  epochs: 30
+  hidden_dim: 4
+  epochs: 20
   step_size: 212
   w_dc: 0
   gamma: 0.1
