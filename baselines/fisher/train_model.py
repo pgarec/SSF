@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 
 from model_merging.model import MLP
-from compute_fisher import compute_fisher_diags 
+from compute_fisher import compute_fisher_diags, compute_fisher_grads
 from model_merging.data import create_dataset
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
@@ -161,9 +161,13 @@ def main(cfg):
         test_loader = dataset.create_inference_dataloader()
         inference(cfg, name, test_loader, criterion)
 
-        if cfg.train.fisher:
+        if cfg.train.fisher_diagonal:
             cfg.train.name = name
             compute_fisher_diags(cfg)
+
+        if cfg.train.fisher_gradients:
+            cfg.train.name = name
+            compute_fisher_grads(cfg)
 
 
 if __name__ == "__main__":

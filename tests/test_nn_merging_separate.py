@@ -104,7 +104,7 @@ def tsne(cfg, features):
     plt.show()
 
 ############################################
-# Evalutation
+# Evaluation
 ############################################
 
 def inference(cfg, model, test_loader, criterion):

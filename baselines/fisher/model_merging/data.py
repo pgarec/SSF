@@ -38,6 +38,17 @@ def load_fishers(cfg):
     return fishers
 
 
+def load_grads(cfg):
+    grads = []
+
+    for model_name in cfg.models:
+        path = cfg.data.grad_path + cfg.models[model_name]
+        grad = load_file(path)
+        grads.append(grad)
+
+    return grads
+
+
 def create_dataset(cfg):
     if cfg.data.dataset == "MNIST":
         assert cfg.data.image_shape == 784

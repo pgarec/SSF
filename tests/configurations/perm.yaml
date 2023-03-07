@@ -12,36 +12,32 @@ data:
   batch_size_train: 64
   batch_size_test: 64
   data_path: "./data"
-
   dataset: "MNIST"
-  max_samples_train: -1
-  max_samples_test: -1
-
-  classes: [0,1,2,3]
+  classes: [0,1,2,3,4]
   n_classes: 4
-
-  subset_length: 0
+  n_models: 2
   image_shape: 784
   unbalanced: []
-  fisher_path: "./fisher_diags/"
-  grad_path: "./grad_diags/"
-  fisher_samples: 10000
+  fisher_path: "./fisher/fisher_diags/"
+  grad_path: "./fisher/grad_diags/"
+  model_path: "./fisher/models/"
+  permutations: 5
+
+models:
+  model1: "MNIST_0123_epoch30"
+  model2: "MNIST_0123_epoch20"
 
 train:
   lr: 0.01
   hidden_dim: 16
-  epochs: 30
+  epochs: 25
   step_size: 212
   w_dc: 0
   gamma: 0.1
   momentum: 0.5
-  normalize: True
-  fisher_diagonal: True
-  fisher_gradients: True
-
+  fisher: True
   name: ""
   plot_sample: False
   plot: False
 
   
- 

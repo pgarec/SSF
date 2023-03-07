@@ -5,4 +5,5 @@ wandb/
 baselines/fisher/data
 baselines/fisher/fisher_diags
 baselines/fisher/models
+baselines/fisher/grad_diags
 baselines/fisher/results

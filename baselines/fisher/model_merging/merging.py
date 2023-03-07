@@ -268,4 +268,3 @@ def merging_models_isotropic(
     return output_model
 
 
-
