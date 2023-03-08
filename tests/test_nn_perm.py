@@ -175,6 +175,7 @@ def main(cfg):
 
     # metamodel = isotropic_model
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
+    cfg.train.plot_sample = True
     inference(cfg, perm_model, test_loader, criterion)
 
 
