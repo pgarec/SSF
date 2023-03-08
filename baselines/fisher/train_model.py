@@ -35,6 +35,7 @@ def train(cfg, train_loader, test_loader, model, optimizer, criterion):
             out = model(x.to(device))
             batch_onehot = y.apply_(lambda x: y_classes[x])
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
+            
             loss.backward()
             optimizer.step()
             train_loss += loss
@@ -151,9 +152,13 @@ def main(cfg):
         dataset = create_dataset(cfg)
         train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
         model = MLP(cfg)
+        print(model.get_trainable_parameters())
         optimizer = optim.SGD(
-            model.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum
+            model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay
         )
+        # optimizer = optim.SGD(
+        #     model.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum, weight_decay=cfg.train.weight_decay
+        # )
         criterion = torch.nn.CrossEntropyLoss()
 
         name = train(cfg, train_loader, test_loader, model, optimizer, criterion)
