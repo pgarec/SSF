@@ -81,9 +81,7 @@ def logprob_normal(x, mu, precision):
 
     # return -0.5 * n * torch.log(2 * torch.tensor([math.pi])) - 0.5 * n * torch.log(var) - 0.5 * torch.sum((x - mu)**2 / var)
     log_p = -0.5 * n * torch.log(2 * torch.tensor([math.pi])) + 0.5 * torch.log(precision).sum() - 0.5 * torch.sum((x - mu)**2 * precision)
-    print("3rd term {}".format(- 0.5 * torch.sum((x - mu)**2 * precision)))
-    print("x {}".format(x))
-    print("mu {}".format(mu))
+
     return log_p
 
 def perm_loss(cfg, metamodel, models, grads):
@@ -99,9 +97,7 @@ def perm_loss(cfg, metamodel, models, grads):
     n_models = cfg.data.n_models
     l = 0
 
-    for m in range(1,2):
-        m = 2000
-
+    for m in range(1900,2100):
         for p in range(1,n_perm):
             for k in range(n_models):
                 perm = torch.randperm(n_dim)
@@ -120,14 +116,13 @@ def perm_loss(cfg, metamodel, models, grads):
                 grads_m = grad[perm[:m]]
                 precision_m = grads_m ** 2
                 precision_mr = torch.outer(grads_m, grads_r)
-
+                precision_m = torch.tensor(np.where(precision_m < 1e-10, 1e-10, precision_m))
+                                             
                 m_pred = theta_m + 1/precision_m @ precision_mr @ (metatheta_r - theta_r)
                 l1 = logprob_normal(metatheta_m, m_pred, precision_m).sum()
-                print("l1 {}".format(l1))
                 l += l1
     
-    loss = prior + l/(n_models*n_perm*(1))
-    # loss = perm_loss/(n_models*n_perm*(1))
+    loss = prior + l/(n_models*n_perm*(200))
 
     return -loss
 
@@ -145,7 +140,6 @@ def merging_models_permutation(cfg, metamodel, models, grads):
         optimizer.step()
         perm_losses.append(l.item())
         pbar.set_description(f'[Loss: {l.item():.3f}')
-        break
     
     perm_losses = [x for x in perm_losses if x > 0]
     plt.plot(perm_losses)
@@ -177,7 +171,7 @@ def main(cfg):
     # PERMUTATION
     metamodel = MLP(cfg)
 
-    # metamodel = isotropic_model
+    metamodel = isotropic_model
     perm_model = merging_models_permutation(cfg, metamodel, models, grads)
     inference(cfg, perm_model, test_loader, criterion)
 

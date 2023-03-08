@@ -51,7 +51,7 @@ def compute_fisher_grads(cfg):
         d = "".join(map(str, cfg.data.classes))
         grad_name = "{}_{}_epoch{}".format(cfg.data.dataset, d, cfg.train.epochs)
     store_file(grad_diag, cfg.data.grad_path + grad_name)
-    print("Fisher saved to file")
+    print("Grads saved to file")
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ data:
   fisher_path: "./fisher/fisher_diags/"
   grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
-  permutations: 2
+  permutations: 10
 
 models:
   model1: "MNIST_0123_epoch30"
@@ -31,9 +31,8 @@ train:
   lr: 0.01
   weight_decay: 0.01
   hidden_dim: 4
-  epochs: 30000
+  epochs: 20
   step_size: 212
-  w_dc: 0
   gamma: 0.1
   momentum: 0.5
   fisher: True
