@@ -96,35 +96,35 @@ def perm_loss(cfg, metamodel, models, grads):
     n_perm = cfg.data.permutations
     n_models = cfg.data.n_models
     l = 0
+    m = 1000
+    # for m in range(1900,1902):
+    for p in range(1,n_perm):
+        for k in range(n_models):
+            perm = torch.randperm(n_dim)
+            model = models[k]
+            grad = grads[k]
+            params = model.get_trainable_parameters()
+            theta = nn.utils.parameters_to_vector(params)
+            grad =  nn.utils.parameters_to_vector(grad)
 
-    for m in range(1900,1910):
-        for p in range(1,n_perm):
-            for k in range(n_models):
-                perm = torch.randperm(n_dim)
-                model = models[k]
-                grad = grads[k]
-                params = model.get_trainable_parameters()
-                theta = nn.utils.parameters_to_vector(params)
-                grad =  nn.utils.parameters_to_vector(grad)
-
-                theta_r = theta[perm[m:]]
-                theta_m = theta[perm[:m]]
-                metatheta_r = metatheta[perm[m:]]
-                metatheta_m = metatheta[perm[:m]]
-                
-                grads_r = grad[perm[m:]]
-                grads_m = grad[perm[:m]]
-                precision_m = grads_m ** 2
-                precision_mr = torch.outer(grads_m, grads_r)
-                precision_m = torch.tensor(np.where(precision_m < 1e-10, 1e-10, precision_m))
-                                             
-                m_pred = theta_m - 1/precision_m @ precision_mr @ (metatheta_r - theta_r)
-                l1 = logprob_normal(metatheta_m, m_pred, precision_m).sum()
-                l += l1
+            theta_r = theta[perm[m:]]
+            theta_m = theta[perm[:m]]
+            metatheta_r = metatheta[perm[m:]]
+            metatheta_m = metatheta[perm[:m]]
+            
+            grads_r = grad[perm[m:]]
+            grads_m = grad[perm[:m]]
+            precision_m = grads_m ** 2
+            precision_mr = torch.outer(grads_m, grads_r)
+            precision_m = torch.tensor(np.where(precision_m < 1e-10, 1e-10, precision_m))
+                                            
+            m_pred = theta_m - 1/precision_m @ precision_mr @ (metatheta_r - theta_r)
+            l1 = logprob_normal(metatheta_m, m_pred, precision_m).sum()/m
+            l += l1
     
-    loss = prior + l/(n_models*n_perm*(10))
+    loss = prior + l/(n_models*n_perm)
 
-    return -loss
+    return -loss/n_dim
 
 
 def merging_models_permutation(cfg, metamodel, models, grads):
