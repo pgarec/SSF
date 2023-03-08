@@ -30,7 +30,7 @@ data:
 train:
   lr: 0.01
   hidden_dim: 4
-  epochs: 30
+  epochs: 20
   step_size: 212
   weight_decay: 0.01
   gamma: 0.1
