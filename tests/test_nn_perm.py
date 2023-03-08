@@ -127,9 +127,10 @@ def perm_loss(cfg, metamodel, models, grads):
     return -loss/n_dim
 
 
-def merging_models_permutation(cfg, metamodel, models, grads):
+def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
     optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs)
+    cfg.train.plot_sample = False
 
     perm_losses = []
 
@@ -140,7 +141,8 @@ def merging_models_permutation(cfg, metamodel, models, grads):
         optimizer.step()
         perm_losses.append(l.item())
         pbar.set_description(f'[Loss: {l.item():.3f}')
-    
+        inference(cfg, metamodel, test_loader, criterion)
+
     perm_losses = [x for x in perm_losses if x > 0]
     plt.plot(perm_losses)
     plt.show()
@@ -172,7 +174,7 @@ def main(cfg):
     metamodel = MLP(cfg)
 
     # metamodel = isotropic_model
-    perm_model = merging_models_permutation(cfg, metamodel, models, grads)
+    perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
     inference(cfg, perm_model, test_loader, criterion)
 
 
