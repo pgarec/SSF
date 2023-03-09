@@ -89,18 +89,13 @@ def logprob_normal(x, mu, precision):
 def perm_loss(cfg, metamodel, models, grads):
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params)
-    prior_mean = torch.zeros(metatheta.shape[0])
-    prior_cov = cfg.train.weight_decay * torch.ones(metatheta.shape[0])
-
-    # prior = -(1 - 1/len(models))*logprob_normal(metatheta, prior_mean, prior_cov).sum()
-    prior = 0.0
 
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
     n_models = cfg.data.n_models
 
     l = 0.0
-    m = 500
+    m = 100
     for p in range(n_perm):
         perm = torch.randperm(n_dim)
         k = torch.randperm(n_models)[0]
@@ -113,23 +108,23 @@ def perm_loss(cfg, metamodel, models, grads):
 
         theta_r = theta[perm[m:]]
         theta_m = theta[perm[:m]]
-        metatheta_r = metatheta[perm[m:]]
+        metatheta_r = metatheta[perm[m:]].detach()
         metatheta_m = metatheta[perm[:m]]
         
         grads_r = grad[perm[m:]]
         grads_m = grad[perm[:m]]
-        precision_m = grads_m ** 2
+        precision_m = torch.clamp(grads_m ** 2, min=1e-20)
         precision_mr = torch.outer(grads_m, grads_r)
-        # precision_m = torch.tensor(torch.where(precision_m < 1e-100, 1e-100, precision_m)) # ojo con la precision!
-        precision_m = torch.tensor(torch.where(precision_m < 1e-10, 1e-10, precision_m)) # ojo con la precision!
-                                        
+
         # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
+        # m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
         m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-        posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
+        posterior = n_models*logprob_normal(metatheta_m, m_pred, precision_m).sum()
 
         cond_prior_m = torch.zeros(m)    
-        cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
-        prior = -(len(models) - 1)*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
+        # cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
+        cond_prior_prec = torch.ones(m)
+        prior = -(n_models - 1)*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
 
         l += (posterior + prior)/m
 
@@ -138,8 +133,8 @@ def perm_loss(cfg, metamodel, models, grads):
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
-    optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
-    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)#, momentum=cfg.train.momentum)
+    # optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs)
     cfg.train.plot = False
 
@@ -153,8 +148,8 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
-        if it % 100:
-            pass
+        # if it % 100:
+            # pass
             # inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
 
     # perm_losses = [x for x in perm_losses if x > 0]
@@ -192,14 +187,16 @@ def main(cfg):
     metamodel = isotropic_model
     # metamodel = fisher_model
 
-    perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
-    cfg.train.plot = False
-    avg_loss = inference(cfg, perm_model, test_loader, criterion)
-    print("Ours - Average loss {}".format(avg_loss))    
     avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
     print("Isotropic - Average loss {}".format(avg_loss))
     avg_loss = inference(cfg, fisher_model, test_loader, criterion)
-    print("Fisher - Average loss {}".format(avg_loss))
+    print("Fisher - Average loss {}".format(avg_loss)) 
+
+    perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
+    cfg.train.plot = False
+
+    avg_loss = inference(cfg, perm_model, test_loader, criterion)
+    print("Ours (after) - Average loss {}".format(avg_loss))    
 
 if __name__=="__main__":
     main()
