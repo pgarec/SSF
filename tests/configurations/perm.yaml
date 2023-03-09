@@ -21,7 +21,11 @@ data:
   fisher_path: "./fisher/fisher_diags/"
   grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
+<<<<<<< HEAD
   permutations: 50
+=======
+  permutations: 5
+>>>>>>> 9c77d2a8fa769c9f05bd54149c5d611171d19e37
 
 models:
   model1: "MNIST_0123_epoch30"
@@ -31,7 +35,7 @@ train:
   lr: 0.01
   weight_decay: 0.01
   hidden_dim: 4
-  epochs: 2000
+  epochs: 200
   step_size: 212
   gamma: 0.1
   momentum: 0.5

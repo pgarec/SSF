@@ -18,6 +18,7 @@ import math
 from fisher.model_merging.model import MLP
 from fisher.model_merging.data import MNIST, load_models, load_fishers, load_grads, create_dataset
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
+torch.autograd.set_detect_anomaly(True)
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -91,30 +92,20 @@ def perm_loss(cfg, metamodel, models, grads):
     prior_mean = torch.zeros(metatheta.shape[0])
     prior_cov = cfg.train.weight_decay * torch.ones(metatheta.shape[0])
 
-    prior = -(1 - 1/len(models))*logprob_normal(metatheta, prior_mean, prior_cov).sum()
-    # prior=0.0
+    # prior = -(1 - 1/len(models))*logprob_normal(metatheta, prior_mean, prior_cov).sum()
+    prior = 0.0
 
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
     n_models = cfg.data.n_models
-    l = 0
-    # print(n_dim)
-    m = n_dim - 2
-    # for m in range(1900,1902):
-    for p in range(n_perm):
-        for k in range(n_models):
-            perm = torch.randperm(n_dim)
-            model = models[k]
-            grad = grads[k]
-            params = model.get_trainable_parameters()
-            theta = nn.utils.parameters_to_vector(params)
-            grad =  nn.utils.parameters_to_vector(grad)
 
-            theta_r = theta[perm[m:]]
-            theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:]]
-            metatheta_m = metatheta[perm[:m]]
+    l = 0.0
+    m = 500
+    for p in range(n_perm):
+        perm = torch.randperm(n_dim)
+        k = torch.randperm(n_models)[0]
             
+<<<<<<< HEAD
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
             precision_m = grads_m ** 2
@@ -126,8 +117,37 @@ def perm_loss(cfg, metamodel, models, grads):
             l += l1
     
     loss = prior + l/(n_models*n_perm)
+=======
+        model = models[k]
+        grad = grads[k]
+        params = model.get_trainable_parameters()
+        theta = nn.utils.parameters_to_vector(params)
+        grad =  nn.utils.parameters_to_vector(grad)
 
-    return -loss/n_dim
+        theta_r = theta[perm[m:]]
+        theta_m = theta[perm[:m]]
+        metatheta_r = metatheta[perm[m:]]
+        metatheta_m = metatheta[perm[:m]]
+        
+        grads_r = grad[perm[m:]]
+        grads_m = grad[perm[:m]]
+        precision_m = grads_m ** 2
+        precision_mr = torch.outer(grads_m, grads_r)
+        precision_m = torch.tensor(torch.where(precision_m < 1e-100, 1e-100, precision_m)) # ojo con la precision!
+                                        
+        # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
+        m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
+        posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
+>>>>>>> 9c77d2a8fa769c9f05bd54149c5d611171d19e37
+
+        cond_prior_m = torch.zeros(m)    
+        cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
+        prior = -(len(models) - 1)*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
+
+        l += (posterior + prior)/m
+
+    loss = l/(n_perm)
+    return -loss
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
@@ -184,14 +204,17 @@ def main(cfg):
 
     # PERMUTATION
     metamodel = MLP(cfg)
-
     # metamodel = isotropic_model
+    # metamodel = fisher_model
+
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
     cfg.train.plot = False
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
-    print("Average loss {}".format(avg_loss))    
-    # avg_loss = inference(cfg, fisher_model, test_loader, criterion)
-    # print("Average loss {}".format(avg_loss))
+    print("Ours - Average loss {}".format(avg_loss))    
+    avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
+    print("Isotropic - Average loss {}".format(avg_loss))
+    avg_loss = inference(cfg, fisher_model, test_loader, criterion)
+    print("Fisher - Average loss {}".format(avg_loss))
 
 if __name__=="__main__":
     main()
