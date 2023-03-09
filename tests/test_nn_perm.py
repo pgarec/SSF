@@ -120,7 +120,8 @@ def perm_loss(cfg, metamodel, models, grads):
         grads_m = grad[perm[:m]]
         precision_m = grads_m ** 2
         precision_mr = torch.outer(grads_m, grads_r)
-        precision_m = torch.tensor(torch.where(precision_m < 1e-100, 1e-100, precision_m)) # ojo con la precision!
+        # precision_m = torch.tensor(torch.where(precision_m < 1e-100, 1e-100, precision_m)) # ojo con la precision!
+        precision_m = torch.tensor(torch.where(precision_m < 1e-10, 1e-10, precision_m)) # ojo con la precision!
                                         
         # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
         m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
@@ -187,8 +188,8 @@ def main(cfg):
     inference(cfg, isotropic_model, test_loader, criterion)
 
     # PERMUTATION
-    metamodel = MLP(cfg)
-    # metamodel = isotropic_model
+    # metamodel = MLP(cfg)
+    metamodel = isotropic_model
     # metamodel = fisher_model
 
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
