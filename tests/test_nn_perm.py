@@ -60,8 +60,6 @@ def inference(cfg, model, test_loader, criterion):
 
     avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.classes))]
 
-    # print("Average loss {}".format(sum(avg_loss)/len(avg_loss)))
-
     if cfg.train.plot:
         plt.bar(list(y_classes.keys()), avg_loss)
         plt.xlabel("Number of classes")
@@ -132,10 +130,10 @@ def perm_loss(cfg, metamodel, models, grads):
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
     optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs)
-    cfg.train.plot_sample = False
+    cfg.train.plot = False
 
     perm_losses = []
-    perm_error = []
+    inference_loss = []
 
     for it in pbar:
         optimizer.zero_grad()
@@ -143,10 +141,8 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         l.backward()      # Backward pass <- computes gradients
         optimizer.step()
         perm_losses.append(l.item())
-        error = inference(cfg, metamodel, test_loader, criterion)
-        perm_error.append(error)
-        pbar.set_description(f'[Loss: {l.item():.3f}, error: {error:.3f}')
-        inference(cfg, metamodel, test_loader, criterion)
+        pbar.set_description(f'[Loss: {l.item():.3f}')
+        inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
 
     perm_losses = [x for x in perm_losses if x > 0]
     plt.subplot(2,1,1)
@@ -183,9 +179,9 @@ def main(cfg):
 
     # metamodel = isotropic_model
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
-    cfg.train.plot_sample = True
-    inference(cfg, perm_model, test_loader, criterion)
-
+    cfg.train.plot = False
+    avg_loss = inference(cfg, perm_model, test_loader, criterion)
+    print("Average loss {}".format(avg_loss))
 
 if __name__=="__main__":
     main()

@@ -28,7 +28,7 @@ models:
   model2: "MNIST_0123_epoch20"
 
 train:
-  lr: 0.01
+  lr: 0.1
   weight_decay: 0.01
   hidden_dim: 4
   epochs: 50
