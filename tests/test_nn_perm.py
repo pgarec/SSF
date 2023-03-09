@@ -77,7 +77,7 @@ def inference(cfg, model, test_loader, criterion):
 
 def logprob_normal(x, mu, precision):
     n = x.shape[0]    
-    precision += 10e-5
+    precision = precision + 10e-5
 
     # return -0.5 * n * torch.log(2 * torch.tensor([math.pi])) - 0.5 * n * torch.log(var) - 0.5 * torch.sum((x - mu)**2 / var)
     # log_p = -0.5 * n * torch.log(2 * torch.tensor([math.pi])) + 0.5 * torch.log(precision).sum() - 0.5 * torch.sum((x - mu)**2 * precision)
@@ -120,15 +120,7 @@ def perm_loss(cfg, metamodel, models, grads):
             precision_m = grads_m ** 2
             precision_mr = torch.outer(grads_m, grads_r)
             precision_m = torch.tensor(torch.where(precision_m < 1e-10, 1e-10, precision_m))
-
-            # print(precision_m.shape)
-            # print(precision_mr.shape)
-            # print((1/precision_m @ precision_mr).shape)
-            # print((1/precision_m @ precision_mr @ (metatheta_r - theta_r)).shape)
-            # print((1/torch.diag(precision_m) @ precision_mr * (metatheta_r - theta_r)).shape)
-            # print((torch.diag(1/precision_m) @ precision_mr @ (metatheta_r - theta_r)))
-            # print(torch.diag(1/precision_m).shape, torch.diag(1/precision_m))
-                                            
+            
             m_pred = theta_m - precision_m * (precision_mr @ (metatheta_r - theta_r))
             l1 = logprob_normal(metatheta_m, m_pred, precision_m).sum()/m
             l += l1
