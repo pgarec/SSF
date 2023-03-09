@@ -60,7 +60,7 @@ def inference(cfg, model, test_loader, criterion):
 
     avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.classes))]
 
-    print("Average loss {}".format(sum(avg_loss)/len(avg_loss)))
+    # print("Average loss {}".format(sum(avg_loss)/len(avg_loss)))
 
     if cfg.train.plot:
         plt.bar(list(y_classes.keys()), avg_loss)
@@ -70,6 +70,8 @@ def inference(cfg, model, test_loader, criterion):
         plt.show()
 
         print("")
+
+    return sum(avg_loss)/len(avg_loss)
 
 ############################################
 # Permutation
@@ -133,6 +135,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
     cfg.train.plot_sample = False
 
     perm_losses = []
+    perm_error = []
 
     for it in pbar:
         optimizer.zero_grad()
@@ -140,11 +143,16 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         l.backward()      # Backward pass <- computes gradients
         optimizer.step()
         perm_losses.append(l.item())
-        pbar.set_description(f'[Loss: {l.item():.3f}')
+        error = inference(cfg, metamodel, test_loader, criterion)
+        perm_error.append(error)
+        pbar.set_description(f'[Loss: {l.item():.3f}, error: {error:.3f}')
         inference(cfg, metamodel, test_loader, criterion)
 
     perm_losses = [x for x in perm_losses if x > 0]
+    plt.subplot(2,1,1)
     plt.plot(perm_losses)
+    plt.subplot(2,1,2)
+    plt.plot(perm_error)
     plt.show()
     
     return metamodel

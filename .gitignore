@@ -7,3 +7,5 @@ baselines/fisher/fisher_diags
 baselines/fisher/models
 baselines/fisher/grad_diags
 baselines/fisher/results
+baselines/fisher/model_merging/__pycache__
+baselines/fisher/model_merging/datasets
