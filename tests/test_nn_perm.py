@@ -146,9 +146,11 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
 
     perm_losses = [x for x in perm_losses if x > 0]
     plt.subplot(2,1,1)
+    plt.title("Permutation loss")
     plt.plot(perm_losses)
     plt.subplot(2,1,2)
-    plt.plot(perm_error)
+    plt.title("Inference loss")
+    plt.plot(inference_loss)
     plt.show()
     
     return metamodel
