@@ -77,7 +77,7 @@ def inference(cfg, model, test_loader, criterion):
 
 def logprob_normal(x, mu, precision):
     n = x.shape[0]    
-    precision += 10e-5
+    precision = precision + 10e-5
 
     # return -0.5 * n * torch.log(2 * torch.tensor([math.pi])) - 0.5 * n * torch.log(var) - 0.5 * torch.sum((x - mu)**2 / var)
     # log_p = -0.5 * n * torch.log(2 * torch.tensor([math.pi])) + 0.5 * torch.log(precision).sum() - 0.5 * torch.sum((x - mu)**2 * precision)
@@ -94,12 +94,15 @@ def perm_loss(cfg, metamodel, models, grads):
     prior = -(1 - 1/len(models))*logprob_normal(metatheta, prior_mean, prior_cov).sum()
     # prior=0.0
 
+    torch.autograd.set_detect_anomaly(True)
+
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
     n_models = cfg.data.n_models
     l = 0
     # print(n_dim)
-    m = n_dim - 2
+    # m = n_dim - 2
+    m=50
     # for m in range(1900,1902):
     for p in range(n_perm):
         for k in range(n_models):
@@ -119,17 +122,10 @@ def perm_loss(cfg, metamodel, models, grads):
             grads_m = grad[perm[:m]]
             precision_m = grads_m ** 2
             precision_mr = torch.outer(grads_m, grads_r)
-            precision_m = torch.tensor(torch.where(precision_m < 1e-10, 1e-10, precision_m))
-
-            # print(precision_m.shape)
-            # print(precision_mr.shape)
-            # print((1/precision_m @ precision_mr).shape)
-            # print((1/precision_m @ precision_mr @ (metatheta_r - theta_r)).shape)
-            # print((1/torch.diag(precision_m) @ precision_mr * (metatheta_r - theta_r)).shape)
-            # print((torch.diag(1/precision_m) @ precision_mr @ (metatheta_r - theta_r)))
-            # print(torch.diag(1/precision_m).shape, torch.diag(1/precision_m))
+            precision_m = torch.tensor(torch.where(precision_m < 1e-32, 1e-32, precision_m)) # ojo con la precision!
                                             
-            m_pred = theta_m - precision_m * (precision_mr @ (metatheta_r - theta_r))
+            # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
+            m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
             l1 = logprob_normal(metatheta_m, m_pred, precision_m).sum()/m
             l += l1
     
@@ -139,8 +135,8 @@ def perm_loss(cfg, metamodel, models, grads):
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
-    optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
-    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)#, momentum=cfg.train.momentum)
+    # optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs)
     cfg.train.plot = False
 
@@ -190,14 +186,17 @@ def main(cfg):
 
     # PERMUTATION
     metamodel = MLP(cfg)
-
     # metamodel = isotropic_model
+    # metamodel = fisher_model
+
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
     cfg.train.plot = False
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
-    print("Average loss {}".format(avg_loss))    
-    # avg_loss = inference(cfg, fisher_model, test_loader, criterion)
-    # print("Average loss {}".format(avg_loss))
+    print("Ours - Average loss {}".format(avg_loss))    
+    avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
+    print("Isotropic - Average loss {}".format(avg_loss))
+    avg_loss = inference(cfg, fisher_model, test_loader, criterion)
+    print("Fisher - Average loss {}".format(avg_loss))
 
 if __name__=="__main__":
     main()
