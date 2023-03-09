@@ -60,8 +60,6 @@ def inference(cfg, model, test_loader, criterion):
 
     avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.classes))]
 
-    print("Average loss {}".format(sum(avg_loss)/len(avg_loss)))
-
     if cfg.train.plot:
         plt.bar(list(y_classes.keys()), avg_loss)
         plt.xlabel("Number of classes")
@@ -70,6 +68,8 @@ def inference(cfg, model, test_loader, criterion):
         plt.show()
 
         print("")
+
+    return sum(avg_loss)/len(avg_loss)
 
 ############################################
 # Permutation
@@ -130,9 +130,10 @@ def perm_loss(cfg, metamodel, models, grads):
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
     optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs)
-    cfg.train.plot_sample = False
+    cfg.train.plot = False
 
     perm_losses = []
+    inference_loss = []
 
     for it in pbar:
         optimizer.zero_grad()
@@ -141,10 +142,15 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         optimizer.step()
         perm_losses.append(l.item())
         pbar.set_description(f'[Loss: {l.item():.3f}')
-        inference(cfg, metamodel, test_loader, criterion)
+        inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
 
     perm_losses = [x for x in perm_losses if x > 0]
     plt.plot(perm_losses)
+    plt.title("Permutation Loss")
+    plt.show()
+
+    plt.plot(inference_loss)
+    plt.title("Inference Loss")
     plt.show()
     
     return metamodel
@@ -175,9 +181,9 @@ def main(cfg):
 
     # metamodel = isotropic_model
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
-    cfg.train.plot_sample = True
-    inference(cfg, perm_model, test_loader, criterion)
-
+    cfg.train.plot = False
+    avg_loss = inference(cfg, perm_model, test_loader, criterion)
+    print("Average loss {}".format(avg_loss))
 
 if __name__=="__main__":
     main()
