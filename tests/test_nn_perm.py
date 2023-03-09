@@ -89,10 +89,6 @@ def logprob_normal(x, mu, precision):
 def perm_loss(cfg, metamodel, models, grads):
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params)
-    prior_mean = torch.zeros(metatheta.shape[0])
-    prior_cov = cfg.train.weight_decay * torch.ones(metatheta.shape[0])
-
-    # prior = -(1 - 1/len(models))*logprob_normal(metatheta, prior_mean, prior_cov).sum()
     prior = 0.0
 
     n_dim = len(metatheta)
@@ -105,19 +101,6 @@ def perm_loss(cfg, metamodel, models, grads):
         perm = torch.randperm(n_dim)
         k = torch.randperm(n_models)[0]
             
-<<<<<<< HEAD
-            grads_r = grad[perm[m:]]
-            grads_m = grad[perm[:m]]
-            precision_m = grads_m ** 2
-            precision_mr = torch.outer(grads_m, grads_r)
-            precision_m = torch.tensor(torch.where(precision_m < 1e-10, 1e-10, precision_m))
-            
-            m_pred = theta_m - precision_m * (precision_mr @ (metatheta_r - theta_r))
-            l1 = logprob_normal(metatheta_m, m_pred, precision_m).sum()/m
-            l += l1
-    
-    loss = prior + l/(n_models*n_perm)
-=======
         model = models[k]
         grad = grads[k]
         params = model.get_trainable_parameters()
@@ -138,7 +121,6 @@ def perm_loss(cfg, metamodel, models, grads):
         # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
         m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
         posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
->>>>>>> 9c77d2a8fa769c9f05bd54149c5d611171d19e37
 
         cond_prior_m = torch.zeros(m)    
         cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
@@ -195,14 +177,17 @@ def main(cfg):
     test_loader = dataset.create_inference_dataloader()
 
     # FISHER
+    models = load_models(cfg)
     fisher_model = merging_models_fisher(cfg, models, fishers)
     inference(cfg, fisher_model, test_loader, criterion)
 
     # ISOTROPIC
+    models = load_models(cfg)
     isotropic_model = merging_models_isotropic(cfg, models)
     inference(cfg, isotropic_model, test_loader, criterion)
 
     # PERMUTATION
+    models = load_models(cfg)
     metamodel = MLP(cfg)
     # metamodel = isotropic_model
     # metamodel = fisher_model

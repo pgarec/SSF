@@ -21,11 +21,7 @@ data:
   fisher_path: "./fisher/fisher_diags/"
   grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
-<<<<<<< HEAD
-  permutations: 50
-=======
   permutations: 5
->>>>>>> 9c77d2a8fa769c9f05bd54149c5d611171d19e37
 
 models:
   model1: "MNIST_0123_epoch30"
