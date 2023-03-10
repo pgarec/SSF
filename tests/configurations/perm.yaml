@@ -24,8 +24,8 @@ data:
   permutations: 1000
 
 models:
-  model1: "MNIST_0123_epoch30"
-  model2: "MNIST_0123_epoch20"
+  model1: "MNIST_0123_epoch20"
+  model2: "MNIST_0123_epoch30"
 
 train:
   lr: 0.01
@@ -34,7 +34,7 @@ train:
   epochs: 50
   step_size: 212
   gamma: 0.1
-  momentum: 0.5
+  momentum: 0.9
   fisher: True
   name: ""
   plot_sample: False

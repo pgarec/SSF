@@ -94,47 +94,47 @@ def perm_loss(cfg, metamodel, models, grads):
     n_perm = cfg.data.permutations
     n_models = cfg.data.n_models
 
-    l = 0.0
-    m = 100
+    loss = 0.0
+    m = 500
     for p in range(n_perm):
         perm = torch.randperm(n_dim)
-        k = torch.randperm(n_models)[0]
+        # k = torch.randperm(n_models)[0]
+        for k in range(n_models):
+
+            model = models[k]
+            grad = grads[k]
+            params = model.get_trainable_parameters()
+            theta = nn.utils.parameters_to_vector(params)
+            grad =  nn.utils.parameters_to_vector(grad)
+
+            theta_r = theta[perm[m:]]
+            theta_m = theta[perm[:m]]
+            metatheta_r = metatheta[perm[m:]].detach()
+            metatheta_m = metatheta[perm[:m]]
             
-        model = models[k]
-        grad = grads[k]
-        params = model.get_trainable_parameters()
-        theta = nn.utils.parameters_to_vector(params)
-        grad =  nn.utils.parameters_to_vector(grad)
+            grads_r = grad[perm[m:]]
+            grads_m = grad[perm[:m]]
+            precision_m = torch.clamp(grads_m ** 2, min=1e-20)
+            precision_mr = torch.outer(grads_m, grads_r)
 
-        theta_r = theta[perm[m:]]
-        theta_m = theta[perm[:m]]
-        metatheta_r = metatheta[perm[m:]].detach()
-        metatheta_m = metatheta[perm[:m]]
-        
-        grads_r = grad[perm[m:]]
-        grads_m = grad[perm[:m]]
-        precision_m = torch.clamp(grads_m ** 2, min=1e-20)
-        precision_mr = torch.outer(grads_m, grads_r)
+            # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
+            m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
+            posterior = n_models*logprob_normal(metatheta_m, m_pred, precision_m).sum()
+            posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
 
-        # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
-        # m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-        m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-        posterior = n_models*logprob_normal(metatheta_m, m_pred, precision_m).sum()
+            cond_prior_m = torch.zeros(m)    
+            cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
+            prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
 
-        cond_prior_m = torch.zeros(m)    
-        # cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
-        cond_prior_prec = torch.ones(m)
-        prior = -(n_models - 1)*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
+            loss += (posterior + prior)/(m * n_perm)
 
-        l += (posterior + prior)/m
-
-    loss = l/(n_perm)
     return -loss
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
-    # optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
-    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)#, momentum=cfg.train.momentum)
+    # optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
+    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs)
     cfg.train.plot = False
 
@@ -153,9 +153,11 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             # inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
 
     # perm_losses = [x for x in perm_losses if x > 0]
-    plt.subplot(2,1,1)
+    # plt.subplot(2,1,1)
     plt.plot(perm_losses)
-    plt.subplot(2,1,2)
+    plt.xlabel('Permutations')
+    plt.ylabel('Loss')
+    # plt.subplot(2,1,2)
     # plt.plot(inference_loss)
     plt.show()
     
@@ -183,10 +185,13 @@ def main(cfg):
     inference(cfg, isotropic_model, test_loader, criterion)
 
     # PERMUTATION
-    # metamodel = MLP(cfg)
-    metamodel = isotropic_model
+    random_model = MLP(cfg)
+    metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
     # metamodel = fisher_model
+    # metamodel = MLP(cfg)
 
+    avg_loss = inference(cfg, random_model, test_loader, criterion)
+    print("Random untrained - Average loss {}".format(avg_loss))
     avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
     print("Isotropic - Average loss {}".format(avg_loss))
     avg_loss = inference(cfg, fisher_model, test_loader, criterion)
