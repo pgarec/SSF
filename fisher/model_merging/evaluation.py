@@ -89,7 +89,7 @@ def plot_merging_techniques(cfg, isotropic_loss, fisher_loss, perm_loss, output_
     fig.suptitle("Loss for each digit across merging techniques", fontsize=16)
     
     width = 0.25
-    labels = ["Isotropic", "Fisher", "Output"]
+    labels = ["Isotropic", "Fisher", "Permutation", "Output"]
 
     for digit in range(len(isotropic_loss)):
         ax.bar(digit, isotropic_loss[digit], label=f"Isotropic", color="b", width=0.25)
