@@ -1,0 +1,42 @@
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+
+data:
+  batch_size_train: 64
+  batch_size_test: 64
+  data_path: "./data"
+  dataset: "MNIST"
+  digits: [0,1,2,3,4,5]
+  n_classes: 3
+  n_models: 2
+  image_shape: 784
+  unbalanced: []
+  fisher_path: "./fisher_diags/"
+  model_path: "./models/"
+
+models:
+  model1: "mnist_012_epoch20"
+  model2: "mnist_345_epoch20"
+
+train:
+  lr: 0.01
+  hidden_dim: 64
+  epochs: 25
+  step_size: 212
+  w_dc: 0
+  gamma: 0.1
+  momentum: 0.5
+  fisher: True
+  name: ""
+  plot_sample: False
+  plot: False
+  torch_seed: -1
+
+  

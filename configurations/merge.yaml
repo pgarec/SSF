@@ -1,0 +1,41 @@
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+
+data:
+  batch_size_train: 64
+  batch_size_test: 64
+  data_path: "./data"
+  dataset: "MNIST"
+  classes: [0,1,2,3]
+  n_classes: 4
+  image_shape: 784
+  model_path: "./models/"
+  grad_path: "./grad_diags/"
+  fisher_path: "./fisher_diags/"
+  results_path: "./results/"
+  plot: True
+  permutations: 10
+
+
+models:
+  model1: "FashionMNIST_0123456789_epoch50"
+  model2: "FashionMNIST_0123456789_epoch30"
+
+train:
+  lr: 0.01
+  hidden_dim: 4
+  epochs: 300
+  step_size: 212
+  weight_decay: 0.01
+  gamma: 0.1
+  momentum: 0.5
+  torch_seed: -1
+
+  
