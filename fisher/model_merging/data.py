@@ -46,8 +46,9 @@ def load_fishers(cfg, names=[]):
 
     else:
         for model_name in names:
-            path = cfg.data.fisher_path + model_name
-            fisher = load_file(path)
+            name = model_name.split('/')[-1][:-3] 
+            path = cfg.data.fisher_path + name
+            fisher = load_file(path)            
             fishers.append(fisher)
     
     return fishers
@@ -64,8 +65,9 @@ def load_grads(cfg, names=[]):
     
     else:
         for model_name in names:
-            path = cfg.data.grad_path + model_name
-            grad = load_file(path)
+            name = model_name.split('/')[-1][:-3] 
+            path = cfg.data.fisher_path + name
+            grad = load_grads(path)            
             grads.append(grad)
 
     return grads

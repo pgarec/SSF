@@ -23,8 +23,8 @@ def main(cfg):
         torch.manual_seed(cfg.train.torch_seed)
 
     grads = load_grads(cfg)
-    fishers = load_fishers(cfg)
     models = load_models(cfg)
+    fishers = load_fishers(models)
     criterion = torch.nn.CrossEntropyLoss()
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()

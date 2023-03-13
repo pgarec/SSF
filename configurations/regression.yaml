@@ -18,7 +18,9 @@ data:
   max_samples_train: 0
   max_samples_test: 0
   fisher_path: "./fisher/fisher_diags/"
+  grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
+  fisher_samples: 10000
 
 models:
   model1: "MNIST_01_epoch30"
@@ -33,7 +35,7 @@ train:
   gamma: 0.1
   momentum: 0.5
   plot_sample: False
-  plot: True
+  plot: False
   torch_seed: -1
 
   

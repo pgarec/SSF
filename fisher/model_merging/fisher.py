@@ -78,6 +78,7 @@ def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logi
             sq_grad = [probs[0][i] * g for g in grad]
             sq_grads.append(sq_grad)
 
+
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
 
     grads = torch.zeros((len(variables)),requires_grad=False)
