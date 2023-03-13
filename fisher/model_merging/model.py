@@ -88,14 +88,15 @@ class MLP_regression(nn.Module):
 
         self.feature_map = nn.Sequential(
             nn.Linear(cfg.data.dimensions, self.hidden_dim),
+            nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
         )
 
         self.regressor = nn.Sequential(
             nn.Linear(self.hidden_dim, 1, bias=False),
-            nn.Sigmoid()
         )
 
         if normal:

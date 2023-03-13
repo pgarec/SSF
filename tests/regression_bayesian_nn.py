@@ -17,7 +17,7 @@ from sklearn.manifold import TSNE
 from fisher.model_merging.data import load_models, load_fishers, create_dataset
 from fisher.model_merging.merging import merging_models_fisher_subsets
 from fisher.model_merging.model import MLP_regression
-from fisher.train_regression import train_regression, inference
+from fisher.train_regression import train, inference
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -62,48 +62,6 @@ def shannon_loss(metamodel, models, fishers):
     return s_loss
 
 ############################################
-# Feature extraction
-############################################
-
-def extract_features(model, test_loader):
-    model.eval()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    features = []
-
-    with torch.no_grad():
-        for _, (x, y) in enumerate(test_loader):
-            out = model.feature_map(x.to(device))
-            features.append((out, y))
-
-    return features
-
-############################################
-# T-SNE
-############################################
-
-def tsne(cfg, features):
-    features_tsne = []
-    labels_tsne = []
-    for m in features:
-        for x,y in m:
-            features_tsne.append(np.array(x))
-            labels_tsne.append(np.array(y))
-
-
-    test_features = np.concatenate(features_tsne)
-    test_labels = np.concatenate(labels_tsne)
-
-    tsne = TSNE(n_components=2, perplexity=40, random_state=0, n_iter=300)
-    test_features_tsne = tsne.fit_transform(test_features)
-    
-    cmap = plt.get_cmap('tab10', 10)  # Choose a discrete colormap with 4 colors
-    plt.figure(figsize=(10, 5))
-    plt.scatter(test_features_tsne[:, 0], test_features_tsne[:, 1], c=test_labels, cmap=cmap)
-    plt.title('Test set t-SNE embeddings')
-    plt.colorbar()
-    plt.show()
-
-############################################
 # Main
 ############################################
 
@@ -119,12 +77,8 @@ def main(cfg):
 
     name = "prova"
 
-    train_regression(cfg, name, train_loader, test_loader, model, optimizer, criterion)
+    train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
 
-
-
-
-    
 
 if __name__ == "__main__": 
     main()

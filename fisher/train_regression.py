@@ -22,9 +22,12 @@ plt.rc('font', **font)
 plt.rc('text.latex', preamble=r'\usepackage{bm}')
 
 
-def train_regression(cfg, name, train_loader, test_loader, model, optimizer, criterion):
+def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
+
+    train_losses = []
+    val_losses = []
 
     for epoch in range(cfg.train.epochs):
         model.train()
@@ -38,6 +41,9 @@ def train_regression(cfg, name, train_loader, test_loader, model, optimizer, cri
             optimizer.step()
             train_loss += loss
             # wandb.log({"Training loss": loss/len(train_loader)})
+
+        train_loss = train_loss.detach()/len(train_loader)
+        train_losses.append(train_loss)
 
         print(
             f"Epoch [{epoch + 1}/{cfg.train.epochs}], Training Loss: {train_loss/len(train_loader):.4f}"
@@ -54,6 +60,17 @@ def train_regression(cfg, name, train_loader, test_loader, model, optimizer, cri
             print(
                 f"Epoch [{epoch + 1}/{cfg.train.epochs}], Validation Loss: {val_loss/len(test_loader):.4f}"
             )
+            val_loss /= len(test_loader)
+            val_losses.append(val_loss)
+
+    if cfg.train.plot:
+        plt.plot(train_losses, label='Training Loss')
+        plt.plot(val_losses, label='Validation Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Training and Validation Loss')
+        plt.legend()
+        plt.show()
 
     print("")
     torch.save(model.state_dict(), name)
@@ -79,16 +96,7 @@ def inference(cfg, name, test_loader, criterion):
 
             loss_data.append(loss)
             x_data.append(x)
-            y_data.append(y)
-            
-    # if cfg.train.plot:
-    #     plt.bar(list(y_classes.keys()), avg_loss)
-    #     plt.xlabel("Number of classes")
-    #     plt.ylabel("Average Test Loss")
-    #     plt.xticks(list(y_classes.keys()))
-    #     plt.show()
-
-    #     print("")
+            y_data.append(y)        
 
 
 @hydra.main(config_path="./configurations", config_name="train_regression.yaml")
@@ -102,7 +110,7 @@ def main(cfg):
     optimizer = optim.SGD(
         model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay
     )
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.MSELoss()
 
     name = "{}{}_epoch{}.pt".format(
         cfg.data.model_path,
@@ -110,7 +118,7 @@ def main(cfg):
         cfg.train.epochs,
     )
 
-    name = train_regression(cfg, name, train_loader, test_loader, model, optimizer, criterion)
+    name = train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
     
     test_loader = dataset.create_inference_dataloader()
     inference(cfg, name, test_loader, criterion)
