@@ -33,36 +33,6 @@ plt.rc('font', **font)
 plt.rc('text.latex', preamble=r'\usepackage{bm}')
 
 ############################################
-# Shannon loss
-############################################
-
-def logprob_multivariate_gaussian(x, mu, var):
-    var += 0.1
-    n = x.shape[0]    
-
-    return - n * torch.log((1/var)) -0.5 * n * np.log(2*torch.pi) -0.5 * (x-mu)**2 * var
-
-
-def shannon_loss(metamodel, models, fishers):
-    params = metamodel.get_trainable_parameters()
-    metamean = nn.utils.parameters_to_vector(params)
-    prior_mean = torch.zeros(metamean.shape[0])
-    prior_cov = 10e-4 * torch.ones(metamean.shape[0])
-
-    prior = logprob_multivariate_gaussian(metamean, prior_mean, prior_cov).sum()
-    l = 0
-
-    for m in range(len(models)):
-        model = models[m]
-        mean = nn.utils.parameters_to_vector(model.parameters())
-        fisher = nn.utils.parameters_to_vector(fishers[m])
-        l += logprob_multivariate_gaussian(metamean, mean, fisher).sum()
-
-    s_loss = l - (len(models)-1)*prior
-
-    return s_loss
-
-############################################
 # Main
 ############################################
 

@@ -9,8 +9,8 @@ from .data import create_dataset
 def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_logits):
     def fisher_single_example(single_example_batch):
         logits = model(single_example_batch)
-        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-        probs = torch.nn.functional.softmax(log_probs, dim=-1)
+        log_probs = torch.nn.functional.logsigmoid(logits)
+        probs = torch.sigmoid(log_probs)
 
         log_probs.backward(retain_graph=True)
         
@@ -57,8 +57,8 @@ def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logi
 
     def grads_single_example(single_example_batch):
         logits = model(single_example_batch)
-        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-        probs = torch.nn.functional.softmax(log_probs, dim=-1)
+        log_probs = torch.nn.functional.logsigmoid(logits)
+        probs = torch.sigmoid(log_probs)
 
         log_probs.backward(retain_graph=True)
         
@@ -69,7 +69,6 @@ def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logi
 
     grads = torch.zeros((len(variables)),requires_grad=False)
 
-    
     for element in batch:
        model.zero_grad()
        grad_elem = grads_single_example(element.unsqueeze(0))
