@@ -123,11 +123,11 @@ def main(cfg):
     test_loader = dataset.create_inference_dataloader()
     inference(cfg, name, test_loader, criterion)
 
-    # if cfg.train.fisher_diagonal:
-    #     compute_fisher_diags(cfg, name)
+    if cfg.train.fisher_diagonal:
+        compute_fisher_diags(cfg, name, regression=True)
 
-    # if cfg.train.fisher_gradients:
-    #     compute_fisher_grads(cfg, name)
+    if cfg.train.fisher_gradients:
+        compute_fisher_grads(cfg, name, regression=True)
 
 
 if __name__ == "__main__":

@@ -18,8 +18,8 @@ data:
   max_samples_test: -1
 
   dimensions: 1
-  fisher_path: "./fisher_diags/"
-  grad_path: "./grad_diags/"
+  fisher_path: "./fisher/fisher_diags/"
+  grad_path: "./fisher/grad_diags/"
   model_path: "./models/"
   fisher_samples: 10000
 

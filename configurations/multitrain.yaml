@@ -43,7 +43,7 @@ train:
   normalize: True
   fisher_diagonal: True
   fisher_gradients: True
-  n_models: 10
+  n_models: 3
   torch_seed: -1
   plot_sample: False
   plot: False
