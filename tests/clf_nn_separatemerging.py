@@ -16,6 +16,7 @@ from sklearn.manifold import TSNE
 
 from fisher.model_merging.data import load_models, load_fishers, create_dataset
 from fisher.model_merging.merging import merging_models_fisher_subsets
+from fisher.train import inference
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -101,47 +102,6 @@ def tsne(cfg, features):
     plt.colorbar()
     plt.show()
 
-############################################
-# Evaluation
-############################################
-
-def inference(cfg, model, test_loader, criterion):
-    model.eval()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    avg_loss = [0] * len(cfg.data.classes)
-    count = [0] * len(cfg.data.classes)
-    y_classes = dict(zip(cfg.data.classes, range(len(cfg.data.classes))))
-
-    with torch.no_grad():
-        for batch_idx, (x, y) in enumerate(test_loader):
-            out = model(x.to(device))
-            batch_onehot = y.apply_(lambda i: y_classes[i])
-            loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
-            avg_loss[y] += loss.item()
-            count[y] += 1
-
-            if batch_idx == 100 and cfg.train.plot_sample:
-                probs = torch.softmax(out[0], dim=-1)
-                plt.bar(np.arange(len(cfg.data.classes)), probs.cpu().numpy())
-                plt.xlabel("Number of classes")
-                plt.ylabel("Class probabilities for y={}".format(y))
-                plt.xticks(np.arange(len(cfg.data.classes)))
-                plt.show()
-
-    avg_loss = [avg_loss[i] / count[i] for i in range(len(cfg.data.classes))]
-
-    print(avg_loss)
-    print("Average loss {}".format(sum(avg_loss)/len(avg_loss)))
-
-    if cfg.train.plot:
-        plt.bar(list(y_classes.keys()), avg_loss)
-        plt.xlabel("Number of classes")
-        plt.ylabel("Average Test Loss")
-        plt.xticks(list(y_classes.keys()))
-        plt.show()
-
-        print("")
 
 ############################################
 # Main

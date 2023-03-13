@@ -8,7 +8,6 @@ fisher/models
 fisher/grad_diags
 fisher/results
 fisher/model_merging/__pycache__
-fisher/model_merging/datasets
 scripts/results
 test/results
 

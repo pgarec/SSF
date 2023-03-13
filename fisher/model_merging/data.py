@@ -4,6 +4,7 @@ from .model import MLP
 from .datasets.mnist import MNIST
 from .datasets.fmnist import FashionMNIST
 from .datasets.cifar import CIFAR10, CIFAR100
+from .datasets.snelson import SNELSON
 
 
 def load_models(cfg, names = []):
@@ -91,6 +92,9 @@ def create_dataset(cfg):
         cfg.data.classes = list(range(0,100))
 
         dataset = CIFAR100(cfg)
+
+    elif cfg.data.dataset == "SNELSON":
+        dataset = SNELSON(cfg)
 
     else:
         raise("invalid dataset")

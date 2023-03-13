@@ -80,23 +80,22 @@ class MLP(nn.Module):
         return [param for param in self.clf.parameters() if param.requires_grad]
     
 
-class MLP_lr(nn.Module):
+class MLP_regression(nn.Module):
     def __init__(self, cfg, normal=False):
-        super(MLP, self).__init__()
+        super(MLP_regression, self).__init__()
 
-        self.image_shape = cfg.data.image_shape
-        self.num_classes = cfg.data.n_classes
         self.hidden_dim = cfg.train.hidden_dim
 
         self.feature_map = nn.Sequential(
-            nn.Linear(cfg.data.image_shape, self.hidden_dim),
+            nn.Linear(cfg.data.dimensions, self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
         )
 
-        self.clf = nn.Sequential(
-            nn.Linear(self.hidden_dim, self.num_classes, bias=False),
+        self.regressor = nn.Sequential(
+            nn.Linear(self.hidden_dim, 1, bias=False),
+            nn.Sigmoid()
         )
 
         if normal:
@@ -115,7 +114,7 @@ class MLP_lr(nn.Module):
         else:
             x = self.feature_map(x)
         
-        return self.clf(x)
+        return self.regressor(x)
     
     def get_trainable_parameters(self):
         return [param for param in self.parameters() if param.requires_grad]
@@ -123,6 +122,6 @@ class MLP_lr(nn.Module):
     def get_featuremap_trainable_parameters(self):
         return [param for param in self.feature_map.parameters() if param.requires_grad]
     
-    def get_clf_trainable_parameters(self):
-        return [param for param in self.clf.parameters() if param.requires_grad]
+    def get_regressor_trainable_parameters(self):
+        return [param for param in self.regressor.parameters() if param.requires_grad]
     
