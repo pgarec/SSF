@@ -66,8 +66,6 @@ def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logi
     num_classes = model.num_classes
 
     def grads_single_example(single_example_batch):
-        # calculates the gradients of the log-probs with respect to the variables
-        # (the parameters of the model), and squares them
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(log_probs, dim=-1)
@@ -80,8 +78,6 @@ def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logi
             sq_grad = [probs[0][i] * g for g in grad]
             sq_grads.append(sq_grad)
 
-        # l = [torch.sum(torch.stack(g), dim=0) for g in zip(*sq_grads)]
-        # return [x/num_classes for x in l]
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
 
     grads = torch.zeros((len(variables)),requires_grad=False)

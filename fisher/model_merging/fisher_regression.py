@@ -7,25 +7,17 @@ from .data import create_dataset
 
 
 def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_logits):
-    num_classes = model.num_classes
-
     def fisher_single_example(single_example_batch):
-        # calculates the gradients of the log-probs with respect to the variables
-        # (the parameters of the model), and squares them
-        log_probs = model(single_example_batch)
+        logits = model(single_example_batch)
+        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(log_probs, dim=-1)
-        sq_grads = []
 
-        for i in range(num_classes):
-            log_prob = log_probs[0][i]
-            log_prob.backward(retain_graph=True)
-            grad = [p.grad.clone() for p in model.parameters()]
-            sq_grad = [probs[0][i] * g**2 for g in grad]
-            sq_grads.append(sq_grad)
+        log_probs.backward(retain_graph=True)
+        
+        grad = [p.grad.clone() for p in model.parameters()]
+        sq_grad = [probs * g**2 for g in grad]
 
-        # l = [torch.sum(torch.stack(g), dim=0) for g in zip(*sq_grads)]
-        # return [x/num_classes for x in l]
-        return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
+        return sq_grad
 
     fishers = torch.zeros((len(variables)),requires_grad=False)
     for element in batch:
@@ -64,25 +56,20 @@ def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher
 def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logits):
 
     def grads_single_example(single_example_batch):
-        # calculates the gradients of the log-probs with respect to the variables
-        # (the parameters of the model), and squares them
-        out = model(single_example_batch)
-        sq_grads = []
+        logits = model(single_example_batch)
+        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+        probs = torch.nn.functional.softmax(log_probs, dim=-1)
 
-        out = out[0]
-        out.backward(retain_graph=True)
+        log_probs.backward(retain_graph=True)
         
         grad = [p.grad.clone() for p in model.parameters()]
-        sq_grad = [out * g for g in grad]
-        sq_grads.append(sq_grad)
+        sq_grad = [probs * g for g in grad]
 
-        out = 
-
-        # l = [torch.sum(torch.stack(g), dim=0) for g in zip(*sq_grads)]
-        # return [x/num_classes for x in l]
-        return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
+        return sq_grad
 
     grads = torch.zeros((len(variables)),requires_grad=False)
+
+    
     for element in batch:
        model.zero_grad()
        grad_elem = grads_single_example(element.unsqueeze(0))
@@ -118,10 +105,11 @@ def compute_grads_for_model(model, dataset, expectation_wrt_logits=True, grad_sa
 
 def compute_fisher_diags(cfg, model_name):
     model = MLP_regression(cfg)
+    model.eval()
     model.load_state_dict(torch.load(model_name))
 
     dataset = create_dataset(cfg)
-    train_loader, _ = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
+    train_loader, _ = dataset.create_dataloaders()
 
     print("Starting Fisher computation")
     fisher_diag = compute_fisher_for_model(model, train_loader, fisher_samples=cfg.data.fisher_samples)
@@ -132,11 +120,12 @@ def compute_fisher_diags(cfg, model_name):
 
 
 def compute_fisher_grads(cfg, model_name):
-    model = MLP_regressions(cfg)
+    model = MLP_regression(cfg)
+    model.eval()
     model.load_state_dict(torch.load(model_name))
 
     dataset = create_dataset(cfg)
-    train_loader, _ = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
+    train_loader, _ = dataset.create_dataloaders()
 
     print("Starting Grads computation")
     grad_diag = compute_grads_for_model(model, train_loader, grad_samples=cfg.data.fisher_samples)
