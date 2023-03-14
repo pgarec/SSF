@@ -22,10 +22,6 @@ data:
   model_path: "./fisher/models/"
   fisher_samples: 10000
 
-models:
-  model1: "MNIST_01_epoch30"
-  model2: "MNIST_23_epoch30"
-
 train:
   lr: 0.01
   hidden_dim: 16

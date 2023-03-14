@@ -24,7 +24,7 @@ def main(cfg):
 
     grads = load_grads(cfg)
     models = load_models(cfg)
-    fishers = load_fishers(models)
+    fishers = load_fishers(cfg)
     criterion = torch.nn.CrossEntropyLoss()
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()
@@ -32,12 +32,10 @@ def main(cfg):
     # FISHER
     models = load_models(cfg)
     fisher_model = merging_models_fisher(cfg, models, fishers)
-    inference(cfg, fisher_model, test_loader, criterion)
 
     # ISOTROPIC
     models = load_models(cfg)
     isotropic_model = merging_models_isotropic(cfg, models)
-    inference(cfg, isotropic_model, test_loader, criterion)
 
     # PERMUTATION
     models = load_models(cfg)

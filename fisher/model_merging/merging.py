@@ -174,7 +174,7 @@ def merging_models_fisher(
         assert len(fishers) == n_models
 
     d = dict(output_model.named_parameters())
-    print(d.keys())
+
     for idx, k in enumerate(list(d.keys())):
         # iterate over models
         s = torch.zeros_like(output_model.get_parameter(k)) 
@@ -185,8 +185,9 @@ def merging_models_fisher(
 
         for m in range(len(mergeable_models)):
             diag = fishers[m] if isinstance(fishers[m], float) else fishers[m][idx]
-            print("s shape {}".format(s.shape))
+            print("s {} shape {}".format(m, s.shape))
             s = torch.add(s, mergeable_models[m].get_parameter(k)*diag)
+            print("s {} shape after add {}".format(m, s.shape))
             if not favor_target_model or m == 0:
                 # ensure that fisher diagonal doesn't vanish
                 diag = torch.clamp(diag, min=fisher_floor, max=float("inf"))

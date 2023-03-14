@@ -65,9 +65,7 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     return name
 
 
-def inference(cfg, name, test_loader, criterion):
-    model = MLP(cfg)
-    model.load_state_dict(torch.load(name))
+def inference(cfg, model, test_loader, criterion):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -101,6 +99,8 @@ def inference(cfg, name, test_loader, criterion):
         plt.show()
 
         print("")
+
+    return sum(avg_loss) / len(avg_loss)
 
 
 def train_subsets(cfg):
@@ -139,7 +139,7 @@ def train_subsets(cfg):
         name = train(cfg_subset, name, train_loader, test_loader, model, optimizer, criterion)
         
         test_loader = dataset.create_inference_dataloader()
-        inference(cfg_subset, name, test_loader, criterion)
+        inference(cfg_subset, model, test_loader, criterion)
 
         if cfg_subset.train.fisher:
             cfg_subset.train.name = name
@@ -177,9 +177,8 @@ def main(cfg):
                 "".join(map(str, cfg.data.unbalanced)))
 
         name = train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
-        
         test_loader = dataset.create_inference_dataloader()
-        inference(cfg, name, test_loader, criterion)
+        inference(cfg, model, test_loader, criterion)
 
         if cfg.train.fisher_diagonal:
             compute_fisher_diags(cfg, name)

@@ -20,7 +20,8 @@ data:
   fisher_path: "./fisher/fisher_diags/"
   grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
-  permutations: 1000
+  permutations: 50
+  plot: False
 
 models:
   model1: "MNIST_0123_epoch20"

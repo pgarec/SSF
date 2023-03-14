@@ -7,7 +7,7 @@ from .datasets.cifar import CIFAR10, CIFAR100
 from .datasets.snelson import SNELSON
 
 
-def load_models(cfg, names = []):
+def load_models(cfg, names=[]):
     models = []
 
     if names == []:
