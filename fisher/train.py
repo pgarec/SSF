@@ -25,10 +25,10 @@ plt.rc('text.latex', preamble=r'\usepackage{bm}')
 def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
+    model.train()
     y_classes = dict(zip(cfg.data.classes, range(len(cfg.data.classes))))
 
     for epoch in range(cfg.train.epochs):
-        model.train()
         train_loss = 0
         for _, (x, y) in enumerate(train_loader):
             optimizer.zero_grad()
@@ -61,8 +61,6 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     print("")
     torch.save(model.state_dict(), name)
     print(name)
-
-    return name
 
 
 def inference(cfg, model, test_loader, criterion):
@@ -136,7 +134,7 @@ def train_subsets(cfg):
                 "".join(map(str, cfg.data.unbalanced))
         )
 
-        name = train(cfg_subset, name, train_loader, test_loader, model, optimizer, criterion)
+        train(cfg_subset, name, train_loader, test_loader, model, optimizer, criterion)
         
         test_loader = dataset.create_inference_dataloader()
         inference(cfg_subset, model, test_loader, criterion)
@@ -176,7 +174,7 @@ def main(cfg):
                 "".join(map(str, cfg.data.classes)), cfg.train.epochs,
                 "".join(map(str, cfg.data.unbalanced)))
 
-        name = train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
+        train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
         test_loader = dataset.create_inference_dataloader()
         inference(cfg, model, test_loader, criterion)
 

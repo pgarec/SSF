@@ -40,9 +40,12 @@ class MLP(nn.Module):
         self.image_shape = cfg.data.image_shape
         self.num_classes = cfg.data.n_classes
         self.hidden_dim = cfg.train.hidden_dim
+        # self.linear1 = nn.Linear(self.image_shape, self.hidden_dim)
+        # self.linear2 = nn.Linear(self.hidden_dim, self.hidden_dim)
+        # self.activation = nn.ReLU()
 
         self.feature_map = nn.Sequential(
-            nn.Linear(cfg.data.image_shape, self.hidden_dim),
+            nn.Linear(self.image_shape, self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
@@ -51,7 +54,6 @@ class MLP(nn.Module):
         self.clf = nn.Sequential(
             nn.Linear(self.hidden_dim, self.num_classes, bias=False),
         )
-
         if normal:
             self._init_weights()
     
@@ -60,13 +62,8 @@ class MLP(nn.Module):
             if isinstance(m, nn.Linear):
                 init.normal_(m.weight.data, mean=0, std=1)
 
-    def forward(self, x, training=True):
-        if not training:
-            with torch.no_grad():
-                x = self.feature_map(x)
-
-        else:
-            x = self.feature_map(x)
+    def forward(self, x):
+        x = self.feature_map(x)
         
         return self.clf(x)
     
@@ -85,19 +82,12 @@ class MLP_regression(nn.Module):
         super(MLP_regression, self).__init__()
 
         self.hidden_dim = cfg.train.hidden_dim
+        self.linear1 = nn.Linear(cfg.data.dimensions, self.hidden_dim)
+        self.linear2 = nn.Linear(self.hidden_dim, self.hidden_dim)
+        self.regressor = nn.Linear(self.hidden_dim, 1, bias=False)
 
-        self.feature_map = nn.Sequential(
-            nn.Linear(cfg.data.dimensions, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
-            nn.ReLU(),
-        )
-
-        self.regressor = nn.Sequential(
-            nn.Linear(self.hidden_dim, 1, bias=False),
-        )
+        self.activation = nn.ReLU()
+        self.batch_norm = nn.BatchNorm1d(self.hidden_dim)
 
         if normal:
             self._init_weights()
@@ -107,22 +97,15 @@ class MLP_regression(nn.Module):
             if isinstance(m, nn.Linear):
                 init.normal_(m.weight.data, mean=0, std=1)
 
-    def forward(self, x, training=True):
-        if not training:
-            with torch.no_grad():
-                x = self.feature_map(x)
-
-        else:
-            x = self.feature_map(x)
+    def forward(self, x):
+        x = self.activation(self.linear1(x))
+        x = self.activation(self.linear2(x))
         
         return self.regressor(x)
     
     def get_trainable_parameters(self):
         return [param for param in self.parameters() if param.requires_grad]
-    
-    def get_featuremap_trainable_parameters(self):
-        return [param for param in self.feature_map.parameters() if param.requires_grad]
-    
+  
     def get_regressor_trainable_parameters(self):
         return [param for param in self.regressor.parameters() if param.requires_grad]
     

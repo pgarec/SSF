@@ -24,8 +24,8 @@ data:
   plot: False
 
 models:
-  model1: "MNIST_0123_epoch20"
-  model2: "MNIST_0123_epoch30"
+  model1: "MNIST_0123_epoch30"
+  model2: "MNIST_0123_epoch20"
 
 train:
   lr: 0.01
