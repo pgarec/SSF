@@ -23,6 +23,8 @@ def weight_permutation(model, layer_index):
     weight = f"feature_map.{layer_index}.weight"
     bias = f"feature_map.{layer_index}.bias"
 
+    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
+
     num_units = parameters[weight].shape[0]
     permuted_indices = torch.randperm(num_units)
 
