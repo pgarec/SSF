@@ -15,7 +15,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_log
         log_probs.backward(retain_graph=True)
         
         grad = [p.grad.clone() for p in model.parameters()]
-        sq_grad = [probs * g**2 for g in grad]
+        sq_grad = [probs[0] * g**2 for g in grad]
 
         return sq_grad
 

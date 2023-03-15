@@ -14,7 +14,7 @@ import torch.nn as nn
 import numpy as np
 from sklearn.manifold import TSNE
 
-from fisher.model_merging.data import load_models, load_fishers, create_dataset
+from fisher.model_merging.data import load_models_regression, load_fishers, create_dataset, load_grads
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from fisher.model_merging.model import MLP_regression
 from fisher.train_regression import train, inference
@@ -57,7 +57,6 @@ def main(cfg):
             i
         )
         print(name)
-        names.append(name)
 
         name = train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
         print("compute_fisher_diags")
@@ -65,37 +64,67 @@ def main(cfg):
         compute_fisher_grads(cfg, name)
         model.eval()
         models.append(model)
+        names.append(name)
+    
+    test_loader = dataset.create_inference_dataloader()
 
     # FISHER
+    models = load_models_regression(cfg, names)
     fishers = load_fishers(cfg, names)
     fisher_model = merging_models_fisher(cfg, models, fishers)
-    inference(cfg, fisher_model, test_loader, criterion)
 
     # ISOTROPIC
-    models = load_models(cfg)
+    models = load_models_regression(cfg, names)
     isotropic_model = merging_models_isotropic(cfg, models)
-    inference(cfg, isotropic_model, test_loader, criterion)
 
     # PERMUTATION
-    models = load_models(cfg)
+    models = load_models_regression(cfg, names)
     random_model = MLP_regression(cfg)
+    grads = load_grads(cfg, names)
     metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
     # metamodel = fisher_model
     # metamodel = MLP(cfg)
 
-    avg_loss = inference(cfg, random_model, test_loader, criterion)
-    print("Random untrained - Average loss {}".format(avg_loss))
-    avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
-    print("Isotropic - Average loss {}".format(avg_loss))
-    avg_loss = inference(cfg, fisher_model, test_loader, criterion)
-    print("Fisher - Average loss {}".format(avg_loss)) 
+    y_random, avg_loss_random = inference(cfg, random_model, test_loader, criterion)
+    print("Random untrained - Average loss {}".format(avg_loss_random))
+    y_isotropic, avg_loss_isotropic = inference(cfg, isotropic_model, test_loader, criterion)
+    print("Isotropic - Average loss {}".format(avg_loss_isotropic))
+    y_fisher, avg_loss_fisher = inference(cfg, fisher_model, test_loader, criterion)
+    print("Fisher - Average loss {}".format(avg_loss_fisher)) 
 
     perm_model = merging_models_permutation(cfg, random_model, models, grads, test_loader, criterion)
     cfg.train.plot = False
 
-    avg_loss = inference(cfg, perm_model, test_loader, criterion)
-    print("Ours (after) - Average loss {}".format(avg_loss))  
+    y_perm, avg_loss_permutation = inference(cfg, perm_model, test_loader, criterion)
+    print("Ours (after) - Average loss {}".format(avg_loss_permutation)) 
 
+    values = [avg_loss_random, avg_loss_isotropic, avg_loss_fisher, avg_loss_permutation]
+    labels = ["Random", "Isotropic", "Fisher", "Perm"]
+
+    # plt.bar(labels, values)
+    # plt.xlabel("Type of merging")
+    # plt.ylabel("Average Test Loss")
+    # plt.show()
+
+    palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
+    x_data = []
+    y_data = []
+
+    for x,y in test_loader:
+        x_data.append(x)
+        y_data.append(y)
+
+    plt.scatter(x, y, marker="+", c=palette[0])
+    plt.scatter(x, np.array(y_random[0].flatten()), marker=".", c=palette[1])
+    plt.scatter(x, np.array(y_isotropic[0].flatten()), marker=".", c=palette[2])
+    plt.scatter(x, np.array(y_fisher[0].flatten()), marker=".", c=palette[3])
+    plt.scatter(x, np.array(y_perm[0].flatten()), marker=".", c=palette[4])
+
+    # plt.scatter(X[:,k], y_k, s=8, c=palette[k], alpha=0.25)
+    
+    plt.xlabel('$X$')
+    plt.ylabel('$Y$')
+    plt.show()
 
     
 if __name__ == "__main__": 

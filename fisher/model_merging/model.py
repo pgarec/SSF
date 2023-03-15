@@ -91,7 +91,7 @@ class MLP_regression(nn.Module):
             # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
+            # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
         )
 

@@ -55,6 +55,7 @@ def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher
             break
 
     for i, fisher in enumerate(fishers):
+        print(fisher.shape)
         fishers[i] = fisher / n_examples
 
     return fishers

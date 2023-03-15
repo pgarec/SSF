@@ -20,6 +20,7 @@ def logprob_normal(x, mu, precision):
 
     # return -0.5 * n * torch.log(2 * torch.tensor([math.pi])) - 0.5 * n * torch.log(var) - 0.5 * torch.sum((x - mu)**2 / var)
     # log_p = -0.5 * n * torch.log(2 * torch.tensor([math.pi])) + 0.5 * torch.log(precision).sum() - 0.5 * torch.sum((x - mu)**2 * precision)
+
     log_p = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
 
     return log_p
@@ -34,7 +35,7 @@ def perm_loss(cfg, metamodel, models, grads):
     n_models = len(models)
 
     loss = 0.0
-    m = 500
+    m = 10
     for p in range(n_perm):
         perm = torch.randperm(n_dim)
         # k = torch.randperm(n_models)[0]
@@ -92,13 +93,14 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             # inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
 
     # perm_losses = [x for x in perm_losses if x > 0]
-    # plt.subplot(2,1,1)
-    plt.plot(perm_losses)
-    plt.xlabel('Permutations')
-    plt.ylabel('Loss')
-    # plt.subplot(2,1,2)
-    # plt.plot(inference_loss)
-    plt.show()
+    if cfg.data.plot:
+        # plt.subplot(2,1,1)
+        plt.plot(perm_losses)
+        plt.xlabel('Permutations')
+        plt.ylabel('Loss')
+        # plt.subplot(2,1,2)
+        # plt.plot(inference_loss)
+        plt.show()
     
     return metamodel
 

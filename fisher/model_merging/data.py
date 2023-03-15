@@ -1,6 +1,6 @@
 import torch
 import pickle
-from .model import MLP
+from .model import MLP, MLP_regression
 from .datasets.mnist import MNIST
 from .datasets.fmnist import FashionMNIST
 from .datasets.cifar import CIFAR10, CIFAR100
@@ -19,7 +19,29 @@ def load_models(cfg, names=[]):
     else:
         for model_name in names:
             model = MLP(cfg)
-            model.load_state_dict(torch.load(cfg.data.model_path+model_name+".pt"))
+            name = model_name.split('/')[-1][:-3] 
+            path = cfg.data.model_path + name + ".pt"
+            model.load_state_dict(torch.load(path))
+            models.append(model)
+
+    return models
+
+
+def load_models_regression(cfg, names=[]):
+    models = []
+
+    if names == []:
+        for model_name in cfg.models:
+            model = MLP_regression(cfg)
+            model.load_state_dict(torch.load(cfg.data.model_path+cfg.models[model_name]+".pt"))
+            models.append(model)
+    
+    else:
+        for model_name in names:
+            model = MLP_regression(cfg)
+            name = model_name.split('/')[-1][:-3] 
+            path = cfg.data.model_path + name + ".pt"
+            model.load_state_dict(torch.load(path))
             models.append(model)
 
     return models
@@ -56,7 +78,6 @@ def load_fishers(cfg, names=[]):
 
 def load_grads(cfg, names=[]):
     grads = []
-
     if names == []:
         for model_name in cfg.models:
             path = cfg.data.grad_path + cfg.models[model_name]
@@ -67,7 +88,7 @@ def load_grads(cfg, names=[]):
         for model_name in names:
             name = model_name.split('/')[-1][:-3] 
             path = cfg.data.fisher_path + name
-            grad = load_grads(path)            
+            grad = load_file(path)            
             grads.append(grad)
 
     return grads

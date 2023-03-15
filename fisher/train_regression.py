@@ -79,9 +79,7 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     return name
 
 
-def inference(cfg, name, test_loader, criterion):
-    model = MLP_regression(cfg)
-    model.load_state_dict(torch.load(name))
+def inference(cfg, model, test_loader, criterion):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -96,7 +94,9 @@ def inference(cfg, name, test_loader, criterion):
 
             loss_data.append(loss)
             x_data.append(x)
-            y_data.append(y)        
+            y_data.append(out)     
+
+    return y_data, sum(loss_data)/len(test_loader)
 
 
 @hydra.main(config_path="./configurations", config_name="train_regression.yaml")
@@ -121,7 +121,7 @@ def main(cfg):
     name = train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
     
     test_loader = dataset.create_inference_dataloader()
-    inference(cfg, name, test_loader, criterion)
+    inference(cfg, model, test_loader, criterion)
 
     if cfg.train.fisher_diagonal:
         compute_fisher_diags(cfg, name)
