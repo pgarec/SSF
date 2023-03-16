@@ -4,6 +4,7 @@ from model_merging.data import load_models, store_file, create_dataset
 from .merge_fisher import evaluate_fisher
 from .merge_permutation import evaluate_permutation
 from .merge_isotropic import evaluate_isotropic
+from .train import inference
 from model_merging.model import MLP
 from model_merging.evaluation import plot_avg_merging_techniques, plot_merging_techniques
 import torch.nn.functional as F
@@ -17,19 +18,23 @@ def store_results(cfg, isotropic_loss, fisher_loss, output_loss):
 
 
 def evaluate_techniques(cfg, model_names = []):
-    if cfg.train.torch_seed > -1:
-        torch.manual_seed(cfg.train.torch_seed)
-        
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_names = ["model_{}".format(x) for x in range(0,3)]
     
-    models = load_models(cfg, model_names)
+    if model_names == []:
+        models = load_models(cfg)
+    else:
+        models = load_models(cfg, model_names)
+
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()
     
     y_classes = dict(zip(cfg.data.classes, range(len(cfg.data.classes))))
     criterion = torch.nn.CrossEntropyLoss()
     outputs = []
+
+    for model in models:
+        loss = inference(cfg, model, test_loader, criterion)
+        print("loss model {}".format(loss))
 
     isotropic_loss, count = evaluate_isotropic(cfg, models, test_loader, criterion)
     fisher_loss, count = evaluate_fisher(cfg, models, test_loader, criterion, model_names)
@@ -68,7 +73,7 @@ def evaluate_techniques(cfg, model_names = []):
 
 @hydra.main(config_path="./configurations", config_name="merge.yaml")
 def main(cfg):
-    evaluate_techniques(cfg)
+    evaluate_techniques(cfg, ["model_0.pt", "model_1.pt", "model_2.pt"])
 
 
 if __name__ == "__main__":

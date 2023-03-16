@@ -71,21 +71,19 @@ def main(cfg):
     avg_loss = inference(cfg, models[0], test_loader, criterion)
     print("Model 0 - Average loss {}".format(avg_loss))
 
-    weight_permuted_model = weight_permutation(models[0],0)
-    avg_loss = inference(cfg, weight_permuted_model, test_loader, criterion)
-    print("Weight permuted model 0 - Average loss {}".format(avg_loss))
-    # avg_loss = inference(cfg, random_model, test_loader, criterion)
-    # print("Random untrained - Average loss {}".format(avg_loss))
-    # avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
-    # print("Isotropic - Average loss {}".format(avg_loss))
-    # avg_loss = inference(cfg, fisher_model, test_loader, criterion)
-    # print("Fisher - Average loss {}".format(avg_loss)) 
+    avg_loss = inference(cfg, random_model, test_loader, criterion)
+    print("Random untrained - Average loss {}".format(avg_loss))
 
-    # perm_model = merging_models_permutation(cfg, random_model, models, grads, test_loader, criterion)
-    # cfg.train.plot = False
+    avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
+    print("Isotropic - Average loss {}".format(avg_loss))
+    
+    avg_loss = inference(cfg, fisher_model, test_loader, criterion)
+    print("Fisher - Average loss {}".format(avg_loss)) 
 
-    # avg_loss = inference(cfg, perm_model, test_loader, criterion)
-    # print("Ours (after) - Average loss {}".format(avg_loss))    
+    perm_model = merging_models_permutation(cfg, random_model, models, grads, test_loader, criterion)
+    cfg.train.plot = False
+    avg_loss = inference(cfg, perm_model, test_loader, criterion)
+    print("Ours (after) - Average loss {}".format(avg_loss))    
 
 if __name__=="__main__":
     main()

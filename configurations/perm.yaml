@@ -24,8 +24,10 @@ data:
   plot: False
 
 models:
-  model1: "MNIST_0123_epoch30"
-  model2: "MNIST_0123_epoch20"
+  model0: "model_0"
+  model1: "model_1"
+  model2: "model_2"
+
 
 train:
   lr: 0.01
@@ -39,4 +41,4 @@ train:
   name: ""
   plot_sample: False
   plot: False
-  torch_seed: -1
+  torch_seed: 30

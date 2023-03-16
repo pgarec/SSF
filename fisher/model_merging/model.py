@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 # Important for merging models!
-# torch.manual_seed(42)
+torch.manual_seed(40)
 
 def get_featuremap_and_clf(model):
     feature = model.feature_map
@@ -37,12 +37,12 @@ class MLP(nn.Module):
     def __init__(self, cfg, normal=False):
         super(MLP, self).__init__()
 
+        if cfg.train.torch_seed > -1:
+            torch.manual_seed(cfg.train.torch_seed)
+
         self.image_shape = cfg.data.image_shape
         self.num_classes = cfg.data.n_classes
         self.hidden_dim = cfg.train.hidden_dim
-        # self.linear1 = nn.Linear(self.image_shape, self.hidden_dim)
-        # self.linear2 = nn.Linear(self.hidden_dim, self.hidden_dim)
-        # self.activation = nn.ReLU()
 
         self.feature_map = nn.Sequential(
             nn.Linear(self.image_shape, self.hidden_dim),

@@ -10,8 +10,28 @@ import torch.optim as optim
 import tqdm
 import torch.nn as nn
 import math
-from model_merging.data import load_grads, load_models
-from model_merging.evaluation import evaluate_metamodel, evaluate_minimodels, plot
+from model_merging.data import load_grads
+from model_merging.evaluation import evaluate_metamodel
+
+
+def weight_permutation(model, layer_index):
+    parameters = {name: p for name, p in model.named_parameters()}
+    weight = f"feature_map.{layer_index}.weight"
+    bias = f"feature_map.{layer_index}.bias"
+
+    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
+
+    num_units = parameters[weight].shape[0]
+    permuted_indices = torch.randperm(num_units)
+
+    with torch.no_grad():
+        parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
+        parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
+
+        weight_next = f"feature_map.{layer_index+2}.weight"
+        parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+
+    return model
 
 
 def logprob_normal(x, mu, precision):

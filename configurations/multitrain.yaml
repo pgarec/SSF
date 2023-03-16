@@ -44,7 +44,7 @@ train:
   fisher_diagonal: True
   fisher_gradients: True
   n_models: 3
-  torch_seed: -1
+  torch_seed: 40
   plot_sample: False
   plot: False
 

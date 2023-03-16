@@ -23,10 +23,10 @@ data:
   plot: True
   permutations: 10
 
-
 models:
-  model1: "FashionMNIST_0123456789_epoch50"
-  model2: "FashionMNIST_0123456789_epoch30"
+  model0: "model0"
+  model1: "model1"
+  model2: "model2"
 
 train:
   lr: 0.01

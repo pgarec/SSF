@@ -19,8 +19,8 @@ from fisher.merge_permutation import merging_models_permutation
 
 @hydra.main(config_path="./configurations", config_name="perm.yaml")
 def main(cfg):
-    if cfg.train.torch_seed > -1:
-        torch.manual_seed(cfg.train.torch_seed)
+    # if cfg.train.torch_seed > -1:
+    #     torch.manual_seed(cfg.train.torch_seed)
 
     grads = load_grads(cfg)
     models = load_models(cfg)
@@ -46,14 +46,15 @@ def main(cfg):
 
     avg_loss = inference(cfg, random_model, test_loader, criterion)
     print("Random untrained - Average loss {}".format(avg_loss))
+
     avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
     print("Isotropic - Average loss {}".format(avg_loss))
+
     avg_loss = inference(cfg, fisher_model, test_loader, criterion)
     print("Fisher - Average loss {}".format(avg_loss)) 
 
     perm_model = merging_models_permutation(cfg, random_model, models, grads, test_loader, criterion)
     cfg.train.plot = False
-
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
     print("Ours (after) - Average loss {}".format(avg_loss))    
 
