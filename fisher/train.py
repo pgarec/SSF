@@ -9,6 +9,7 @@ import wandb
 from model_merging.model import MLP
 from model_merging.fisher import compute_fisher_diags, compute_fisher_grads
 from model_merging.data import create_dataset
+from model_merging.permutation import compute_permutations
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -183,6 +184,9 @@ def main(cfg):
 
         if cfg.train.fisher_gradients:
             compute_fisher_grads(cfg, name)
+
+        if cfg.train.permutations:
+            compute_permutations(cfg, name)
 
 
 if __name__ == "__main__":

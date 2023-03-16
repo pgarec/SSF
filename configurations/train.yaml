@@ -25,6 +25,8 @@ data:
   unbalanced: []
   fisher_path: "./fisher_diags/"
   grad_path: "./grad_diags/"
+  perm_path: "./perms/"
+
   model_path: "./models/"
   fisher_samples: 10000
 

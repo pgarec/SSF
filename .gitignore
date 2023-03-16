@@ -6,6 +6,7 @@ fisher/data
 fisher/fisher_diags
 fisher/models
 fisher/grad_diags
+fisher/perms
 fisher/results
 fisher/model_merging/__pycache__
 scripts/results

@@ -15,29 +15,6 @@ from fisher.merge_permutation import merging_models_permutation
 import torch.nn as nn
 
 ############################################
-# Weight permutation
-############################################
-
-def weight_permutation(model, layer_index):
-    parameters = {name: p for name, p in model.named_parameters()}
-    weight = f"feature_map.{layer_index}.weight"
-    bias = f"feature_map.{layer_index}.bias"
-
-    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
-
-    num_units = parameters[weight].shape[0]
-    permuted_indices = torch.randperm(num_units)
-
-    with torch.no_grad():
-        parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
-        parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
-
-        weight_next = f"feature_map.{layer_index+2}.weight"
-        parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
-
-    return model
-
-############################################
 # Main
 ############################################
 
