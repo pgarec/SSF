@@ -55,7 +55,7 @@ def perm_loss(cfg, metamodel, models, grads):
     n_models = len(models)
 
     loss = 0.0
-    m = 10
+    m = 500
     for p in range(n_perm):
         perm = torch.randperm(n_dim)
         # k = torch.randperm(n_models)[0]

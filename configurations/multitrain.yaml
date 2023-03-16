@@ -30,7 +30,7 @@ data:
 
   fisher_samples: 10000
   plot: False
-  permutations: 10
+  permutations: 100
 
 train:
   lr: 0.01

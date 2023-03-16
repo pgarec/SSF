@@ -6,6 +6,7 @@ from .merge_permutation import evaluate_permutation
 from .merge_isotropic import evaluate_isotropic
 from .train import inference
 from model_merging.model import MLP
+from model_merging.merging import merging_models_isotropic
 from model_merging.evaluation import plot_avg_merging_techniques, plot_merging_techniques
 import torch.nn.functional as F
 
@@ -40,6 +41,8 @@ def evaluate_techniques(cfg, model_names = []):
     fisher_loss, count = evaluate_fisher(cfg, models, test_loader, criterion, model_names)
 
     metamodel = MLP(cfg)
+    metamodel = merging_models_isotropic(cfg, models)
+    cfg.train.epochs = 500
     perm_loss, count = evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_names)
 
     output_loss = [0] * len(cfg.data.classes)
