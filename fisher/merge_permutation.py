@@ -90,11 +90,10 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
-        print(inference(cfg, metamodel, test_loader, criterion))
         # if it % 100:
             # pass
             # inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
-
+    
     # perm_losses = [x for x in perm_losses if x > 0]
     if cfg.data.plot:
         # plt.subplot(2,1,1)
@@ -141,6 +140,7 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
             precision_m = torch.clamp(grads_m ** 2, min=1e-20)
+            # outer product 10000 and 3000
             precision_mr = torch.outer(grads_m, grads_r)
 
             # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
@@ -171,7 +171,6 @@ def merging_models_weight_permutation(cfg, metamodel, models, permutations, grad
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
-        print(inference(cfg, metamodel, test_loader, criterion))
 
         # if it % 100:
             # pass

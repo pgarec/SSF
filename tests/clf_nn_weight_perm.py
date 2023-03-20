@@ -28,45 +28,49 @@ def main(cfg):
     criterion = torch.nn.CrossEntropyLoss()
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()
-    
+
+    params = models[0].get_trainable_parameters()
+    metatheta = nn.utils.parameters_to_vector(params)
+    print(len(metatheta))
+    avg_loss = inference(cfg, models[0], test_loader, criterion)
+    print("Model 0 - Average loss {}".format(avg_loss))
+
+    random_model = MLP(cfg)
+    avg_loss = inference(cfg, random_model, test_loader, criterion)
+    print("Random untrained - Average loss {}".format(avg_loss))
+
     # FISHER
     models = load_models(cfg)
     fisher_model = merging_models_fisher(cfg, models, fishers)
+
+    avg_loss = inference(cfg, fisher_model, test_loader, criterion)
+    print("Fisher - Average loss {}".format(avg_loss)) 
 
     # ISOTROPIC
     models = load_models(cfg)
     isotropic_model = merging_models_isotropic(cfg, models)
 
+    avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
+    print("Isotropic - Average loss {}".format(avg_loss))
+
     # PERMUTATION
     models = load_models(cfg)
     random_model = MLP(cfg)
     metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
-    # metamodel = fisher_model
+    metamodel = fisher_model
     # metamodel = MLP(cfg)
-    perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion)
+    perm_model = merging_models_permutation(cfg, random_model, models, grads, test_loader, criterion)
+
+    avg_loss = inference(cfg, perm_model, test_loader, criterion)
+    print("Permutation - Average loss {}".format(avg_loss))  
 
     # WEIGHT PERMUTATION
     models = load_models(cfg)
     random_model = MLP(cfg)
     metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
-    # metamodel = fisher_model
+    metamodel = fisher_model
     # metamodel = MLP(cfg)
-    weight_perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, test_loader, criterion)
-
-    avg_loss = inference(cfg, models[0], test_loader, criterion)
-    print("Model 0 - Average loss {}".format(avg_loss))
-
-    avg_loss = inference(cfg, random_model, test_loader, criterion)
-    print("Random untrained - Average loss {}".format(avg_loss))
-
-    avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
-    print("Isotropic - Average loss {}".format(avg_loss))
-    
-    avg_loss = inference(cfg, fisher_model, test_loader, criterion)
-    print("Fisher - Average loss {}".format(avg_loss)) 
-
-    avg_loss = inference(cfg, perm_model, test_loader, criterion)
-    print("Permutation - Average loss {}".format(avg_loss))  
+    weight_perm_model = merging_models_weight_permutation(cfg, random_model, models, permutations, grads, test_loader, criterion)
 
     avg_loss = inference(cfg, weight_perm_model, test_loader, criterion)
     print("Weight permutation - Average loss {}".format(avg_loss))   

@@ -29,15 +29,15 @@ data:
 
   model_path: "./models/"
   fisher_samples: 10000
-  weight_permutations: 10
+  weight_permutations: 200
   layer_weight_permutation: 0
-  permutations: 500
+  permutations: 200
   m: 500
 
 train:
-  lr: 0.001
-  hidden_dim: 4
-  epochs: 20
+  lr: 0.01
+  hidden_dim: 16
+  epochs: 40
   epochs_perm: 5
   step_size: 212
   weight_decay: 0.01
