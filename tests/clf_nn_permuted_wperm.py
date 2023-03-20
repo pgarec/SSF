@@ -64,7 +64,7 @@ def main(cfg):
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
     print("Permutation - Average loss {}".format(avg_loss))  
 
-    # WEIGHT PERMUTATION
+    # PERMUTED WEIGHT PERMUTATION
     models = load_models(cfg)
     random_model = MLP(cfg)
     metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
