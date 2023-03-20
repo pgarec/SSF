@@ -31,6 +31,8 @@ data:
   fisher_samples: 10000
   plot: False
   permutations: 100
+  weight_permutations: 5
+  layer_weight_permutation: 0
   m: 500
 
 train:

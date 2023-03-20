@@ -20,20 +20,26 @@ data:
   fisher_path: "./fisher/fisher_diags/"
   grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
-  permutations: 50
+  perm_path: "./fisher/perms/"
+
+  permutations: 500
+  m: 500
+  weight_permutations: 500
+  layer_weight_permutation: 0
   plot: False
 
 models:
-  model0: "model_0"
-  model1: "model_1"
-  model2: "model_2"
+  model0: "MNIST_0123_epoch40"
+  model1: "MNIST_0123_epoch30"
+  model2: "MNIST_0123_epoch20"
 
 
 train:
   lr: 0.01
   weight_decay: 0.01
   hidden_dim: 4
-  epochs: 50
+  epochs: 5
+  epochs_perm: 5
   step_size: 212
   gamma: 0.1
   momentum: 0.9

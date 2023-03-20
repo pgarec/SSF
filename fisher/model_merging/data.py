@@ -76,6 +76,25 @@ def load_fishers(cfg, names=[]):
     return fishers
 
 
+def load_permutations(cfg, names=[]):
+    perms = []
+
+    if names == []:
+        for model_name in cfg.models:
+            path = cfg.data.perm_path + cfg.models[model_name]
+            perm = load_file(path)
+            perms.append(perm)
+
+    else:
+        for model_name in names:
+            name = model_name.split('/')[-1][:-3] 
+            path = cfg.data.perm_path + name
+            perm = load_file(path)            
+            perms.append(perm)
+    
+    return perms
+
+
 def load_grads(cfg, names=[]):
     grads = []
     if names == []:

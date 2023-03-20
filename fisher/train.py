@@ -185,7 +185,7 @@ def main(cfg):
         if cfg.train.fisher_gradients:
             compute_fisher_grads(cfg, name)
 
-        if cfg.train.permutations:
+        if cfg.train.weight_permutations:
             compute_permutations(cfg, name)
 
 

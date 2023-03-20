@@ -29,11 +29,16 @@ data:
 
   model_path: "./models/"
   fisher_samples: 10000
+  weight_permutations: 10
+  layer_weight_permutation: 0
+  permutations: 500
+  m: 500
 
 train:
   lr: 0.001
   hidden_dim: 4
-  epochs: 40
+  epochs: 20
+  epochs_perm: 5
   step_size: 212
   weight_decay: 0.01
   gamma: 0.1
@@ -41,7 +46,8 @@ train:
   normalize: True
   fisher_diagonal: True
   fisher_gradients: True
-  torch_seed: -1
+  weight_permutations: True
+  torch_seed: 40
 
   name: ""
   plot_sample: False

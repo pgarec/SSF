@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 # Important for merging models!
-torch.manual_seed(40)
+# torch.manual_seed(40)
 
 def get_featuremap_and_clf(model):
     feature = model.feature_map

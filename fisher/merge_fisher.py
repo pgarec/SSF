@@ -2,21 +2,9 @@ import torch
 import hydra
 from model_merging.data import MNIST, load_models
 from model_merging.data import load_fishers
-from model_merging.merging import create_pairwise_grid_coeffs, create_random_coeffs 
 from model_merging.merging import merging_models_fisher
 from model_merging.evaluation import evaluate_metamodel, evaluate_minimodels, plot
 
-
-def get_coeffs_set(cfg):
-    n_models = len(cfg.merge.n_models)
-    if cfg.merge.coeff_mode == "grid":
-        assert n_models == 2
-        return create_pairwise_grid_coeffs(cfg.merge.n_coeffs)
-    elif cfg.merge.coeff_mode == "random":
-        return create_random_coeffs(n_models, cfg.merge.n_coeffs)
-    else:
-        raise ValueError
-    
 
 def evaluate_fisher(cfg, models, test_loader, criterion, names=[]):
     if names == []:
