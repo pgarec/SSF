@@ -6,6 +6,26 @@ from .data import store_file
 import torch.nn as nn
 
 
+def l2_permutation(cfg, model):
+    layer_index = cfg.data.layer_weight_permutation
+    parameters = {name: p for name, p in model.named_parameters()}
+    weight = f"feature_map.{layer_index}.weight"
+    bias = f"feature_map.{layer_index}.bias"
+
+    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
+
+    l2_norm = torch.linalg.norm(parameters[weight], dim=-1, ord=2)
+    _, permuted_indices = torch.sort(l2_norm)
+    with torch.no_grad():
+        parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
+        parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
+
+        weight_next = f"feature_map.{layer_index+2}.weight"
+        parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+
+    return model
+
+
 def implement_permutation(cfg, model, permuted_indices):
     layer_index = cfg.data.layer_weight_permutation
     parameters = {name: p for name, p in model.named_parameters()}
@@ -69,22 +89,6 @@ def sorted_weight_permutation(model, layer_index):
     return model
 
 
-def indices_sorted_weight_permutation(model, layer_index):
-    parameters = {name: p for name, p in model.named_parameters()}
-    weight = f"feature_map.{layer_index}.weight"
-
-    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
-
-    indices = []
-    with torch.no_grad():
-        w = parameters[weight]
-        for c in w.shape[1]:
-            _, permuted_indices = torch.sort(w[:, c])
-            indices.append(permuted_indices)
-
-    return indices
-
-
 def indices_random_weight_permutation(model, layer_index):
     parameters = {name: p for name, p in model.named_parameters()}
     weight = f"feature_map.{layer_index}.weight"
@@ -106,10 +110,7 @@ def compute_permutations_for_model(cfg, model):
     return list_indices
 
 
-def compute_permutations(cfg, model_name):
-    model = MLP(cfg)
-    model.load_state_dict(torch.load(model_name))
-
+def compute_permutations(cfg, model):
     print("Starting permutations computation")
     permutations = compute_permutations_for_model(cfg, model)
     print("Permutations computed. Saving to file...")
