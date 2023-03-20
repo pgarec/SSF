@@ -4,6 +4,7 @@ import hydra
 from .model import MLP
 from .data import store_file
 import torch.nn as nn
+import numpy as np
 
 ############################################
 # Weight-space symmetry
@@ -103,7 +104,6 @@ def indices_random_weight_permutation(model, layer_index):
     return permuted_indices
 
 
-
 def compute_permutations_for_model(cfg, model):    
     list_indices = []
 
@@ -129,46 +129,44 @@ def compute_permutations(cfg, model_name):
 # Scaling symmetry
 ############################################
 
-def scaling_permutation(model, layer_index):
+def scaling_permutation(model, layer_index, scaler):
     parameters = {name: p for name, p in model.named_parameters()}
     weight = f"feature_map.{layer_index}.weight"
     bias = f"feature_map.{layer_index}.bias"
 
     assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
 
-    num_units = parameters[weight].shape[0]
-    permuted_indices = torch.randperm(num_units)
-
     with torch.no_grad():
-        parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
-        parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
+        parameters[weight] = nn.Parameter(scaler*parameters[weight])
+        parameters[bias] = nn.Parameter(scaler*parameters[bias])
 
         weight_next = f"feature_map.{layer_index+2}.weight"
-        parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+        parameters[weight_next] = nn.Parameter((1/scaler)*parameters[weight_next])
 
     return model
 
 
 def compute_scaling_permutations_for_model(cfg, model):    
     list_indices = []
-
-    for p in range(cfg.data.weight_permutations):
+    scalers = np.random.randint(cfg.data.scaling_permutations_min, cfg.data.scaling_permutations_max, cfg.data.scaling_permutations)
+    
+    for p,scaler in enumerate(scalers):
         print(p)
-        list_indices.append(scaling_permutation(model, cfg.data.layer_weight_permutation))
+        scaling_permutation(model, cfg.data.layer_weight_permutation, scaler)
 
     return list_indices
 
 
-def compute_permutations_scaling(cfg, model_name):
+def compute_scaling_permutations(cfg, model_name):
     model = MLP(cfg)
     model.load_state_dict(torch.load(model_name))
 
-    print("Starting permutations computation")
+    print("Starting scaling permutations computation")
     permutations = compute_permutations_for_model(cfg, model)
-    print("Permutations computed. Saving to file...")
+    print("Scaling permutations computed. Saving to file...")
     perm_name = model_name.split('/')[-1][:-3]
     store_file(permutations, cfg.data.perm_path + perm_name)
-    print("Permutations saved to file")
+    print("Scaling permutations saved to file")
 
 ############################################
 # Main

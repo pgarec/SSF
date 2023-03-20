@@ -31,6 +31,9 @@ data:
   fisher_samples: 10000
   weight_permutations: 200
   layer_weight_permutation: 0
+  scaling_permutations: 100
+  scaling_permutations_min: 1000
+  scaling_permutations_max: 100
   permutations: 200
   m: 500
 

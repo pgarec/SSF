@@ -9,7 +9,7 @@ import wandb
 from model_merging.model import MLP
 from model_merging.fisher import compute_fisher_diags, compute_fisher_grads
 from model_merging.data import create_dataset
-from model_merging.permutation import compute_permutations, l2_permutation
+from model_merging.permutation import compute_permutations, l2_permutation, compute_scaling_permutations
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -187,7 +187,7 @@ def main(cfg):
 
         if cfg.train.weight_permutations:
             # compute_permutations(cfg, name)
-            
+
             name_perm = "{}{}_{}_perm_epoch{}.pt".format(
                 cfg.data.model_path,
                 cfg.data.dataset,
@@ -195,7 +195,7 @@ def main(cfg):
             )
             model_perm = l2_permutation(cfg, name_perm)
             torch.save(model_perm.state_dict(), name_perm)
-            compute_permutations(cfg, name_perm)
+            compute_scaling_permutations(cfg, name_perm)
 
 
 if __name__ == "__main__":
