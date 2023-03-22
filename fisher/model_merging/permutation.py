@@ -20,12 +20,11 @@ def l2_permutation(cfg, model):
 
     l2_norm = torch.linalg.norm(parameters[weight], dim=-1, ord=2)
     _, permuted_indices = torch.sort(l2_norm)
-    with torch.no_grad():
-        parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
-        parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
+    parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
+    parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
 
-        weight_next = f"feature_map.{layer_index+2}.weight"
-        parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+    weight_next = f"feature_map.{layer_index+2}.weight"
+    parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
 
     return model
 
@@ -46,8 +45,7 @@ def implement_permutation(cfg, model, permuted_indices):
 
 
 def implement_permutation_grad(cfg, grad, permuted_indices):
-    layer_index = cfg.data.layer_weight_permutation
-    
+    layer_index = (cfg.data.layer_weight_permutation-1)*2
     grad[layer_index] = grad[layer_index][permuted_indices]
     grad[layer_index+1] = grad[layer_index+1][permuted_indices]
     grad[layer_index+2] = nn.Parameter(grad[layer_index+2][:, permuted_indices])
@@ -129,44 +127,25 @@ def compute_permutations(cfg, model_name):
 # Scaling symmetry
 ############################################
 
-def scaling_permutation(model, layer_index, scaler):
+def scaling_permutation(cfg, model,layer_index=-1, scaler=-1):
+    if layer_index == -1:
+        layer_index = cfg.data.layer_weight_permutation
     parameters = {name: p for name, p in model.named_parameters()}
     weight = f"feature_map.{layer_index}.weight"
     bias = f"feature_map.{layer_index}.bias"
 
     assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
 
-    with torch.no_grad():
-        parameters[weight] = nn.Parameter(scaler*parameters[weight])
-        parameters[bias] = nn.Parameter(scaler*parameters[bias])
+    if scaler == -1:
+        scaler = np.random.randint(cfg.data.scaling_perm_min, cfg.data.scaling_perm_max)
 
-        weight_next = f"feature_map.{layer_index+2}.weight"
-        parameters[weight_next] = nn.Parameter((1/scaler)*parameters[weight_next])
+    parameters[weight] = nn.Parameter(scaler*parameters[weight])
+    parameters[bias] = nn.Parameter(scaler*parameters[bias])
+
+    weight_next = f"feature_map.{layer_index+2}.weight"
+    parameters[weight_next] = nn.Parameter((1/scaler)*parameters[weight_next])
 
     return model
-
-
-def compute_scaling_permutations_for_model(cfg, model):    
-    list_indices = []
-    scalers = np.random.randint(cfg.data.scaling_permutations_min, cfg.data.scaling_permutations_max, cfg.data.scaling_permutations)
-    
-    for p,scaler in enumerate(scalers):
-        print(p)
-        scaling_permutation(model, cfg.data.layer_weight_permutation, scaler)
-
-    return list_indices
-
-
-def compute_scaling_permutations(cfg, model_name):
-    model = MLP(cfg)
-    model.load_state_dict(torch.load(model_name))
-
-    print("Starting scaling permutations computation")
-    permutations = compute_permutations_for_model(cfg, model)
-    print("Scaling permutations computed. Saving to file...")
-    perm_name = model_name.split('/')[-1][:-3]
-    store_file(permutations, cfg.data.perm_path + perm_name)
-    print("Scaling permutations saved to file")
 
 ############################################
 # Main

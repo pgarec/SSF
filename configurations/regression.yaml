@@ -13,8 +13,8 @@ data:
   batch_size_test: 64
   data_path: "./data"
   dataset: "SNELSON"
-  dimensions: 1
-  n_models: 2
+  dimensions: 2
+  n_models: 3
   max_samples_train: 0
   max_samples_test: 0
   fisher_path: "./fisher/fisher_diags/"
@@ -22,19 +22,22 @@ data:
   model_path: "./fisher/models/"
   fisher_samples: 10000
   plot: False
+  
   permutations: 50
+  m: 10
 
 train:
   lr: 0.01
-  hidden_dim: 64
-  epochs: 200
+  hidden_dim: 4
+  epochs: 50
+  epochs_perm: 50
   step_size: 212
   weight_decay: 0.01
   gamma: 0.1
   momentum: 0.5
   plot_sample: False
   plot: False
-  torch_seed: 20
+  torch_seed: 40
 
   
  

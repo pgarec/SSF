@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 # Important for merging models!
-# torch.manual_seed(40)
+# torch.manual_seed(40)
 
 def get_featuremap_and_clf(model):
     feature = model.feature_map
@@ -49,6 +49,8 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
         )
 
         self.clf = nn.Sequential(
@@ -81,13 +83,15 @@ class MLP_regression(nn.Module):
     def __init__(self, cfg, normal=False):
         super(MLP_regression, self).__init__()
 
+        if cfg.train.torch_seed > -1:
+            torch.manual_seed(cfg.train.torch_seed)
+
         self.hidden_dim = cfg.train.hidden_dim
         self.linear1 = nn.Linear(cfg.data.dimensions, self.hidden_dim)
         self.linear2 = nn.Linear(self.hidden_dim, self.hidden_dim)
         self.regressor = nn.Linear(self.hidden_dim, 1, bias=False)
 
         self.activation = nn.ReLU()
-        self.batch_norm = nn.BatchNorm1d(self.hidden_dim)
 
         if normal:
             self._init_weights()

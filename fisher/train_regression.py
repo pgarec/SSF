@@ -93,10 +93,10 @@ def inference(cfg, model, test_loader, criterion):
             loss = criterion(out, y)
 
             loss_data.append(loss)
-            x_data.append(x)
-            y_data.append(out)     
+            x_data.append(np.array(x.flatten()))
+            y_data.append(np.array(out.flatten())) 
 
-    return y_data, sum(loss_data)/len(test_loader)
+    return x_data, y_data, sum(loss_data)/len(test_loader)
 
 
 @hydra.main(config_path="./configurations", config_name="train_regression.yaml")

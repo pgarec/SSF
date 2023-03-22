@@ -9,13 +9,16 @@ from .data import create_dataset
 def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_logits):
     def fisher_single_example(single_example_batch):
         logits = model(single_example_batch)
-        log_probs = torch.nn.functional.logsigmoid(logits)
-        probs = torch.sigmoid(log_probs)
-
-        log_probs.backward(retain_graph=True)
         
+        # log_probs = torch.nn.functional.logsigmoid(logits)
+        # probs = torch.sigmoid(log_probs)
+        # log_probs.backward(retain_graph=True)
+        log_logits = torch.log(logits[0])
+        log_logits.backward(retain_graph=True)
         grad = [p.grad.clone() for p in model.parameters()]
-        sq_grad = [probs[0] * g**2 for g in grad]
+        sq_grad = [logits[0] * g**2 for g in grad]
+
+        print(sq_grad)
 
         return sq_grad
 
@@ -102,13 +105,14 @@ def compute_grads_for_model(model, dataset, expectation_wrt_logits=True, grad_sa
     return grads
 
 
-def compute_fisher_diags(cfg, model_name):
+def compute_fisher_diags(cfg, model_name, train_loader=[]):
     model = MLP_regression(cfg)
     model.eval()
     model.load_state_dict(torch.load(model_name))
 
-    dataset = create_dataset(cfg)
-    train_loader, _ = dataset.create_dataloaders()
+    if train_loader == []:
+        dataset = create_dataset(cfg)
+        train_loader, _ = dataset.create_dataloaders()
 
     print("Starting Fisher computation")
     fisher_diag = compute_fisher_for_model(model, train_loader, fisher_samples=cfg.data.fisher_samples)
@@ -118,13 +122,14 @@ def compute_fisher_diags(cfg, model_name):
     print("Fisher saved to file")
 
 
-def compute_fisher_grads(cfg, model_name):
+def compute_fisher_grads(cfg, model_name, train_loader=[]):
     model = MLP_regression(cfg)
     model.eval()
     model.load_state_dict(torch.load(model_name))
 
-    dataset = create_dataset(cfg)
-    train_loader, _ = dataset.create_dataloaders()
+    if train_loader == []:
+        dataset = create_dataset(cfg)
+        train_loader, _ = dataset.create_dataloaders()
 
     print("Starting Grads computation")
     grad_diag = compute_grads_for_model(model, train_loader, grad_samples=cfg.data.fisher_samples)
