@@ -7,12 +7,11 @@ from .model import clone_model, get_mergeable_variables, MLP
 
 
 def merging_models_fisher(
-        cfg,
+        output_model,
         mergeable_models,
         fishers=None,
         fisher_floor=1e-6,
         favor_target_model=True):
-    output_model = clone_model(mergeable_models[0], cfg)
     output_variables = get_mergeable_variables(output_model)
     variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
 
@@ -48,15 +47,15 @@ def merging_models_fisher(
     return output_model
 
 
+
 def merging_models_fisher_subsets(
-        cfg,
+        output_model,
         mergeable_models,
         fishers=None,
+        n_classes=0,
         fisher_floor=1e-6,
         favor_target_model=True
         ):
-    cfg.data.n_classes = cfg.data.n_classes*cfg.data.n_models
-    output_model = MLP(cfg)
     output_variables = get_mergeable_variables(output_model)
     variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
 
@@ -105,10 +104,9 @@ def merging_models_fisher_subsets(
 
 
 def merging_models_isotropic(
-        cfg,
+        output_model,
         mergeable_models,
 ):
-    output_model = clone_model(mergeable_models[0], cfg)
     d = dict(output_model.named_parameters())
     for idx, k in enumerate(list(d.keys())):
         s = torch.zeros_like(output_model.get_parameter(k)) 

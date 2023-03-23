@@ -102,25 +102,22 @@ def indices_random_weight_permutation(model, layer_index):
     return permuted_indices
 
 
-def compute_permutations_for_model(cfg, model):    
+def compute_permutations_for_model(model, layer_wp, weight_permutations):    
     list_indices = []
 
-    for p in range(cfg.data.weight_permutations):
+    for p in range(weight_permutations):
         print(p)
-        list_indices.append(indices_random_weight_permutation(model, cfg.data.layer_weight_permutation))
+        list_indices.append(indices_random_weight_permutation(model, layer_wp))
 
     return list_indices
 
 
-def compute_permutations(cfg, model_name):
-    model = MLP(cfg)
-    model.load_state_dict(torch.load(model_name))
-
+def compute_permutations(model, model_name, perm_path, layer_wp=0, weight_permutations=100):
     print("Starting permutations computation")
-    permutations = compute_permutations_for_model(cfg, model)
+    permutations = compute_permutations_for_model(model, layer_wp, weight_permutations)
     print("Permutations computed. Saving to file...")
     perm_name = model_name.split('/')[-1][:-3]
-    store_file(permutations, cfg.data.perm_path + perm_name)
+    store_file(permutations, perm_path + perm_name)
     print("Permutations saved to file")
 
 ############################################

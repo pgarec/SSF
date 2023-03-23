@@ -6,9 +6,7 @@ from .data import store_file
 from .data import create_dataset
 
 
-def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_logits):
-    num_classes = model.num_classes
-
+def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expectation_wrt_logits):
     def fisher_single_example(single_example_batch):
         # calculates the gradients of the log-probs with respect to the variables
         # (the parameters of the model), and squares them
@@ -36,7 +34,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_log
     return fishers
 
 
-def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher_samples=-1):
+def compute_fisher_for_model(model, dataset, num_classes, expectation_wrt_logits=True, fisher_samples=-1):
     variables = [p for p in model.parameters()]
     # list of the model variables initialized to zero
     fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
@@ -47,7 +45,7 @@ def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher
         print(n_examples)
         n_examples += batch.shape[0]
         batch_fishers = _compute_exact_fisher_for_batch(
-            batch, model, variables, expectation_wrt_logits
+            batch, model, variables, num_classes, expectation_wrt_logits
         )
         fishers = [x+y for (x,y) in zip(fishers, batch_fishers)]
 
@@ -60,9 +58,7 @@ def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher
     return fishers
 
 
-def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logits):
-    num_classes = model.num_classes
-
+def _compute_exact_grads_for_batch(batch, model, variables, num_classes, expectation_wrt_logits):
     def grads_single_example(single_example_batch):
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
@@ -89,7 +85,7 @@ def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logi
     return grads
 
 
-def compute_grads_for_model(model, dataset, expectation_wrt_logits=True, grad_samples=-1):
+def compute_grads_for_model(model, dataset, num_classes, expectation_wrt_logits=True, grad_samples=-1):
     variables = [p for p in model.parameters()]
     # list of the model variables initialized to zero
     grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
@@ -100,7 +96,7 @@ def compute_grads_for_model(model, dataset, expectation_wrt_logits=True, grad_sa
         print(n_examples)
         n_examples += batch.shape[0]
         batch_grads = _compute_exact_grads_for_batch(
-            batch, model, variables, expectation_wrt_logits
+            batch, model, variables, num_classes, expectation_wrt_logits
         )
         grads = [x+y for (x,y) in zip(grads, batch_grads)]
 
@@ -113,33 +109,28 @@ def compute_grads_for_model(model, dataset, expectation_wrt_logits=True, grad_sa
     return grads
 
 
-def compute_fisher_diags(cfg, model_name):
-    model = MLP(cfg)
-    model.load_state_dict(torch.load(model_name))
-
-    dataset = create_dataset(cfg)
-    train_loader, _ = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
-
+def compute_fisher_diags_init(model, train_loader, num_classes, fisher_samples=10000):
     print("Starting Fisher computation")
-    fisher_diag = compute_fisher_for_model(model, train_loader, fisher_samples=cfg.data.fisher_samples)
+    fisher_diag = compute_fisher_for_model(model, train_loader, num_classes, fisher_samples=fisher_samples)
+    
+    return fisher_diag
+
+
+def compute_fisher_diags(model, model_name, fisher_path, train_loader, num_classes, fisher_samples=10000):
+    print("Starting Fisher computation")
+    fisher_diag = compute_fisher_for_model(model, train_loader, num_classes, fisher_samples=fisher_samples)
     print("Fisher computed. Saving to file...")
     fisher_name = model_name.split('/')[-1][:-3]
-    store_file(fisher_diag, cfg.data.fisher_path + fisher_name)
+    store_file(fisher_diag, fisher_path + fisher_name)
     print("Fisher saved to file")
 
 
-def compute_fisher_grads(cfg, model_name):
-    model = MLP(cfg)
-    model.load_state_dict(torch.load(model_name))
-
-    dataset = create_dataset(cfg)
-    train_loader, _ = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
-
+def compute_fisher_grads(model, model_name, grad_path, train_loader, num_classes, fisher_samples=10000):
     print("Starting Grads computation")
-    grad_diag = compute_grads_for_model(model, train_loader, grad_samples=cfg.data.fisher_samples)
+    grad_diag = compute_grads_for_model(model, train_loader, num_classes, grad_samples=fisher_samples)
     print("Grads computed. Saving to file...")
     grad_name = model_name.split('/')[-1][:-3]
-    store_file(grad_diag, cfg.data.grad_path + grad_name)
+    store_file(grad_diag, grad_path + grad_name)
     print("Grads saved to file")
 
 

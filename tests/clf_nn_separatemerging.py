@@ -14,6 +14,7 @@ import torch.nn as nn
 import numpy as np
 from sklearn.manifold import TSNE
 
+from fisher.model_merging.model import MLP
 from fisher.model_merging.data import load_models, load_fishers, create_dataset
 from fisher.model_merging.merging import merging_models_fisher_subsets
 from fisher.train import inference
@@ -113,7 +114,9 @@ def main(cfg):
     models = load_models(cfg)
     
     # FISHER
-    fisher_model = merging_models_fisher_subsets(cfg, models, fishers)
+    n_classes = cfg.data.n_classes*cfg.data.n_models
+    output_model = MLP(cfg)
+    fisher_model = merging_models_fisher_subsets(output_model, models, fishers, n_classes)
     criterion = torch.nn.CrossEntropyLoss()
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()

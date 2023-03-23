@@ -20,7 +20,7 @@ from model_merging.permutation import scaling_permutation
 
 def logprob_normal(x, mu, precision):
     n = x.shape[0]    
-    precision = precision + 10e-5
+    precision = precision #+ 10e-9
 
     # return -0.5 * n * torch.log(2 * torch.tensor([math.pi])) - 0.5 * n * torch.log(var) - 0.5 * torch.sum((x - mu)**2 / var)
     # log_p = -0.5 * n * torch.log(2 * torch.tensor([math.pi])) + 0.5 * torch.log(precision).sum() - 0.5 * torch.sum((x - mu)**2 * precision)
@@ -60,7 +60,6 @@ def perm_loss(cfg, metamodel, models, grads):
             precision_m = torch.clamp(grads_m ** 2, min=1e-20)
 
             precision_mr = torch.outer(grads_m, grads_r)
-            # precision_mr = torch.diag(precision_mr)
             m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
             posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
 
@@ -69,14 +68,15 @@ def perm_loss(cfg, metamodel, models, grads):
             prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
 
             loss += (posterior + prior)/(m * n_perm)
+            # loss += (posterior)/(m * n_perm)
 
     return -loss
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
-    # optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
+    optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
     # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum)
-    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
+    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     perm_losses = []
@@ -89,17 +89,19 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
-        if it % 100:
+        if it % 10:
             inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
     
     # perm_losses = [x for x in perm_losses if x > 0]
     if cfg.data.plot:
-        # plt.subplot(2,1,1)
-        # plt.plot(perm_losses)
-        # plt.xlabel('Permutations')
-        # plt.ylabel('Loss')
-        # plt.subplot(2,1,2)
+        plt.subplot(2,1,1)
+        plt.plot(perm_losses)
+        plt.xlabel('Permutations')
+        plt.ylabel('Permutation loss')
+        plt.subplot(2,1,2)
         plt.plot(inference_loss)
+        plt.xlabel('Permutations')
+        plt.ylabel('Test loss')
         plt.show()
     
     return metamodel
