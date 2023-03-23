@@ -24,7 +24,8 @@ from sklearn.metrics import brier_score_loss
 import hydra
 from fisher.model_merging.fisher import compute_fisher_diags_init, compute_grads_init
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
-from fisher.merge_permutation import merging_models_permutation
+from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
+from fisher.model_merging.permutation import compute_permutations_init
 import omegaconf
 # CONFIGURATION
 seed = 0
@@ -96,7 +97,6 @@ batch_data = True
 
 # run with several seeds
 
-
 data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25)
 
 # define train and validation 
@@ -147,12 +147,8 @@ for m in range(n_models):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss(reduction='sum')
 
-    r_MAP = 0
-    w_b_MAP = 0
-
     best_valid_accuracy = 0
     max_epoch = 100
-
 
     for epoch in range(max_epoch):
         train_loss = 0
@@ -194,9 +190,19 @@ fishers = [compute_fisher_diags_init(m, train_loader, num_clusters) for m in mod
 fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-print(cfg.train)
-
 metamodel = isotropic_model 
 grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+
+# metamodel = isotropic_model 
+# grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
+# permutations = compute_permutations_init(metamodel, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+# perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion)
+# print("Weight permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+
+# metamodel = isotropic_model 
+# grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
+# permutations = compute_permutations_init(metamodel, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+# perm_model = merging_models_scaling_permutation(cfg, metamodel, models, grads, val_loader, criterion)
+# print("Scaling permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))

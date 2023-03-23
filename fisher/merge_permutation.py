@@ -219,10 +219,10 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
             model = models[k]
             permutations_model = permutations[k]
             perm_model = random.choice(permutations_model)
-            model = implement_permutation(cfg, model, perm_model)            
+            model = implement_permutation(model, perm_model, cfg.data.layer_weight_permutation)            
 
             grad = grads[k]
-            grad = implement_permutation_grad(cfg, grad, perm_model)
+            grad = implement_permutation_grad(grad, perm_model, cfg.data.layer_weight_permutation)
             params = model.get_trainable_parameters()
             theta = nn.utils.parameters_to_vector(params)
             grad =  nn.utils.parameters_to_vector(grad)
