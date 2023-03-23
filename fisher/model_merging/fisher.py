@@ -19,7 +19,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expect
             log_prob = log_probs[0][i]
             log_prob.backward(retain_graph=True)
             grad = [p.grad.clone() for p in model.parameters()]
-            sq_grad = [probs[0][i] * g**2 for g in grad]
+            sq_grad = [(probs[0][i] * g)**2 for g in grad]
             sq_grads.append(sq_grad)
 
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
