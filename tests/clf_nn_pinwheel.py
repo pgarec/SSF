@@ -22,9 +22,10 @@ from fisher.model_merging.datasets.pinwheel import make_pinwheel_data
 from fisher.metrics import accuracy, nll, brier, calibration
 from sklearn.metrics import brier_score_loss
 import hydra
-from fisher.model_merging.fisher import compute_fisher_diags_init
+from fisher.model_merging.fisher import compute_fisher_diags_init, compute_grads_init
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
-
+from fisher.merge_permutation import merging_models_permutation
+import omegaconf
 # CONFIGURATION
 seed = 0
 np.random.seed(seed)
@@ -35,7 +36,7 @@ K = 15                     # number of components in mixture model
 N = 2                      # number of latent dimensions
 P = 2                      # number of observation dimensions
 H = 20
-
+plot = False
 
 class Model(nn.Module):
     def __init__(self, num_features, H, num_output, torch_seed=-1):
@@ -81,6 +82,7 @@ def evaluate_model(model, val_loader, criterion):
 
     return avg_loss
 
+cfg = omegaconf.OmegaConf.load('./configurations/perm.yaml')
 
 sns.set_style('darkgrid')
 palette = sns.color_palette('colorblind')
@@ -123,13 +125,14 @@ if batch_data:
     val_dataset = torch.utils.data.TensorDataset(X_valid, y_valid)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=100, shuffle=True)
 
-plt.scatter(X_train[:,0], X_train[:,1], s=40, c=y_train, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
-plt.title("Train data")
-plt.show()
+if plot:
+    plt.scatter(X_train[:,0], X_train[:,1], s=40, c=y_train, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
+    plt.title("Train data")
+    plt.show()
 
-plt.scatter(X_valid[:,0], X_valid[:,1], s=40, c=y_valid, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
-plt.title("Validation data")
-plt.show()
+    plt.scatter(X_valid[:,0], X_valid[:,1], s=40, c=y_valid, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
+    plt.title("Validation data")
+    plt.show()
 
 num_features = X_train.shape[-1]
 print(num_features)
@@ -191,4 +194,9 @@ fishers = [compute_fisher_diags_init(m, train_loader, num_clusters) for m in mod
 fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
+print(cfg.train)
 
+metamodel = isotropic_model 
+grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
+perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion)
+print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))

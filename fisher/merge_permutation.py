@@ -73,6 +73,20 @@ def perm_loss(cfg, metamodel, models, grads):
     return -loss
 
 
+def evaluate_model(model, val_loader, criterion):
+    model.eval()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    avg_loss = 0
+
+    with torch.no_grad():
+        for batch_idx, (x, y) in enumerate(val_loader):
+            out = model(x.to(device))
+            loss = criterion(out, y)
+            avg_loss += loss
+
+    return avg_loss
+
+
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion=""):
     optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
     # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum)
@@ -90,7 +104,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
         if it % 10:
-            inference_loss.append(inference(cfg, metamodel, test_loader, criterion))
+            inference_loss.append(evaluate_model(metamodel, test_loader, criterion))
     
     # perm_losses = [x for x in perm_losses if x > 0]
     if cfg.data.plot:

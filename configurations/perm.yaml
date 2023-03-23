@@ -14,7 +14,7 @@ data:
   data_path: "./data"
   dataset: "MNIST"
   classes: [0,1,2,3]
-  n_classes: 4
+  n_classes: 5
   image_shape: 784
   unbalanced: []
   fisher_path: "./fisher/fisher_diags/"

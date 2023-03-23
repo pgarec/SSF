@@ -116,6 +116,13 @@ def compute_fisher_diags_init(model, train_loader, num_classes, fisher_samples=1
     return fisher_diag
 
 
+def compute_grads_init(model, train_loader, num_classes, grad_samples=10000):
+    print("Starting Grad computation")
+    grad_diag = compute_grads_for_model(model, train_loader, num_classes, grad_samples=grad_samples)
+    
+    return grad_diag
+
+
 def compute_fisher_diags(model, model_name, fisher_path, train_loader, num_classes, fisher_samples=10000):
     print("Starting Fisher computation")
     fisher_diag = compute_fisher_for_model(model, train_loader, num_classes, fisher_samples=fisher_samples)
