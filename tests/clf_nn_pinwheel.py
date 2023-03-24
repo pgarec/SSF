@@ -27,12 +27,14 @@ from fisher.model_merging.merging import merging_models_fisher, merging_models_i
 from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
 from fisher.model_merging.permutation import compute_permutations_init
 import omegaconf
+
 # CONFIGURATION
-seed = 0
-np.random.seed(seed)
-torch.manual_seed(seed)
+seed = 40
+if seed > -1:
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 num_clusters = 5          # number of clusters in pinwheel data
-samples_per_cluster = 200  # number of samples per cluster in pinwheel
+samples_per_cluster = 1000  # number of samples per cluster in pinwheel
 K = 15                     # number of components in mixture model
 N = 2                      # number of latent dimensions
 P = 2                      # number of observation dimensions
@@ -84,7 +86,7 @@ def evaluate_model(model, val_loader, criterion):
     return avg_loss
 
 
-def evaluate_model_in_depth(model, val_loader, criterion):
+def evaluate_model_in_depth(model, val_loader, criterion, plot=False):
     avg_loss = [0] * num_clusters
     count = [0] * num_clusters
     y_classes = dict(zip(range(num_clusters), range(num_clusters)))
@@ -99,17 +101,13 @@ def evaluate_model_in_depth(model, val_loader, criterion):
             avg_loss[y] += loss
             count[y] += 1
 
-    avg_loss_mean = [x/y for (x,y) in zip(avg_loss,count)]
-    plt.bar(list(y_classes.keys()), avg_loss_mean)
-    plt.xlabel("Number of classes")
-    plt.ylabel("Average Test Loss")
-    plt.xticks(list(y_classes.keys()))
-    plt.show()
-
-    print(count)
-    print(avg_loss)
-    print(avg_loss_mean)
-
+    if plot:
+        avg_loss_mean = [x/y for (x,y) in zip(avg_loss,count)]
+        plt.bar(list(y_classes.keys()), avg_loss_mean)
+        plt.xlabel("Number of classes")
+        plt.ylabel("Average Test Loss")
+        plt.xticks(list(y_classes.keys()))
+        plt.show()
 
 cfg = omegaconf.OmegaConf.load('./configurations/perm.yaml')
 
@@ -167,7 +165,7 @@ print(num_features)
 num_output = num_clusters
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models = []
-n_models = 3
+n_models = 5
 
 for m in range(n_models):
     model = Model(num_features, H, num_output, seed)
@@ -223,16 +221,18 @@ fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
 metamodel = isotropic_model 
+# metamodel = Model(num_features, H, num_output)
 grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
-val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, shuffle=True)
-evaluate_model_in_depth(perm_model, val_loader, criterion)
-# metamodel = isotropic_model 
-# grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
-# permutations = compute_permutations_init(metamodel, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
-# perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion)
-# print("Weight permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+# val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, shuffle=True)
+# evaluate_model_in_depth(perm_model, val_loader, criterion)
+
+metamodel = isotropic_model 
+grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
+permutations = compute_permutations_init(metamodel, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion)
+print("Weight permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
 # metamodel = isotropic_model 
 # grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]

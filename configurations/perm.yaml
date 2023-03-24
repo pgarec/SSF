@@ -22,8 +22,8 @@ data:
   model_path: "./fisher/models/"
   perm_path: "./fisher/perms/"
 
-  permutations: 10
-  m: 500
+  m: 200
+  permutations: 100
   weight_permutations: 50
   layer_weight_permutation: 2
   scaling_perm_min: 1
@@ -40,7 +40,7 @@ train:
   weight_decay: 0.1
   hidden_dim: 4
   epochs: 5
-  epochs_perm: 100
+  epochs_perm: 5
   step_size: 212
   gamma: 0.1
   momentum: 0.9

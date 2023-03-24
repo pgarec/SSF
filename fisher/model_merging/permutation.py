@@ -105,7 +105,6 @@ def compute_permutations_for_model(model, layer_wp, weight_permutations):
     list_indices = []
 
     for p in range(weight_permutations):
-        print(p)
         list_indices.append(indices_random_weight_permutation(model, layer_wp))
 
     return list_indices
@@ -118,6 +117,7 @@ def compute_permutations(model, model_name, perm_path, layer_wp=0, weight_permut
     perm_name = model_name.split('/')[-1][:-3]
     store_file(permutations, perm_path + perm_name)
     print("Permutations saved to file")
+
 
 def compute_permutations_init(model, layer_wp=0, weight_permutations=100):
     permutations = compute_permutations_for_model(model, layer_wp, weight_permutations)

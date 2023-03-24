@@ -21,7 +21,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expect
             log_prob = log_probs[0][i]
             log_prob.backward(retain_graph=True)
             grad = [p.grad.clone() for p in model.parameters()]
-            sq_grad = [probs[0][i] * g**2 for g in grad]
+            sq_grad = [(1/probs[0][i]) * g**2 for g in grad]
             sq_grads.append(sq_grad)
         
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
@@ -44,7 +44,6 @@ def compute_fisher_for_model(model, dataset, num_classes, expectation_wrt_logits
     n_examples = 0
 
     for batch, _ in dataset:
-        print(n_examples)
         n_examples += batch.shape[0]
         batch_fishers = _compute_exact_fisher_for_batch(
             batch, model, variables, num_classes, expectation_wrt_logits
@@ -94,7 +93,6 @@ def compute_grads_for_model(model, dataset, num_classes, expectation_wrt_logits=
     n_examples = 0
 
     for batch, _ in dataset:
-        print(n_examples)
         n_examples += batch.shape[0]
         batch_grads = _compute_exact_grads_for_batch(
             batch, model, variables, num_classes, expectation_wrt_logits
@@ -111,14 +109,12 @@ def compute_grads_for_model(model, dataset, num_classes, expectation_wrt_logits=
 
 
 def compute_fisher_diags_init(model, train_loader, num_classes, fisher_samples=10000):
-    print("Starting Fisher computation")
     fisher_diag = compute_fisher_for_model(model, train_loader, num_classes, fisher_samples=fisher_samples)
     
     return fisher_diag
 
 
 def compute_grads_init(model, train_loader, num_classes, grad_samples=10000):
-    print("Starting Grad computation")
     grad_diag = compute_grads_for_model(model, train_loader, num_classes, grad_samples=grad_samples)
     
     return grad_diag
