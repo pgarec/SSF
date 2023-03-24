@@ -83,6 +83,34 @@ def evaluate_model(model, val_loader, criterion):
 
     return avg_loss
 
+
+def evaluate_model_in_depth(model, val_loader, criterion):
+    avg_loss = [0] * num_clusters
+    count = [0] * num_clusters
+    y_classes = dict(zip(range(num_clusters), range(num_clusters)))
+
+    model.eval()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    with torch.no_grad():
+        for batch_idx, (x, y) in enumerate(val_loader):
+            out = model(x.to(device))
+            loss = criterion(out, y)
+            avg_loss[y] += loss
+            count[y] += 1
+
+    avg_loss_mean = [x/y for (x,y) in zip(avg_loss,count)]
+    plt.bar(list(y_classes.keys()), avg_loss_mean)
+    plt.xlabel("Number of classes")
+    plt.ylabel("Average Test Loss")
+    plt.xticks(list(y_classes.keys()))
+    plt.show()
+
+    print(count)
+    print(avg_loss)
+    print(avg_loss_mean)
+
+
 cfg = omegaconf.OmegaConf.load('./configurations/perm.yaml')
 
 sns.set_style('darkgrid')
@@ -139,12 +167,12 @@ print(num_features)
 num_output = num_clusters
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models = []
-n_models = 2
+n_models = 3
 
 for m in range(n_models):
     model = Model(num_features, H, num_output, seed)
     weight_decay = 1e-4
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=weight_decay)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2*(m+1), weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss(reduction='sum')
 
     best_valid_accuracy = 0
@@ -178,6 +206,10 @@ for m in range(n_models):
     
     models.append(model)
 
+parameters = models[0].get_trainable_parameters()
+metatheta = nn.utils.parameters_to_vector(parameters)
+print("Number of parameters: {}".format(len(metatheta)))
+
 for n, model in enumerate(models):
     print("Loss model {}: {}".format(n, evaluate_model(model, val_loader, criterion)))
 
@@ -194,7 +226,8 @@ metamodel = isotropic_model
 grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
-
+val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, shuffle=True)
+evaluate_model_in_depth(perm_model, val_loader, criterion)
 # metamodel = isotropic_model 
 # grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
 # permutations = compute_permutations_init(metamodel, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
