@@ -22,12 +22,13 @@ data:
   model_path: "./fisher/models/"
   perm_path: "./fisher/perms/"
 
-  m: 200
-  permutations: 100
-  weight_permutations: 50
-  layer_weight_permutation: 2
+  m: 400
+  permutations: 30
+  weight_permutations: 5
+  layer_weight_permutation: 0
   scaling_perm_min: 1
-  scaling_perm_max: 200
+  scaling_perm_max: 50
+  number_scalations: 5
   plot: True
 
 models:
@@ -40,7 +41,7 @@ train:
   weight_decay: 0.1
   hidden_dim: 4
   epochs: 5
-  epochs_perm: 5
+  epochs_perm: 10
   step_size: 212
   gamma: 0.1
   momentum: 0.9

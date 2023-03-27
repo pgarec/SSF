@@ -25,7 +25,9 @@ import hydra
 from fisher.model_merging.fisher import compute_fisher_diags_init, compute_grads_init
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
+from fisher.merge_permutation import weight_perm_loss_all
 from fisher.model_merging.permutation import compute_permutations_init
+from fisher.model_merging.permutation import scaling_permutation, random_weight_permutation
 import omegaconf
 
 # CONFIGURATION
@@ -50,10 +52,12 @@ class Model(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(num_features, H),
+            # torch.nn.ReLU(),
             torch.nn.Tanh(),
             nn.Linear(H, H),
+            # torch.nn.ReLU(),
             torch.nn.Tanh(),
-            nn.Linear(H,num_output)
+            nn.Linear(H,num_output, bias=False)
         )
 
     def forward(self, x):
@@ -220,22 +224,29 @@ fishers = [compute_fisher_diags_init(m, train_loader, num_clusters) for m in mod
 fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-metamodel = isotropic_model 
-# metamodel = Model(num_features, H, num_output)
-grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
-perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion)
-print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
-# val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, shuffle=True)
-# evaluate_model_in_depth(perm_model, val_loader, criterion)
+# metamodel = isotropic_model 
+# grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
+# perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
+# print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
 metamodel = isotropic_model 
 grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
-permutations = compute_permutations_init(metamodel, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
-perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion)
+permutations = [compute_permutations_init(m, cfg.data.layer_weight_permutation, cfg.data.weight_permutations) for m in models]
+perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion, plot=True)
 print("Weight permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+
+# print("scaled0: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
+# scaled = scaling_permutation(cfg, isotropic_model, 0, 5)
+# print("scaled1: {}".format(evaluate_model(scaled, val_loader, criterion)))
+
+# isotropic_model = merging_models_isotropic(output_model, models)
+# print("weight0: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
+# isotropic_model = merging_models_isotropic(output_model, models)
+# scaled = random_weight_permutation(isotropic_model, 0)
+# print("weight1: {}".format(evaluate_model(scaled, val_loader, criterion)))
 
 # metamodel = isotropic_model 
 # grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
 # permutations = compute_permutations_init(metamodel, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
-# perm_model = merging_models_scaling_permutation(cfg, metamodel, models, grads, val_loader, criterion)
+# perm_model = merging_models_scaling_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
 # print("Scaling permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))

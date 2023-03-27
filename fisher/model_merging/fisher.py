@@ -13,7 +13,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expect
         # (the parameters of the model), and squares them
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-        probs = torch.nn.functional.softmax(log_probs, dim=-1)
+        probs = torch.nn.functional.softmax(logits, dim=-1)
         sq_grads = []
 
         for i in range(num_classes):
@@ -21,7 +21,8 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expect
             log_prob = log_probs[0][i]
             log_prob.backward(retain_graph=True)
             grad = [p.grad.clone() for p in model.parameters()]
-            sq_grad = [(1/probs[0][i]) * g**2 for g in grad]
+            # sq_grad = [(1/probs[0][i]) * g**2 for g in grad]
+            sq_grad = [probs[0][i] * g**2 for g in grad]
             sq_grads.append(sq_grad)
         
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
@@ -63,7 +64,7 @@ def _compute_exact_grads_for_batch(batch, model, variables, num_classes, expecta
     def grads_single_example(single_example_batch):
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-        probs = torch.nn.functional.softmax(log_probs, dim=-1)
+        probs = torch.nn.functional.softmax(logits, dim=-1)
         sq_grads = []
 
         for i in range(num_classes):

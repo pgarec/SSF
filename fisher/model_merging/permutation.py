@@ -13,18 +13,20 @@ import numpy as np
 def l2_permutation(cfg, model):
     layer_index = cfg.data.layer_weight_permutation
     parameters = {name: p for name, p in model.named_parameters()}
-    weight = f"feature_map.{layer_index}.weight"
-    bias = f"feature_map.{layer_index}.bias"
+    weight = f"model.{layer_index}.weight"
+    bias = f"model.{layer_index}.bias"
 
-    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
+    assert f"model.{layer_index+2}.weight" in parameters.keys()
 
     l2_norm = torch.linalg.norm(parameters[weight], dim=-1, ord=2)
     _, permuted_indices = torch.sort(l2_norm)
     parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
     parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
 
-    weight_next = f"feature_map.{layer_index+2}.weight"
+    weight_next = f"model.{layer_index+2}.weight"
     parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+    #parameters[weight_next] = torch.zeros_like(parameters[weight_next])
+    model.load_state_dict(parameters)
 
     return model
 
@@ -39,14 +41,18 @@ def implement_permutation(model, permuted_indices, layer_index):
 
     weight_next = f"model.{layer_index+2}.weight"
     parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+    model.load_state_dict(parameters)
 
     return model
 
 
 def implement_permutation_grad(grad, permuted_indices, layer_weight_perm):
-    layer_index = (layer_weight_perm-1)*2
+    layer_index=layer_weight_perm
+    # weight
     grad[layer_index] = grad[layer_index][permuted_indices]
+    # bias
     grad[layer_index+1] = grad[layer_index+1][permuted_indices]
+    # weight + 1
     grad[layer_index+2] = nn.Parameter(grad[layer_index+2][:, permuted_indices])
     
     return grad
@@ -54,10 +60,10 @@ def implement_permutation_grad(grad, permuted_indices, layer_weight_perm):
 
 def random_weight_permutation(model, layer_index):
     parameters = {name: p for name, p in model.named_parameters()}
-    weight = f"feature_map.{layer_index}.weight"
-    bias = f"feature_map.{layer_index}.bias"
+    weight = f"model.{layer_index}.weight"
+    bias = f"model.{layer_index}.bias"
 
-    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
+    assert f"model.{layer_index+2}.weight" in parameters.keys()
 
     num_units = parameters[weight].shape[0]
     permuted_indices = torch.randperm(num_units)
@@ -66,26 +72,30 @@ def random_weight_permutation(model, layer_index):
         parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
         parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
 
-        weight_next = f"feature_map.{layer_index+2}.weight"
+        weight_next = f"model.{layer_index+2}.weight"
         parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+
+    model.load_state_dict(parameters)
 
     return model
 
 
 def sorted_weight_permutation(model, layer_index):
     parameters = {name: p for name, p in model.named_parameters()}
-    weight = f"feature_map.{layer_index}.weight"
-    bias = f"feature_map.{layer_index}.bias"
+    weight = f"model.{layer_index}.weight"
+    bias = f"model.{layer_index}.bias"
 
-    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
+    assert f"model.{layer_index+2}.weight" in parameters.keys()
 
     _, permuted_indices = torch.sort(parameters[weight][:, 0])
     with torch.no_grad():
         parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
         parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
 
-        weight_next = f"feature_map.{layer_index+2}.weight"
+        weight_next = f"model.{layer_index+2}.weight"
         parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+    
+    model.load_state_dict(parameters)
 
     return model
 
@@ -97,6 +107,7 @@ def indices_random_weight_permutation(model, layer_index):
     assert f"model.{layer_index+2}.weight" in parameters.keys()
 
     permuted_indices = torch.randperm(parameters[weight].shape[0])
+    model.load_state_dict(parameters)
 
     return permuted_indices
 
@@ -132,10 +143,10 @@ def scaling_permutation(cfg, model,layer_index=-1, scaler=-1):
     if layer_index == -1:
         layer_index = cfg.data.layer_weight_permutation
     parameters = {name: p for name, p in model.named_parameters()}
-    weight = f"feature_map.{layer_index}.weight"
-    bias = f"feature_map.{layer_index}.bias"
+    weight = f"model.{layer_index}.weight"
+    bias = f"model.{layer_index}.bias"
 
-    assert f"feature_map.{layer_index+2}.weight" in parameters.keys()
+    assert f"model.{layer_index+2}.weight" in parameters.keys()
 
     if scaler == -1:
         scaler = np.random.randint(cfg.data.scaling_perm_min, cfg.data.scaling_perm_max)
@@ -143,8 +154,9 @@ def scaling_permutation(cfg, model,layer_index=-1, scaler=-1):
     parameters[weight] = nn.Parameter(scaler*parameters[weight])
     parameters[bias] = nn.Parameter(scaler*parameters[bias])
 
-    weight_next = f"feature_map.{layer_index+2}.weight"
+    weight_next = f"model.{layer_index+2}.weight"
     parameters[weight_next] = nn.Parameter((1/scaler)*parameters[weight_next])
+    model.load_state_dict(parameters)
 
     return model
 
