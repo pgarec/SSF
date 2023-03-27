@@ -194,7 +194,7 @@ def merging_models_scaling_permutation(cfg, metamodel, models, grads, test_loade
     if plot:
         plt.subplot(2,1,1)
         plt.plot(perm_losses)
-        plt.xlabel('Permutations')
+        plt.xlabel('Steps')
         plt.ylabel('Scaling permutation loss')
         plt.subplot(2,1,2)
         plt.plot(inference_loss)

@@ -9,21 +9,18 @@ import random
 
 def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expectation_wrt_logits):
     def fisher_single_example(single_example_batch):
-        # calculates the gradients of the log-probs with respect to the variables
-        # (the parameters of the model), and squares them
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(logits, dim=-1)
         sq_grads = []
-        model.zero_grad()
 
         for i in range(num_classes):
-            model.zero_grad()
             log_prob = log_probs[0][i]
             log_prob.backward(retain_graph=True)
             grad = [p.grad.clone() for p in model.parameters()]
             sq_grad = [probs[0][i] * g**2 for g in grad]
             sq_grads.append(sq_grad)
+            model.zero_grad()
         
         log_prob.backward()
         
@@ -41,7 +38,6 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expect
 
 def compute_fisher_for_model(model, dataset, num_classes, expectation_wrt_logits=True, fisher_samples=-1):
     variables = [p for p in model.parameters()]
-    # list of the model variables initialized to zero
     fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
 
     n_examples = 0
@@ -68,7 +64,6 @@ def _compute_exact_grads_for_batch(batch, model, variables, num_classes, expecta
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(logits, dim=-1)
         grads = []
-        model.zero_grad()
 
         for i in range(num_classes):
             log_prob = log_probs[0][i]
@@ -76,9 +71,9 @@ def _compute_exact_grads_for_batch(batch, model, variables, num_classes, expecta
             grad = [p.grad.clone() for p in model.parameters()]
             g = [probs[0][i] * g for g in grad]
             grads.append(g)
+            model.zero_grad()
     
         log_prob.backward()
-
 
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*grads)]
 

@@ -31,10 +31,12 @@ from fisher.model_merging.permutation import scaling_permutation, random_weight_
 import omegaconf
 
 # CONFIGURATION
-seed = 20
+seed = 35
+
 if seed > -1:
     np.random.seed(seed)
     torch.manual_seed(seed)
+
 num_clusters = 5          # number of clusters in pinwheel data
 samples_per_cluster = 1000  # number of samples per cluster in pinwheel
 K = 15                     # number of components in mixture model
@@ -87,7 +89,7 @@ def evaluate_model(model, val_loader, criterion):
             loss = criterion(out, y)
             avg_loss += loss
 
-    return avg_loss
+    return avg_loss / len(val_loader)
 
 
 def evaluate_model_in_depth(model, val_loader, criterion, plot=False):
@@ -231,6 +233,7 @@ perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loade
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
 # metamodel = models[0]
+# metamodel = isotropic_model
 # grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
 # permutations = [compute_permutations_init(m, cfg.data.layer_weight_permutation, cfg.data.weight_permutations) for m in models]
 # perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion, plot=True)
