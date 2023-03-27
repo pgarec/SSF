@@ -38,10 +38,10 @@ models:
 
 train:
   lr: 0.01
-  weight_decay: 0.1
+  weight_decay: 0.01
   hidden_dim: 4
   epochs: 5
-  epochs_perm: 10
+  epochs_perm: 100
   step_size: 212
   gamma: 0.1
   momentum: 0.9
@@ -49,4 +49,4 @@ train:
   name: ""
   plot_sample: False
   plot: False
-  torch_seed: 40
+  torch_seed: -1
