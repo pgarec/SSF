@@ -10,7 +10,7 @@ def merging_models_fisher(
         output_model,
         mergeable_models,
         fishers=None,
-        fisher_floor=1e-10,
+        fisher_floor=1e-20,
         favor_target_model=True):
     output_variables = get_mergeable_variables(output_model)
     variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]

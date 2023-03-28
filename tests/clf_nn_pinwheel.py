@@ -31,7 +31,7 @@ from fisher.model_merging.permutation import scaling_permutation, random_weight_
 import omegaconf
 
 # CONFIGURATION
-seed = -1
+seed = 40
 
 if seed > -1:
     np.random.seed(seed)
@@ -177,8 +177,7 @@ max_epoch = 100
 
 for m in range(n_models):
     model = Model(num_features, H, num_output, seed)
-    weight_decay =cfg.train.weight_decay
-    # optimizer = torch.optim.Adam(model.parameters(), lr=1e-2*(m+1), weight_decay=weight_decay)
+    weight_decay = cfg.train.weight_decay * 2
     optimizer = torch.optim.SGD(model.parameters(),  lr=1e-2, momentum=cfg.train.momentum, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss(reduction='sum')
 

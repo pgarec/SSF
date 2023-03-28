@@ -180,14 +180,12 @@ def main(cfg):
         inference(cfg, model, test_loader, criterion)
 
         if cfg.train.fisher_diagonal:
-            compute_fisher_diags(cfg, name)
+            compute_fisher_diags(model, name, cfg.data.fisher_path, train_loader, cfg.data.n_classes)
 
         if cfg.train.fisher_gradients:
-            compute_fisher_grads(cfg, name)
+            compute_fisher_grads(model, name, cfg.data.grad_path, train_loader, cfg.data.n_classes)
 
         if cfg.train.weight_permutations:
-            # compute_permutations(cfg, name)
-
             name_perm = "{}{}_{}_perm_epoch{}.pt".format(
                 cfg.data.model_path,
                 cfg.data.dataset,

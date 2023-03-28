@@ -90,7 +90,6 @@ def perm_loss(cfg, metamodel, models, grads):
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
-    # optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
     optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 

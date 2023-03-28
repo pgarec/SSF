@@ -46,7 +46,7 @@ train:
   normalize: True
   fisher_diagonal: True
   fisher_gradients: True
-  weight_permutations: True
+  weight_permutations: False
   torch_seed: 40
 
   name: ""
