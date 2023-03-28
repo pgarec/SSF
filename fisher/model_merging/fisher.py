@@ -15,12 +15,12 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expect
         sq_grads = []
 
         for i in range(num_classes):
+            model.zero_grad()
             log_prob = log_probs[0][i]
             log_prob.backward(retain_graph=True)
             grad = [p.grad.clone() for p in model.parameters()]
             sq_grad = [probs[0][i] * g**2 for g in grad]
             sq_grads.append(sq_grad)
-            model.zero_grad()
         
         log_prob.backward()
         
@@ -66,12 +66,12 @@ def _compute_exact_grads_for_batch(batch, model, variables, num_classes, expecta
         grads = []
 
         for i in range(num_classes):
+            model.zero_grad()
             log_prob = log_probs[0][i]
             log_prob.backward(retain_graph=True)
             grad = [p.grad.clone() for p in model.parameters()]
             g = [probs[0][i] * g for g in grad]
             grads.append(g)
-            model.zero_grad()
     
         log_prob.backward()
 

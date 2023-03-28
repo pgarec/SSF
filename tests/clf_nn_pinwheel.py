@@ -31,13 +31,13 @@ from fisher.model_merging.permutation import scaling_permutation, random_weight_
 import omegaconf
 
 # CONFIGURATION
-seed = 34
+seed = -1
 
 if seed > -1:
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-num_clusters = 5          # number of clusters in pinwheel data
+num_clusters = 5        # number of clusters in pinwheel data
 samples_per_cluster = 1000  # number of samples per cluster in pinwheel
 K = 15                     # number of components in mixture model
 N = 2                      # number of latent dimensions
@@ -172,17 +172,20 @@ num_output = num_clusters
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models = []
 n_models = 5
+max_epoch = 100
+
 
 for m in range(n_models):
     model = Model(num_features, H, num_output, seed)
-    weight_decay = 1e-4
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2*(m+1), weight_decay=weight_decay)
+    weight_decay =cfg.train.weight_decay
+    # optimizer = torch.optim.Adam(model.parameters(), lr=1e-2*(m+1), weight_decay=weight_decay)
+    optimizer = torch.optim.SGD(model.parameters(),  lr=1e-2, momentum=cfg.train.momentum, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss(reduction='sum')
 
     best_valid_accuracy = 0
-    max_epoch = 100
+    max = max_epoch*(m+1)
 
-    for epoch in range(max_epoch):
+    for epoch in range(max):
         train_loss = 0
         for _, (x, y) in enumerate(train_loader):
             optimizer.zero_grad()
@@ -193,7 +196,7 @@ for m in range(n_models):
 
             train_loss += loss
         print(
-            f"Epoch [{epoch + 1}/{max_epoch}], Training Loss: {train_loss/len(train_loader):.4f}"
+            f"Epoch [{epoch + 1}/{max}], Training Loss: {train_loss/len(train_loader):.4f}"
         )
 
         val_loss = 0
@@ -205,7 +208,7 @@ for m in range(n_models):
                 val_loss += loss
 
             print(
-                f"Epoch [{epoch + 1}/{max_epoch}], Validation Loss: {val_loss/len(val_loader):.4f}"
+                f"Epoch [{epoch + 1}/{max}], Validation Loss: {val_loss/len(val_loader):.4f}"
             )
     
     models.append(model)

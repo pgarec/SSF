@@ -64,14 +64,20 @@ def perm_loss(cfg, metamodel, models, grads):
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
             metatheta_r = metatheta[perm[m:]].detach()
-            metatheta_m = metatheta[perm[:m]]
+            metatheta_m = metatheta[perm[:m]]#.detach()
             
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
-            precision_m = torch.clamp(grads_m ** 2, min=1e-20)
+            # precision_m = torch.clamp(grads_m ** 2, min=1e-30)
+            precision_m = grads_m ** 2
             precision_mr = torch.outer(grads_m, grads_r)
 
+            # precision_m = torch.eye(grads_m.shape[0])*100 + 10e-5
+            # precision_mr = torch.zeros_like(precision_mr)
+
             m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
+
+      
             posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
 
             cond_prior_m = torch.zeros(m)    
@@ -84,9 +90,8 @@ def perm_loss(cfg, metamodel, models, grads):
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
-    optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
-    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum)
-    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
+    # optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     perm_losses = []
@@ -96,16 +101,13 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         if it % 10:
             inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
-
         optimizer.zero_grad()
         l = perm_loss(cfg, metamodel, models, grads)
         l.backward()      # Backward pass <- computes gradients
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
-        
     
-    # perm_losses = [x for x in perm_losses if x > 0]
     if plot:
         plt.subplot(2,1,1)
         plt.plot(perm_losses)
