@@ -68,14 +68,15 @@ def perm_loss(cfg, metamodel, models, grads):
             
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
-            # precision_m = torch.clamp(grads_m ** 2, min=1e-30)
-            precision_m = grads_m ** 2
+            precision_m = torch.clamp(grads_m ** 2, min=1e-30)
+            # precision_m = grads_m ** 2
             precision_mr = torch.outer(grads_m, grads_r)
 
             # precision_m = torch.eye(grads_m.shape[0])*100 + 10e-5
             # precision_mr = torch.zeros_like(precision_mr)
 
             m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
+
 
       
             posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
@@ -286,7 +287,6 @@ def weight_perm_loss_all(cfg, metamodel, models, permutations, grads):
                 precision_m = torch.clamp(grads_m ** 2, min=1e-20)
                 precision_mr = torch.outer(grads_m, grads_r)
 
-                # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
                 m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
                 posterior = n_models*logprob_normal(metatheta_m, m_pred, precision_m).sum()
                 posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()

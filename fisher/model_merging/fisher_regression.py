@@ -6,19 +6,13 @@ from .data import store_file
 from .data import create_dataset
 
 
-def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_logits):
+def _compute_exact_fisher_for_batch(batch, model, variables):
     def fisher_single_example(single_example_batch):
         logits = model(single_example_batch)
-        
-        # log_probs = torch.nn.functional.logsigmoid(logits)
-        # probs = torch.sigmoid(log_probs)
-        # log_probs.backward(retain_graph=True)
         log_logits = torch.log(logits[0])
-        log_logits.backward(retain_graph=True)
+        log_logits.backward()
         grad = [p.grad.clone() for p in model.parameters()]
-        sq_grad = [logits[0] * g**2 for g in grad]
-
-        print(sq_grad)
+        sq_grad = [g**2 for g in grad]
 
         return sq_grad
 
@@ -32,7 +26,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, expectation_wrt_log
     return fishers
 
 
-def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher_samples=-1):
+def compute_fisher_for_model(model, dataset, fisher_samples=-1):
     variables = [p for p in model.parameters()]
     # list of the model variables initialized to zero
     fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
@@ -43,7 +37,7 @@ def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher
         print(n_examples)
         n_examples += batch.shape[0]
         batch_fishers = _compute_exact_fisher_for_batch(
-            batch, model, variables, expectation_wrt_logits
+            batch, model, variables
         )
         fishers = [x+y for (x,y) in zip(fishers, batch_fishers)]
 
@@ -56,19 +50,15 @@ def compute_fisher_for_model(model, dataset, expectation_wrt_logits=True, fisher
     return fishers
 
 
-def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logits):
+def _compute_exact_grads_for_batch(batch, model, variables):
 
     def grads_single_example(single_example_batch):
         logits = model(single_example_batch)
-        log_probs = torch.nn.functional.logsigmoid(logits)
-        probs = torch.sigmoid(log_probs)
-
-        log_probs.backward(retain_graph=True)
-        
+        log_logits = torch.log(logits[0])
+        log_logits.backward()
         grad = [p.grad.clone() for p in model.parameters()]
-        sq_grad = [probs * g for g in grad]
 
-        return sq_grad
+        return grad
 
     grads = torch.zeros((len(variables)),requires_grad=False)
 
@@ -81,7 +71,7 @@ def _compute_exact_grads_for_batch(batch, model, variables, expectation_wrt_logi
     return grads
 
 
-def compute_grads_for_model(model, dataset, expectation_wrt_logits=True, grad_samples=-1):
+def compute_grads_for_model(model, dataset, grad_samples=-1):
     variables = [p for p in model.parameters()]
     # list of the model variables initialized to zero
     grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
@@ -92,7 +82,7 @@ def compute_grads_for_model(model, dataset, expectation_wrt_logits=True, grad_sa
         print(n_examples)
         n_examples += batch.shape[0]
         batch_grads = _compute_exact_grads_for_batch(
-            batch, model, variables, expectation_wrt_logits
+            batch, model, variables
         )
         grads = [x+y for (x,y) in zip(grads, batch_grads)]
 

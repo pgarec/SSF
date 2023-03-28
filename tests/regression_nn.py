@@ -17,6 +17,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 import random
 
+from fisher.model_merging.model import clone_model
 from fisher.model_merging.data import load_models_regression, load_fishers, create_dataset, load_grads
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from fisher.model_merging.model import MLP_regression
@@ -78,7 +79,7 @@ def main(cfg):
 
     for i in range(n_models):
         model = MLP_regression(cfg)
-        optimizer = optim.Adam(model.parameters(), lr=cfg.train.lr)
+        optimizer = optim.SGD(model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)
         criterion = torch.nn.MSELoss()
         name = "{}regressor_{}.pt".format(
             cfg.data.model_path,
@@ -96,21 +97,23 @@ def main(cfg):
         names.append(name)
     
     # FISHER
+    output_model = clone_model(models[0], cfg)
     models = load_models_regression(cfg, names)
     fishers = load_fishers(cfg, names)
-    fisher_model = merging_models_fisher(cfg, models, fishers)
+    fisher_model = merging_models_fisher(output_model, models, fishers)
 
     # ISOTROPIC
+    output_model = clone_model(models[0], cfg)
     models = load_models_regression(cfg, names)
-    isotropic_model = merging_models_isotropic(cfg, models)
+    isotropic_model = merging_models_isotropic(output_model, models)
 
     # PERMUTATION
     models = load_models_regression(cfg, names)
     random_model = MLP_regression(cfg)
     grads = load_grads(cfg, names)
-    metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
-    # metamodel = fisher_model
-    # metamodel = MLP(cfg)
+    metamodel = isotropic_model 
+    perm_model = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion)
+    # isotropic_model = merging_models_isotropic(output_model, models)
 
     x_random, y_random, avg_loss_random = inference(cfg, random_model, inference_loader, criterion)
     print("Random untrained - Average loss {}".format(avg_loss_random))
@@ -118,10 +121,6 @@ def main(cfg):
     print("Isotropic - Average loss {}".format(avg_loss_isotropic))
     x_fisher, y_fisher, avg_loss_fisher = inference(cfg, fisher_model, inference_loader, criterion)
     print("Fisher - Average loss {}".format(avg_loss_fisher)) 
-
-    perm_model = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion)
-    cfg.train.plot = False
-
     x_perm, y_perm, avg_loss_permutation = inference(cfg, perm_model, inference_loader, criterion)
     print("Ours (after) - Average loss {}".format(avg_loss_permutation)) 
 

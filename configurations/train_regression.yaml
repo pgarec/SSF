@@ -28,7 +28,6 @@ models:
   model2: "SNELSON_epoch30_2.pt"
   model3: "SNELSON_epoch30_3.pt"
 
-
 train:
   lr: 0.01
   hidden_dim: 32

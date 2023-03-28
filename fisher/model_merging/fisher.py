@@ -7,7 +7,7 @@ from .data import create_dataset
 import random
 
 
-def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expectation_wrt_logits):
+def _compute_exact_fisher_for_batch(batch, model, variables, num_classes):
     def fisher_single_example(single_example_batch):
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
@@ -36,7 +36,7 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes, expect
     return fishers
 
 
-def compute_fisher_for_model(model, dataset, num_classes, expectation_wrt_logits=True, fisher_samples=-1):
+def compute_fisher_for_model(model, dataset, num_classes, fisher_samples=-1):
     variables = [p for p in model.parameters()]
     fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
 
@@ -45,7 +45,7 @@ def compute_fisher_for_model(model, dataset, num_classes, expectation_wrt_logits
     for batch, _ in dataset:
         n_examples += batch.shape[0]
         batch_fishers = _compute_exact_fisher_for_batch(
-            batch, model, variables, num_classes, expectation_wrt_logits
+            batch, model, variables, num_classes
         )
         fishers = [x+y for (x,y) in zip(fishers, batch_fishers)]
 
@@ -58,7 +58,7 @@ def compute_fisher_for_model(model, dataset, num_classes, expectation_wrt_logits
     return fishers
 
 
-def _compute_exact_grads_for_batch(batch, model, variables, num_classes, expectation_wrt_logits):
+def _compute_exact_grads_for_batch(batch, model, variables, num_classes):
     def grads_single_example(single_example_batch):
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
@@ -87,7 +87,7 @@ def _compute_exact_grads_for_batch(batch, model, variables, num_classes, expecta
     return grads
 
 
-def compute_grads_for_model(model, dataset, num_classes, expectation_wrt_logits=True, grad_samples=-1):
+def compute_grads_for_model(model, dataset, num_classes, grad_samples=-1):
     variables = [p for p in model.parameters()]
     # list of the model variables initialized to zero
     grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
@@ -97,7 +97,7 @@ def compute_grads_for_model(model, dataset, num_classes, expectation_wrt_logits=
     for batch, _ in dataset:
         n_examples += batch.shape[0]
         batch_grads = _compute_exact_grads_for_batch(
-            batch, model, variables, num_classes, expectation_wrt_logits
+            batch, model, variables, num_classes
         )
         grads = [x+y for (x,y) in zip(grads, batch_grads)]
 

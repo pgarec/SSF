@@ -21,10 +21,10 @@ data:
   grad_path: "./fisher/grad_diags/"
   model_path: "./fisher/models/"
   fisher_samples: 10000
-  plot: False
   
+  plot: True
   permutations: 50
-  m: 10
+  m: 20
 
 train:
   lr: 0.01

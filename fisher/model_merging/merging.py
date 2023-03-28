@@ -113,6 +113,7 @@ def merging_models_isotropic(
         for m in mergeable_models:
             s = torch.add(s, m.get_parameter(k))
 
+        # print(s)
         d[k].data = s / len(mergeable_models)
 
     output_model.load_state_dict(d)
