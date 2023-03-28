@@ -31,7 +31,7 @@ from fisher.model_merging.permutation import scaling_permutation, random_weight_
 import omegaconf
 
 # CONFIGURATION
-seed = 35
+seed = 34
 
 if seed > -1:
     np.random.seed(seed)

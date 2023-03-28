@@ -37,7 +37,7 @@ def evaluate_model(model, val_loader, criterion):
             loss = criterion(out, y)
             avg_loss += loss
 
-    return avg_loss
+    return avg_loss / len(val_loader)
 
 
 def perm_loss(cfg, metamodel, models, grads):
@@ -69,16 +69,9 @@ def perm_loss(cfg, metamodel, models, grads):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
             precision_m = torch.clamp(grads_m ** 2, min=1e-20)
-            
-            # precision_m = grads_m ** 2
             precision_mr = torch.outer(grads_m, grads_r)
 
-            # precision_m = torch.eye(grads_m.shape[0])*100 + 10e-5
-            # precision_mr = torch.zeros_like(precision_mr)
-
             m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-
-      
             posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
 
             cond_prior_m = torch.zeros(m)    
@@ -100,14 +93,17 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
     inference_loss = []
 
     for it in pbar:
+        if it % 10:
+            inf_loss = evaluate_model(metamodel, test_loader, criterion)
+            inference_loss.append(inf_loss)
+
         optimizer.zero_grad()
         l = perm_loss(cfg, metamodel, models, grads)
         l.backward()      # Backward pass <- computes gradients
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
-        if it % 10:
-            inference_loss.append(evaluate_model(metamodel, test_loader, criterion))
+        
     
     # perm_losses = [x for x in perm_losses if x > 0]
     if plot:
@@ -117,7 +113,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         plt.ylabel('Permutation loss')
         plt.subplot(2,1,2)
         plt.plot(inference_loss)
-        plt.xlabel('Permutations')
+        plt.xlabel('Steps')
         plt.ylabel('Test loss')
         plt.show()
     
