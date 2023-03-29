@@ -22,7 +22,7 @@ data:
   model_path: "./fisher/models/"
   perm_path: "./fisher/perms/"
 
-  m: 2000
+  m: 400
   permutations: 20
   weight_permutations: 5
   layer_weight_permutation: 0

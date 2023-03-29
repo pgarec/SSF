@@ -91,6 +91,7 @@ class MLP_regression(nn.Module):
         self.linear2 = nn.Linear(self.hidden_dim, self.hidden_dim)
         self.regressor = nn.Linear(self.hidden_dim, 1, bias=False)
 
+        # self.activation = nn.Tanh()
         self.activation = nn.ReLU()
 
         if normal:
