@@ -25,7 +25,6 @@ def l2_permutation(cfg, model):
 
     weight_next = f"model.{layer_index+2}.weight"
     parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
-    #parameters[weight_next] = torch.zeros_like(parameters[weight_next])
     model.load_state_dict(parameters)
 
     return model

@@ -191,7 +191,8 @@ def main(cfg):
                 cfg.data.dataset,
                 "".join(map(str, cfg.data.classes)), cfg.train.epochs
             )
-            model_perm = l2_permutation(cfg, model)
+
+            # model_perm = l2_permutation(cfg, model)
             torch.save(model_perm.state_dict(), name_perm)
             compute_permutations(cfg, name_perm)
 

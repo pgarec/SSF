@@ -24,7 +24,7 @@ from fisher.model_merging.model import MLP_regression
 from fisher.train_regression import train, inference
 from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation
 from model_merging.fisher_regression import compute_fisher_diags, compute_fisher_grads
-from model_merging.permutation import compute_permutations_init
+from model_merging.permutation import compute_permutations_init, l2_permutation
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -73,7 +73,7 @@ def manual_dataset(cfg, overlapping=True, nof=5000, dim=1, k=1, alpha=1.0, beta=
 def main(cfg): 
 
     dim = cfg.data.dimensions
-    n_models = 3
+    n_models = 1
     names = []
     models = []
     
@@ -134,22 +134,24 @@ def main(cfg):
     models = load_models_regression(cfg, names)
     grads = load_grads(cfg, names)
     metamodel = merging_models_isotropic(output_model, models)
+    metamodel = MLP_regression(cfg)
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion, plot=True)
     x_perm, y_perm, avg_loss_permutation = inference(perm_model, inference_loader, criterion)
     print("Permutation - Average loss {}".format(avg_loss_permutation)) 
 
-    # WEIGHT PERMUTATION
-    models = load_models_regression(cfg, names)
-    grads = load_grads(cfg, names)
-    permutations = compute_permutations_init(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
-    metamodel = merging_models_isotropic(output_model, models)
-    wperm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, inference_loader, criterion, plot=True)
-    x_wperm, y_wperm, avg_loss_wpermutation = inference(wperm_model, inference_loader, criterion)
-    print("Weight permutation - Average loss {}".format(avg_loss_wpermutation)) 
+    # WEIGHT SYMMETRIES
+    # models = load_models_regression(cfg, names)
+    # grads = load_grads(cfg, names)
+    # permutations = compute_permutations_init(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+    # # metamodel = merging_models_isotropic(output_model, models)
+    # metamodel = MLP_regression(cfg)
+    # wperm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, inference_loader, criterion, plot=True)
+    # x_wperm, y_wperm, avg_loss_wpermutation = inference(wperm_model, inference_loader, criterion)
+    # print("Weight permutation - Average loss {}".format(avg_loss_wpermutation)) 
 
     if dim == 1:
-        palette = ['#264653', '#C2FCF7', '#2a9d8f', '#e9c46a', '#FE6244','#00E5E8']
-        labels = ['Data', 'Random', 'Isotropic', 'Fisher', 'Perm','Wperm']
+        palette = ['#264653', '#C2FCF7', '#2a9d8f', '#e9c46a', '#FE6244']#,'#00E5E8']
+        labels = ['Data', 'Random', 'Isotropic', 'Fisher', 'Perm']#,'Wperm']
         x_data = []
         y_data = []
 
@@ -168,7 +170,6 @@ def main(cfg):
         plt.plot(x_isotropic[:m][sorted_indices], y_isotropic[:m][sorted_indices], c=palette[2])
         plt.plot(x_fisher[:m][sorted_indices], y_fisher[:m][sorted_indices], c=palette[3])
         plt.plot(x_perm[:m][sorted_indices], y_perm[:m][sorted_indices], c=palette[4])
-        plt.plot(x_wperm[:m][sorted_indices], y_wperm[:m][sorted_indices], c=palette[5])
 
         for x, model in enumerate(models):
             x_model, y_model, _ = inference(model, inference_loader, criterion)
