@@ -79,7 +79,7 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     return name
 
 
-def inference(cfg, model, test_loader, criterion):
+def inference(model, test_loader, criterion):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -91,12 +91,11 @@ def inference(cfg, model, test_loader, criterion):
         for _, (x, y) in enumerate(test_loader):
             out = model(x.to(device))
             loss = criterion(out, y)
-
             loss_data.append(loss)
             x_data.append(np.array(x.flatten()))
             y_data.append(np.array(out.flatten())) 
 
-    return x_data, y_data, sum(loss_data)/len(test_loader)
+    return np.array(x_data).flatten(), np.array(y_data).flatten(), sum(loss_data)/len(test_loader)
 
 
 @hydra.main(config_path="./configurations", config_name="train_regression.yaml")

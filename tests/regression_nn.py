@@ -22,8 +22,9 @@ from fisher.model_merging.data import load_models_regression, load_fishers, crea
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from fisher.model_merging.model import MLP_regression
 from fisher.train_regression import train, inference
-from fisher.merge_permutation import merging_models_permutation
+from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation
 from model_merging.fisher_regression import compute_fisher_diags, compute_fisher_grads
+from model_merging.permutation import compute_permutations_init
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -107,11 +108,11 @@ def main(cfg):
     print("Parameters: {}".format(len(metatheta)))
     
     random_model = MLP_regression(cfg)
-    x_random, y_random, avg_loss_random = inference(cfg, random_model, inference_loader, criterion)
+    x_random, y_random, avg_loss_random = inference(random_model, inference_loader, criterion)
     print("Random untrained - Average loss {}".format(avg_loss_random))
 
     for m, model in enumerate(models):
-        _, _, avg_loss_model = inference(cfg, model, inference_loader, criterion)
+        _, _, avg_loss_model = inference(model, inference_loader, criterion)
         print("Model {} - Average loss {}".format(m, avg_loss_model)) 
 
     # FISHER
@@ -119,48 +120,62 @@ def main(cfg):
     models = load_models_regression(cfg, names)
     fishers = load_fishers(cfg, names)
     fisher_model = merging_models_fisher(output_model, models, fishers)
-    x_fisher, y_fisher, avg_loss_fisher = inference(cfg, fisher_model, inference_loader, criterion)
+    x_fisher, y_fisher, avg_loss_fisher = inference(fisher_model, inference_loader, criterion)
     print("Fisher - Average loss {}".format(avg_loss_fisher)) 
 
     # ISOTROPIC
     output_model = clone_model(models[0], cfg)
     models = load_models_regression(cfg, names)
     isotropic_model = merging_models_isotropic(output_model, models)
-    x_isotropic, y_isotropic, avg_loss_isotropic = inference(cfg, isotropic_model, inference_loader, criterion)
+    x_isotropic, y_isotropic, avg_loss_isotropic = inference(isotropic_model, inference_loader, criterion)
     print("Isotropic - Average loss {}".format(avg_loss_isotropic))
 
     # PERMUTATION
     models = load_models_regression(cfg, names)
     grads = load_grads(cfg, names)
-    metamodel = isotropic_model 
-    metamodel = fisher_model
+    metamodel = merging_models_isotropic(output_model, models)
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion, plot=True)
-    x_perm, y_perm, avg_loss_permutation = inference(cfg, perm_model, inference_loader, criterion)
-    print("Ours (after) - Average loss {}".format(avg_loss_permutation)) 
+    x_perm, y_perm, avg_loss_permutation = inference(perm_model, inference_loader, criterion)
+    print("Permutation - Average loss {}".format(avg_loss_permutation)) 
+
+    # WEIGHT PERMUTATION
+    models = load_models_regression(cfg, names)
+    grads = load_grads(cfg, names)
+    permutations = compute_permutations_init(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+    metamodel = merging_models_isotropic(output_model, models)
+    wperm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, inference_loader, criterion, plot=True)
+    x_wperm, y_wperm, avg_loss_wpermutation = inference(wperm_model, inference_loader, criterion)
+    print("Weight permutation - Average loss {}".format(avg_loss_wpermutation)) 
 
     if dim == 1:
-        palette = ['#264653', '#C2FCF7', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
-        labels = ['Data', 'Random', 'Isotropic', 'Fisher', 'Perm', 'Models']
+        palette = ['#264653', '#C2FCF7', '#2a9d8f', '#e9c46a', '#FE6244','#00E5E8']
+        labels = ['Data', 'Random', 'Isotropic', 'Fisher', 'Perm','Wperm']
         x_data = []
         y_data = []
 
-        for x,y in inference_loader:
-            x_data.append(np.array(x.flatten()))
-            y_data.append(np.array(y.flatten()))
+        for x,y in train_loader:
+            x_data.append(np.array(x).flatten())
+            y_data.append(np.array(y).flatten())
+
+        x_data = np.array(x_data).flatten()
+        y_data = np.array(y_data).flatten()
 
         m = 50
+        sorted_indices = np.argsort(x_random[:m])
+
         plt.scatter(x_data, y_data, marker="+", c=palette[0])
-        plt.scatter(x_random[:m], y_random[:m], marker=".", c=palette[1])
-        plt.scatter(x_isotropic[:m], y_isotropic[:m], marker=".", c=palette[2])
-        plt.scatter(x_fisher[:m], y_fisher[:m], marker=".", c=palette[3])
-        plt.scatter(x_perm[:m], y_perm[:m], marker=".", c=palette[4])
+        plt.plot(x_random[:m][sorted_indices], y_random[:m][sorted_indices], c=palette[1])
+        plt.plot(x_isotropic[:m][sorted_indices], y_isotropic[:m][sorted_indices], c=palette[2])
+        plt.plot(x_fisher[:m][sorted_indices], y_fisher[:m][sorted_indices], c=palette[3])
+        plt.plot(x_perm[:m][sorted_indices], y_perm[:m][sorted_indices], c=palette[4])
+        plt.plot(x_wperm[:m][sorted_indices], y_wperm[:m][sorted_indices], c=palette[5])
 
         for x, model in enumerate(models):
-            x_model, y_model, _ = inference(cfg, model, inference_loader, criterion)
-            plt.scatter(x_model[:m], y_model[:m], marker=">", c=palette[5])
+            x_model, y_model, _ = inference(model, inference_loader, criterion)
+            labels.append("Model {}".format(x))
+            plt.plot(x_model[:m][sorted_indices], y_model[:m][sorted_indices], c="#E11299")
 
         plt.legend(labels=labels, fontsize=8)
-
         plt.xlabel('$X$')
         plt.ylabel('$Y$')
         plt.show()

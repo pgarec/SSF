@@ -47,13 +47,9 @@ def implement_permutation(model, permuted_indices, layer_index):
 
 
 def implement_permutation_grad(grad, permuted_indices, layer_weight_perm):
-    layer_index=layer_weight_perm
-    # weight
-    grad[layer_index] = grad[layer_index][permuted_indices]
-    # bias
-    grad[layer_index+1] = grad[layer_index+1][permuted_indices]
-    # weight + 1
-    grad[layer_index+2] = nn.Parameter(grad[layer_index+2][:, permuted_indices])
+    grad[layer_weight_perm] = grad[layer_weight_perm][permuted_indices]
+    grad[layer_weight_perm+1] = grad[layer_weight_perm+1][permuted_indices]
+    grad[layer_weight_perm+2] = nn.Parameter(grad[layer_weight_perm+2][:, permuted_indices])
     
     return grad
 
@@ -130,8 +126,12 @@ def compute_permutations(model, model_name, perm_path, layer_wp=0, weight_permut
     print("Permutations saved to file")
 
 
-def compute_permutations_init(model, layer_wp=0, weight_permutations=100):
-    permutations = compute_permutations_for_model(model, layer_wp, weight_permutations)
+def compute_permutations_init(models, layer_wp=0, weight_permutations=100):
+    permutations = []
+
+    for model in models:
+        p = compute_permutations_for_model(model, layer_wp, weight_permutations)
+        permutations.append(p)
     
     return permutations
 

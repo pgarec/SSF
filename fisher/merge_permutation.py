@@ -64,13 +64,13 @@ def perm_loss(cfg, metamodel, models, grads):
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
             metatheta_r = metatheta[perm[m:]].detach()
-            metatheta_m = metatheta[perm[:m]]#.detach()
+            metatheta_m = metatheta[perm[:m]]
             
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
             precision_m = grads_m ** 2
+            # precision_m = torch.clamp(grads_m ** 2, min=1e-30)
             precision_m = torch.clamp(grads_m ** 2, min=1e-30)
-            # print(precision_m)
             precision_mr = torch.outer(grads_m, grads_r)
 
             # precision_m = torch.eye(grads_m.shape[0])*100 + 10e-5
@@ -89,7 +89,7 @@ def perm_loss(cfg, metamodel, models, grads):
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
-    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.perm_lr)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     perm_losses = []
@@ -169,8 +169,7 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
 
 
 def merging_models_scaling_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
-    optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
-    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     perm_losses = []
@@ -202,54 +201,6 @@ def merging_models_scaling_permutation(cfg, metamodel, models, grads, test_loade
 
 
 def weight_perm_loss(cfg, metamodel, models, permutations, grads):
-    params = metamodel.get_trainable_parameters()
-    metatheta = nn.utils.parameters_to_vector(params)
-
-    n_dim = len(metatheta)
-    n_perm = cfg.data.permutations
-    n_models = len(models)
-
-    loss = 0.0
-    m = cfg.data.m
-    for p in range(n_perm):
-        perm = torch.randperm(n_dim)
-        # k = torch.randperm(n_models)[0]
-        for k in range(n_models):
-            model = models[k]
-            perm_model = permutations[k]
-            model = implement_permutation(model, perm_model, cfg.data.layer_weight_permutation)            
-
-            grad = grads[k]
-            grad = implement_permutation_grad(grad, perm_model, cfg.data.layer_weight_permutation)
-            params = model.get_trainable_parameters()
-            theta = nn.utils.parameters_to_vector(params)
-
-            grad =  nn.utils.parameters_to_vector(grad)
-            theta_r = theta[perm[m:]]
-            theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:]].detach()
-            metatheta_m = metatheta[perm[:m]]
-
-            grads_r = grad[perm[m:]]
-            grads_m = grad[perm[:m]]
-            precision_m = torch.clamp(grads_m ** 2, min=1e-20)
-            precision_mr = torch.outer(grads_m, grads_r)
-
-            # m_pred = theta_m - (1/precision_m) @ (precision_mr @ (metatheta_r - theta_r))
-            m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-            posterior = n_models*logprob_normal(metatheta_m, m_pred, precision_m).sum()
-            posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
-
-            cond_prior_m = torch.zeros(m)    
-            cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
-            prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
-
-            loss += (posterior + prior)/(m * n_perm)
-
-    return -loss
-
-
-def weight_perm_loss_all(cfg, metamodel, models, permutations, grads):
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params)
 
@@ -299,8 +250,7 @@ def weight_perm_loss_all(cfg, metamodel, models, permutations, grads):
 
 
 def merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, test_loader = "", criterion="", plot=False):
-    # optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
-    optimizer = optim.Adam(metamodel.parameters(), lr=cfg.train.lr)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     perm_losses = []
@@ -308,7 +258,7 @@ def merging_models_weight_permutation(cfg, metamodel, models, permutations, grad
 
     for it in pbar:
         optimizer.zero_grad()
-        l = weight_perm_loss_all(cfg, metamodel, models, permutations, grads)
+        l = weight_perm_loss(cfg, metamodel, models, permutations, grads)
         l.backward()      # Backward pass <- computes gradients
         optimizer.step()
         perm_losses.append(-l.item())

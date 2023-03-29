@@ -38,10 +38,11 @@ models:
 
 train:
   lr: 0.01
+  perm_lr: 0.05
   weight_decay: 0.01
-  hidden_dim: 4
+  hidden_dim: 16
   epochs: 100
-  epochs_perm: 20
+  epochs_perm: 50
   step_size: 212
   gamma: 0.1
   momentum: 0.9
