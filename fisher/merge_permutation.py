@@ -21,7 +21,8 @@ def logprob_normal(x, mu, precision):
     n = x.shape[0]    
     precision = precision # + 10e-5
 
-    log_p = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
+    # log_p = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
+    log_p = -0.5*torch.log(2*torch.tensor([math.pi])) - 0.5*precision*(x - mu)**2
 
     return log_p
 
@@ -67,15 +68,16 @@ def perm_loss(cfg, metamodel, models, grads):
             
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
-            precision_m = grads_m ** 2
-            # precision_m = torch.clamp(grads_m ** 2, min=1e-30)
+            # precision_m = grads_m ** 2
             precision_m = torch.clamp(grads_m ** 2, min=1e-30)
             precision_mr = torch.outer(grads_m, grads_r)
+
 
             # precision_m = torch.eye(grads_m.shape[0])*100 + 10e-5
             # precision_mr = torch.zeros_like(precision_mr)
 
             m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
+
             posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
 
             cond_prior_m = torch.zeros(m)    

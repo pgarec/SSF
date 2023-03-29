@@ -10,7 +10,7 @@ import math
 
 def log_prob(logit, y, sigma_sq):
     sigma_sq = torch.tensor([sigma_sq])
-    logprob = 0.5*torch.log(torch.tensor([math.pi])) - 0.5*torch.log(sigma_sq) - (1/(2*sigma_sq))*(logit-y)**2
+    logprob = - 0.5*torch.log(torch.tensor([math.pi])) - 0.5*torch.log(sigma_sq) - (1/(2*sigma_sq))*(logit-y)**2
 
     return logprob
 
@@ -60,7 +60,6 @@ def compute_fisher_for_model(model, dataset, fisher_samples=-1, sigma_sq=-1):
 
 
 def _compute_exact_grads_for_batch(batch_x, batch_y, model, variables, sigma_sq):
-
     def grads_single_example(x, y, sigma_sq):
         logit = model(x)
         lp = log_prob(logit, y, sigma_sq)
