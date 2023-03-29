@@ -52,7 +52,6 @@ def perm_loss(cfg, metamodel, models, grads):
     m = cfg.data.m
     for p in range(n_perm):
         perm = torch.randperm(n_dim)
-        # k = torch.randperm(n_models)[0]
         for k in range(n_models):
             model = models[k]
 
@@ -101,7 +100,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
         l = perm_loss(cfg, metamodel, models, grads)
-        l.backward()      # Backward pass <- computes gradients
+        l.backward()      
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
@@ -133,7 +132,6 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
     m = cfg.data.m
     for p in range(n_perm):
         perm = torch.randperm(n_dim)
-        # k = torch.randperm(n_models)[0]
         for k in range(n_models):
             model = models[k]
             grad = grads[k]
@@ -178,14 +176,13 @@ def merging_models_scaling_permutation(cfg, metamodel, models, grads, test_loade
     for it in pbar:
         optimizer.zero_grad()
         l = scaling_perm_loss(cfg, metamodel, models, grads)
-        l.backward()      # Backward pass <- computes gradients
+        l.backward()      
         optimizer.step()
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
         if it % 10:
             inference_loss.append(evaluate_model(metamodel, test_loader, criterion))
     
-    # perm_losses = [x for x in perm_losses if x > 0]
     if plot:
         plt.subplot(2,1,1)
         plt.plot(perm_losses)
@@ -212,7 +209,6 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
     m = cfg.data.m
     for _ in range(n_perm):
         perm = torch.randperm(n_dim)
-        # k = torch.randperm(n_models)[0]
         
         for k in range(n_models):
             model = models[k]
@@ -267,7 +263,6 @@ def merging_models_weight_permutation(cfg, metamodel, models, permutations, grad
         if it % 10:
             inference_loss.append(evaluate_model(metamodel, test_loader, criterion))
 
-    # perm_losses = [x for x in perm_losses if x > 0]
     if plot:
         plt.subplot(2,1,1)
         plt.plot(perm_losses)
