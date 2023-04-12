@@ -73,14 +73,13 @@ def manual_dataset(cfg, overlapping=True, nof=5000, dim=1, k=1, alpha=1.0, beta=
 def main(cfg): 
 
     dim = cfg.data.dimensions
-    n_models = 1
+    n_models = 3
     names = []
     models = []
     
     # train_loader, test_loader, inference_loader = manual_dataset(cfg, dim=dim)
     dataset = create_dataset(cfg)
     train_loader, test_loader = dataset.create_dataloaders()
-    #inference_loader = dataset.create_inference_dataloader()
     inference_loader = test_loader
 
     for i in range(n_models):
@@ -133,7 +132,7 @@ def main(cfg):
     # PERMUTATION
     models = load_models_regression(cfg, names)
     grads = load_grads(cfg, names)
-    metamodel = merging_models_isotropic(output_model, models)
+    # metamodel = merging_models_isotropic(output_model, models)
     metamodel = MLP_regression(cfg)
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion, plot=True)
     x_perm, y_perm, avg_loss_permutation = inference(perm_model, inference_loader, criterion)

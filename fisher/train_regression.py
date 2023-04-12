@@ -42,6 +42,7 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
             train_loss += loss
             # wandb.log({"Training loss": loss/len(train_loader)})
 
+
         train_loss = train_loss.detach()/len(train_loader)
         train_losses.append(train_loss)
 

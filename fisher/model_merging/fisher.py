@@ -5,6 +5,7 @@ from .model import MLP
 from .data import store_file
 from .data import create_dataset
 import random
+import numpy as np
 
 
 def _compute_exact_fisher_for_batch(batch, model, variables, num_classes):
@@ -73,8 +74,6 @@ def _compute_exact_grads_for_batch(batch, model, variables, num_classes):
             g = [probs[0][i] * g for g in grad]
             grads.append(g)
     
-        log_prob.backward()
-
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*grads)]
 
     grads = torch.zeros((len(variables)),requires_grad=False)

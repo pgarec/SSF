@@ -36,9 +36,8 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
             out = model(x.to(device))
             batch_onehot = y.apply_(lambda x: y_classes[x])
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
-            
             loss.backward()
-            optimizer.step()
+            optimizer.step()           
             train_loss += loss
             # wandb.log({"Training loss": loss/len(train_loader)})
 
@@ -158,7 +157,7 @@ def main(cfg):
         train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
         model = MLP(cfg)
         optimizer = optim.SGD(
-            model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay
+            model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay*2, momentum=cfg.train.momentum
         )
         criterion = torch.nn.CrossEntropyLoss()
 

@@ -22,8 +22,8 @@ data:
   model_path: "./fisher/models/"
   perm_path: "./fisher/perms/"
 
-  m: 400
-  permutations: 20
+  m: 200
+  permutations: 10
   weight_permutations: 5
   layer_weight_permutation: 0
   scaling_perm_min: 1
@@ -32,17 +32,16 @@ data:
   plot: True
 
 models:
-  model0: "MNIST_0123_epoch40"
+  model0: "MNIST_0123_epoch20"
   model1: "MNIST_0123_epoch30"
-  model2: "MNIST_0123_epoch20"
 
 train:
   lr: 0.01
-  perm_lr: 0.05
+  perm_lr: 0.01
   weight_decay: 0.01
   hidden_dim: 16
-  epochs: 100
-  epochs_perm: 50
+  epochs: 50
+  epochs_perm: 5000
   step_size: 212
   gamma: 0.1
   momentum: 0.9

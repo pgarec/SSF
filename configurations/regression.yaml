@@ -24,7 +24,7 @@ data:
   
   plot: True
   permutations: 20
-  m: 50
+  m: 100
   weight_permutations: 20
   layer_weight_permutation: 0
 
@@ -37,7 +37,7 @@ train:
   step_size: 212
   weight_decay: 0.01
   gamma: 0.1
-  momentum: 0.5
+  momentum: 0.9
   plot_sample: False
   plot: False
   torch_seed: 40

@@ -32,7 +32,7 @@ def main(cfg):
 
     params = models[0].get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params)
-    print(len(metatheta))
+    print("Params model {}".format(len(metatheta)))
     avg_loss = inference(cfg, models[0], test_loader, criterion)
     print("Model 0 - Average loss {}".format(avg_loss))
 
@@ -58,23 +58,23 @@ def main(cfg):
 
     # PERMUTATION
     models = load_models(cfg)
-    random_model = MLP(cfg)
+    # metamodel = MLP(cfg)
     metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
     # metamodel = fisher_model
-    # metamodel = MLP(cfg)
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion, plot=True)
 
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
     print("Permutation - Average loss {}".format(avg_loss))  
 
     # WEIGHT PERMUTATION
-    models = load_models(cfg)
-    random_model = MLP(cfg)
-    metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
-    weight_perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, test_loader, criterion)
+    # models = load_models(cfg)
+    # random_model = MLP(cfg)
+    # metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
+    # weight_perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, test_loader, criterion)
 
-    avg_loss = inference(cfg, weight_perm_model, test_loader, criterion)
-    print("Weight permutation - Average loss {}".format(avg_loss))   
+    # avg_loss = inference(cfg, weight_perm_model, test_loader, criterion)
+    # print("Weight permutation - Average loss {}".format(avg_loss))   
+
 
 if __name__=="__main__":
     main()

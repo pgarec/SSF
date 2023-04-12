@@ -10,7 +10,7 @@ import math
 
 def log_prob(logit, y, sigma_sq):
     sigma_sq = torch.tensor([sigma_sq])
-    logprob = - 0.5*torch.log(torch.tensor([math.pi])) - 0.5*torch.log(sigma_sq) - (1/(2*sigma_sq))*(logit-y)**2
+    logprob = - 0.5*torch.log(2*torch.tensor([math.pi])) - 0.5*torch.log(sigma_sq) - ((0.5*(logit-y)**2)/sigma_sq)
 
     return logprob
 
@@ -61,6 +61,7 @@ def compute_fisher_for_model(model, dataset, fisher_samples=-1, sigma_sq=-1):
 
 def _compute_exact_grads_for_batch(batch_x, batch_y, model, variables, sigma_sq):
     def grads_single_example(x, y, sigma_sq):
+        model.zero_grad()
         logit = model(x)
         lp = log_prob(logit, y, sigma_sq)
         lp.backward()
@@ -71,7 +72,6 @@ def _compute_exact_grads_for_batch(batch_x, batch_y, model, variables, sigma_sq)
     grads = torch.zeros((len(variables)),requires_grad=False)
 
     for element_x, element_y in zip(batch_x, batch_y):
-       model.zero_grad()
        grad_elem = grads_single_example(element_x.unsqueeze(0), element_y.unsqueeze(0), sigma_sq)
        grad_elem = [x.detach() for x in grad_elem]
        grads = [x + y for (x,y) in zip(grads, grad_elem)]
@@ -130,7 +130,7 @@ def compute_fisher_grads(cfg, model_name, train_loader=[]):
         train_loader, _ = dataset.create_dataloaders()
 
     print("Starting Grads computation")
-    grad_diag = compute_grads_for_model(model, train_loader, grad_samples=cfg.data.fisher_samples, sigma_sq=cfg.train.sigma_sq)
+    grad_diag = compute_grads_for_model(model, train_loader, grad_samples=1000, sigma_sq=cfg.train.sigma_sq)
     print("Grads computed. Saving to file...")
     grad_name = model_name.split('/')[-1][:-3]
     store_file(grad_diag, cfg.data.grad_path + grad_name)

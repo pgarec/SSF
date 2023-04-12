@@ -35,8 +35,8 @@ data:
   m: 500
 
 train:
-  lr: 0.001
-  hidden_dim: 4
+  lr: 0.01
+  hidden_dim: 16
   epochs: 40
   epochs_perm: 500
   step_size: 212
