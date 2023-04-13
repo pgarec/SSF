@@ -179,7 +179,7 @@ class MetaPosterior(torch.nn.Module):
         loss = (1 - (1/args.num_k))*prior.log_prob(self.meta_theta.squeeze())
         for a in range(args.dim):
             # m = a+1
-            m = 2
+            m = 1
 
             # average over permutations -- 
             loss_pred = 0.0
@@ -190,8 +190,8 @@ class MetaPosterior(torch.nn.Module):
                     m_k = model_k['m']
                
                     iS_k_mr = torch.outer(grad[perm[:m]], grad[perm[m:]])
-                    # iS_k_mr = torch.outer(grad[:m], grad[m:])
-                    i_K1 = grad[perm[:m]]**2
+                    # i_K1 = grad[perm[:m]]**2
+                    i_K1 = torch.outer(grad[perm[:m]],grad[perm[:m]])
                     # i_K1 = grad[:m]**2
 
                     # iS_k = model_k['iS']
@@ -199,10 +199,14 @@ class MetaPosterior(torch.nn.Module):
                     # i_K1 = torch.diagonal(iS_k[perm[:m],:][:,perm[:m]])
                     
                     # m_pred = m_k[:m] - 1/i_K1 * (iS_k_mr @ (self.meta_theta[perm[m:]] - m_k[m:]))
-                    m_pred = m_k[perm[:m]] - 1/i_K1 * (iS_k_mr @ (self.meta_theta[perm[m:]] - m_k[perm[m:]]))
-                    v_pred = i_K1
+                    # m_pred = m_k[perm[:m]] - 1/i_K1 * (iS_k_mr @ (self.meta_theta[perm[m:]] - m_k[perm[m:]]))
+                    # v_pred = i_K1
 
-                    log_p_masked = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(v_pred) - 0.5*v_pred*(self.meta_theta[perm[:m]] - m_pred)**2
+                    m_pred = m_k[perm[:m]] - torch.inverse(i_K1) @ (iS_k_mr @ (self.meta_theta[perm[m:]] - m_k[perm[m:]]))
+                    v_pred = torch.diagonal(torch.inverse(i_K1))
+
+                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(self.meta_theta[perm[:m]] - m_pred)**2) / v_pred
+                    # log_p_masked = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(v_pred) - 0.5*v_pred*(self.meta_theta[perm[:m]] - m_pred)**2
                     loss_pred += log_p_masked.sum(1)
 
             loss_pred = loss_pred/(args.max_perm * m * args.num_k)

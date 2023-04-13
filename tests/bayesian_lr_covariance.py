@@ -43,6 +43,7 @@ args = parser.parse_args()
 ############################################
 
 torch.manual_seed(444)
+np.random.seed(444)
 
 # Set up true curves and models
 if args.overlapping:
@@ -161,9 +162,8 @@ class MetaPosterior(torch.nn.Module):
                     m_pred = m_k[perm[:m]] + S_mr @ iS_rr @ (theta_r - m_k[perm[m:]])
                     v_pred = torch.diagonal(S_mm - S_mr @ iS_rr @ S_mr.T)
 
-                    i_K1 = torch.diagonal(iS_k[perm[:m],:][:,perm[:m]])
-                    print(1/i_K1 == v_pred)
-                    # print(v_pred == (1/torch.diagonal(iS_k[perm[:m],:][:,perm[:m]])))
+                    # i_K1 = torch.diagonal(iS_k[perm[:m],:][:,perm[:m]])
+                    
 
                     log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(theta[:m] - m_pred)**2) / v_pred
                     loss_pred += log_p_masked.sum(1)
