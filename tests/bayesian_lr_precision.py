@@ -156,16 +156,31 @@ class MetaPosterior(torch.nn.Module):
                     iS_k = model_k['iS']
                     S_k = model_k['S']
 
-                    iS_k_mr = iS_k[perm[:m],:][:,perm[m:]]
-                    theta_r = theta[m:]
+                    for i in range(m):
 
-                    i_K1 = iS_k[perm[:m],:][:,perm[:m]]
+                        #################################################
+                        ## PRECISION ##
+                        theta_r = theta[m:]
+                        P_mr = iS_k[perm[i],:][:,perm[m:]]
+                        P_mm = iS_k[perm[i],:][:,perm[i]]
+
+                        m_pred = m_k[perm[:m]] - (1/P_mm) @ (P_mr @ (theta_r - m_k[perm[m:]]))
+                        p_pred = torch.diagonal(P_mm)
+
+                        log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
+                        #################################################
+
+
+                    # print('expensive:', torch.diagonal(torch.inverse(i_K1)))
+                    # print('cheap:', 1/torch.diagonal(i_K1))
+
+
                     # m_pred = m_k[perm[:m]] - (1/i_K1) * (iS_k_mr @ (theta_r - m_k[perm[m:]]))
-                    m_pred = m_k[perm[:m]] - torch.inverse(i_K1) @ (iS_k_mr @ (theta_r - m_k[perm[m:]]))
-                    v_pred = torch.diagonal(torch.inverse(i_K1))
-                    # v_pred = 1/torch.diagonal(i_K1)
+                    # m_pred = m_k[perm[:m]] - torch.inverse(i_K1) @ (iS_k_mr @ (theta_r - m_k[perm[m:]]))
+                    # v_pred = torch.diagonal(torch.inverse(i_K1))
+                    # # v_pred = 1/torch.diagonal(i_K1)
 
-                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(theta[:m] - m_pred)**2) / v_pred
+                    # log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(theta[:m] - m_pred)**2) / v_pred
                     # log_p_masked = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(v_pred) - 0.5*v_pred*(theta[:m] - m_pred)**2
                     loss_pred += log_p_masked.sum(1)
 
