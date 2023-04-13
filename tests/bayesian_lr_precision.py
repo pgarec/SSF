@@ -155,19 +155,21 @@ class MetaPosterior(torch.nn.Module):
                     m_k = model_k['m']
                     iS_k = model_k['iS']
                     S_k = model_k['S']
-
+                    
+                    log_p_masked = 0
                     for i in range(m):
-
+                        
                         #################################################
                         ## PRECISION ##
                         theta_r = theta[m:]
-                        P_mr = iS_k[perm[i],:][:,perm[m:]]
-                        P_mm = iS_k[perm[i],:][:,perm[i]]
+                        P_mr = iS_k[perm[i],:][perm[m:]].unsqueeze(0)
+                        P_mm = iS_k[perm[i],perm[i]].unsqueeze(0)
+              
+                        m_pred = m_k[perm[i]] - (1/P_mm) @ P_mr @ (theta_r - m_k[perm[m:]])
+                        p_pred = P_mm
 
-                        m_pred = m_k[perm[:m]] - (1/P_mm) @ (P_mr @ (theta_r - m_k[perm[m:]]))
-                        p_pred = torch.diagonal(P_mm)
-
-                        log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
+                        log_p_masked += - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
+                        
                         #################################################
 
 
