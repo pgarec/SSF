@@ -188,19 +188,29 @@ class MetaPosterior(torch.nn.Module):
                     perm = torch.randperm(args.dim+1)
                     grad = nn.utils.parameters_to_vector(grads[k])
                     m_k = model_k['m']
-               
-                    iS_k_mr = torch.outer(grad[perm[:m]], grad[perm[m:]])
-                    i_K1 = torch.outer(grad[perm[:m]],grad[perm[:m]])
+                    theta = self.meta_theta[perm]
 
-                    print("iS_k_mr shape {}".format(iS_k_mr.shape))
-                    print("metatheta shape {}".format((self.meta_theta[perm[m:]] - m_k[perm[m:]]).shape))
-           
-                    m_pred = m_k[perm[:m]] - torch.inverse(i_K1) @ (iS_k_mr @ (self.meta_theta[perm[m:]] - m_k[perm[m:]]))
-                    v_pred = torch.diagonal(torch.inverse(i_K1))
+                    # iS_k_mr = torch.outer(grad[perm[:m]], grad[perm[m:]])
+                    # i_K1 = torch.outer(grad[perm[:m]],grad[perm[:m]])
 
-                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(self.meta_theta[perm[:m]] - m_pred)**2) / v_pred
-                    # log_p_masked = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(v_pred) - 0.5*v_pred*(self.meta_theta[perm[:m]] - m_pred)**2
-                    loss_pred += log_p_masked.sum(1)
+                    # m_pred = m_k[perm[:m]] - torch.inverse(i_K1) @ (iS_k_mr @ (self.meta_theta[perm[m:]] - m_k[perm[m:]]))
+                    # v_pred = torch.diagonal(torch.inverse(i_K1))
+
+                    # log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(self.meta_theta[perm[:m]] - m_pred)**2) / v_pred
+                    # loss_pred += log_p_masked.sum(1)
+
+                    log_p_masked = 0
+                    for i in range(m):
+                        
+                        theta_r = theta[m:]
+                        P_mr = torch.outer(grad[perm[i]].unsqueeze(0), grad[perm[m:]])
+                        P_mm = grad[perm[i]]
+                       
+                        m_pred = m_k[perm[i]] - (1/P_mm) @ P_mr @ (theta_r - m_k[perm[m:]])
+                        p_pred = P_mm
+
+                        log_p_masked += - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[i] - m_pred)**2)
+       
 
             loss_pred = loss_pred/(args.max_perm * m * args.num_k)
             loss += loss_pred.sum()

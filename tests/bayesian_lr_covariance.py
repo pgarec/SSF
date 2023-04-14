@@ -159,13 +159,25 @@ class MetaPosterior(torch.nn.Module):
                     S_mr = S_k[perm[:m],:][:,perm[m:]]
                     iS_rr = torch.inverse(S_k[perm[m:],:][:,perm[m:]])
 
-                    m_pred = m_k[perm[:m]] + S_mr @ iS_rr @ (theta_r - m_k[perm[m:]])
-                    v_pred = torch.diagonal(S_mm - S_mr @ iS_rr @ S_mr.T)
+                    theta_r = theta[m:]
+                    P_mr = iS_k[perm[:m],:][:,perm[m:]]
+                    P_mm = iS_k[perm[:m],:][:,perm[:m]]
+                    iP_mm = torch.inverse(P_mm)
+
+                    m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
+                    v_pred = torch.diagonal(torch.inverse(P_mm))
+                    p_pred = torch.diagonal(P_mm)
+
+
+                    # m_pred = m_k[perm[:m]] + S_mr @ iS_rr @ (theta_r - m_k[perm[m:]])
+                    # v_pred = torch.diagonal(S_mm - S_mr @ iS_rr @ S_mr.T)
 
                     # i_K1 = torch.diagonal(iS_k[perm[:m],:][:,perm[:m]])
                     
 
-                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(theta[:m] - m_pred)**2) / v_pred
+                    # log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(theta[:m] - m_pred)**2) / v_pred
+                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
+
                     loss_pred += log_p_masked.sum(1)
 
             loss_pred = loss_pred/(args.max_perm * m * args.num_k)
