@@ -8,7 +8,8 @@ import random
 import numpy as np
 
 
-def _compute_exact_fisher_for_batch(batch, model, variables, num_classes):
+def compute_fisher_for_model(model, dataset, num_classes, fisher_samples=-1):
+
     def fisher_single_example(single_example_batch):
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
@@ -24,20 +25,10 @@ def _compute_exact_fisher_for_batch(batch, model, variables, num_classes):
             sq_grads.append(sq_grad)
         
         log_prob.backward()
-        
+        model.zero_grad()
+
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
 
-    fishers = torch.zeros((len(variables)),requires_grad=False)
-    for element in batch:
-       model.zero_grad()
-       fish_elem = fisher_single_example(element.unsqueeze(0))
-       fish_elem = [x.detach() for x in fish_elem]
-       fishers = [x + y for (x,y) in zip(fishers, fish_elem)]
-    
-    return fishers
-
-
-def compute_fisher_for_model(model, dataset, num_classes, fisher_samples=-1):
     variables = [p for p in model.parameters()]
     fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
 
@@ -45,10 +36,14 @@ def compute_fisher_for_model(model, dataset, num_classes, fisher_samples=-1):
     
     for batch, _ in dataset:
         n_examples += batch.shape[0]
-        batch_fishers = _compute_exact_fisher_for_batch(
-            batch, model, variables, num_classes
-        )
-        fishers = [x+y for (x,y) in zip(fishers, batch_fishers)]
+        fishers_batch = torch.zeros((len(variables)),requires_grad=False)
+        for element in batch:
+            model.zero_grad()
+            fish_elem = fisher_single_example(element.unsqueeze(0))
+            fish_elem = [x.detach() for x in fish_elem]
+            fishers_batch = [x + y for (x,y) in zip(fishers_batch, fish_elem)]
+
+        fishers = [x+y for (x,y) in zip(fishers, fishers_batch)]
 
         if fisher_samples != -1 and n_examples > fisher_samples:
             break
@@ -59,7 +54,8 @@ def compute_fisher_for_model(model, dataset, num_classes, fisher_samples=-1):
     return fishers
 
 
-def _compute_exact_grads_for_batch(batch, model, variables, num_classes):
+def compute_grads_for_model(model, dataset, num_classes, grad_samples=-1):
+    
     def grads_single_example(single_example_batch):
         logits = model(single_example_batch)
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
@@ -73,32 +69,28 @@ def _compute_exact_grads_for_batch(batch, model, variables, num_classes):
             grad = [p.grad.clone() for p in model.parameters()]
             g = [probs[0][i] * g for g in grad]
             grads.append(g)
+        
+        log_prob.backward()
+        model.zero_grad()
     
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*grads)]
 
-    grads = torch.zeros((len(variables)),requires_grad=False)
-    for element in batch:
-       model.zero_grad()
-       grad_elem = grads_single_example(element.unsqueeze(0))
-       grad_elem = [x.detach() for x in grad_elem]
-       grads = [x + y for (x,y) in zip(grads, grad_elem)]
-
-    return grads
-
-
-def compute_grads_for_model(model, dataset, num_classes, grad_samples=-1):
     variables = [p for p in model.parameters()]
-    # list of the model variables initialized to zero
     grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
 
     n_examples = 0
 
     for batch, _ in dataset:
         n_examples += batch.shape[0]
-        batch_grads = _compute_exact_grads_for_batch(
-            batch, model, variables, num_classes
-        )
-        grads = [x+y for (x,y) in zip(grads, batch_grads)]
+        grads_batch = torch.zeros((len(variables)),requires_grad=False)
+
+        for element in batch:
+            model.zero_grad()
+            grad_elem = grads_single_example(element.unsqueeze(0))
+            grad_elem = [x.detach() for x in grad_elem]
+            grads_batch = [x + y for (x,y) in zip(grads_batch, grad_elem)]
+
+        grads = [x+y for (x,y) in zip(grads, grads_batch)]
 
         if grad_samples != -1 and n_examples > grad_samples:
             break

@@ -20,7 +20,7 @@ import numpy as np
 
 def logprob_normal(x, mu, precision):
     n = x.shape[0]    
-    precision = precision + 10e-5
+    precision = precision # + 10e-5
 
     log_p = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
 
@@ -41,52 +41,9 @@ def evaluate_model(model, val_loader, criterion):
     return avg_loss / len(val_loader)
 
 
-def perm_loss_covariance(cfg, metamodel, models, grads):
-    params = metamodel.get_trainable_parameters()
-    metatheta = nn.utils.parameters_to_vector(params)
+### 
 
-    n_dim = len(metatheta)
-    n_perm = cfg.data.permutations
-    n_models = len(models)
-
-    loss = 0.0
-    m = cfg.data.m
-    for p in range(n_perm):
-        perm = torch.randperm(n_dim)
-        for k in range(n_models):
-            model = models[k]
-
-            grad = grads[k]
-            params = model.get_trainable_parameters()
-            theta = nn.utils.parameters_to_vector(params)
-            grad =  nn.utils.parameters_to_vector(grad)
-
-            # COVARIANCE
-            metatheta_r = metatheta[perm[:m]]
-            metatheta_m = metatheta[perm[m:]]
-
-            S_k = torch.outer(grad, grad)
-            print(torch.diagonal(S_k))
-            metatheta_r = metatheta[m:]
-            S_mm = S_k[perm[:m],:][:,perm[:m]]
-            S_mr = S_k[perm[:m],:][:,perm[m:]]
-            iS_rr = torch.inverse(S_k[perm[m:],:][:,perm[m:]])
-            m_pred = theta[perm[:m]] + S_mr @ iS_rr @ (metatheta_r - theta[perm[m:]])
-            v_pred = torch.diagonal(S_mm - S_mr @ iS_rr @ S_mr.T)
-            m_pred = m_pred.T
-
-            log_p_masked = -0.5*torch.log(v_pred) - 0.5*np.log(2*np.pi) - (0.5*(theta[:m] - m_pred)**2 / v_pred)
-
-            cond_prior_m = torch.zeros(m)    
-            cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
-            prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
-
-            loss += (log_p_masked + prior)/(m * n_perm)
-
-    return -loss
-
-
-def perm_loss(cfg, metamodel, models, grads):
+def perm_loss_fisher(cfg, metamodel, models, grads):
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params)
 
@@ -110,26 +67,20 @@ def perm_loss(cfg, metamodel, models, grads):
             metatheta_r = metatheta[perm[m:]]
             metatheta_m = metatheta[perm[:m]]
 
-            # theta_r = theta[m:]
-            # theta_m = theta[:m]
-            # metatheta_r = metatheta[m:]
-            # metatheta_m = metatheta[:m]
-            
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
-            # grads_r = grad[m:]
-            # grads_m = grad[:m]
-
-            precision_mr = torch.outer(grads_m, grads_r)
-            # precision_m = grads_m ** 2
-            precision_m = torch.clamp(grads_m ** 2, min=1e-20)
-            # print("{} clamps out of {} grads".format(len([x for x in precision_m if x == 1e-20]), len(precision_m)))
             
-            # precision_m = torch.eye(grads_m.shape[0])*100 + 10e-5
-            # precision_mr = torch.zeros_like(precision_mr)
+            P_mr = torch.outer(grads_m, grads_r)
+            P_mr = torch.zeros_like(P_mr)
+            P_mm = torch.outer(grads_m, grads_m)
+            # P_mm = torch.eye(grads_m.shape[0])*100 + 10e-5
+            iP_mm = torch.inverse(P_mm)
 
-            m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-            posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
+            m_pred = theta_m - iP_mm @ P_mr @ (metatheta_r - theta_r)
+            # m_pred = theta_m - torch.diagonal(1/P_mm) @ P_mr @ (metatheta_r - theta_r)
+            p_pred = torch.diagonal(P_mm)
+            
+            posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
 
             cond_prior_m = torch.zeros(m)    
             cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
@@ -152,7 +103,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
-        l = perm_loss(cfg, metamodel, models, grads)
+        l = perm_loss_fisher(cfg, metamodel, models, grads)
         l.backward()      
         optimizer.step()
         perm_losses.append(-l.item())

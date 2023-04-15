@@ -133,35 +133,10 @@ def active_set_permutation(x, W):
     return x_perm, W_perm, permutation
 
 
-def compute_gradients(model, dataset):
-    m = model['m'].flatten()
-    # S = model['S']
+def compute_gradients(k):
     S = torch.tensor([0.5])
-    grads = torch.zeros(m.flatten().shape, requires_grad=False)
-    grad_samples = 1000
-    n_examples = 1
-    m.requires_grad = True
-
-    for x,y in zip(dataset['x'], dataset['y']):
-        print(n_examples)
-        n_examples += 1     
-        f_m = m[0] + x @ m[1:] 
-        log_p = -0.5*torch.log(S) - 0.5*np.log(2*np.pi) - (0.5*(y - f_m)**2 / S)
-        loss = log_p.sum()
-        loss.backward()
-        # f_m.backward()
-        grad = m.grad
-        grads = [x+y for (x,y) in zip(grads, grad)]
-
-        if grad_samples != -1 and n_examples > grad_samples:
-            break
-
-    m.requires_grad = False
-
-    for i, grad in enumerate(grads):
-        grads[i] = grad / n_examples
-
-    return grads
+    
+    return (X[:,:,k] @ X[:,:,k].T) / (S)
 
 # Meta Posterior
 class MetaPosterior(torch.nn.Module):
@@ -186,31 +161,21 @@ class MetaPosterior(torch.nn.Module):
             for p in range(args.max_perm):
                 for k, model_k in enumerate(models):
                     perm = torch.randperm(args.dim+1)
-                    grad = nn.utils.parameters_to_vector(grads[k])
+                    grad = grads[k]
                     m_k = model_k['m']
                     theta = self.meta_theta[perm]
 
-                    # iS_k_mr = torch.outer(grad[perm[:m]], grad[perm[m:]])
-                    # i_K1 = torch.outer(grad[perm[:m]],grad[perm[:m]])
+                    theta_r = theta[m:]
+                    P_mr = grad[perm[:m],:][:,perm[m:]]
+                    P_mm = grad[perm[:m],:][:,perm[:m]]
+                    iP_mm = torch.inverse(P_mm)
+                    # iP_mm = 1/P_mm
 
-                    # m_pred = m_k[perm[:m]] - torch.inverse(i_K1) @ (iS_k_mr @ (self.meta_theta[perm[m:]] - m_k[perm[m:]]))
-                    # v_pred = torch.diagonal(torch.inverse(i_K1))
+                    m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
+                    p_pred = torch.diagonal(P_mm)
 
-                    # log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(self.meta_theta[perm[:m]] - m_pred)**2) / v_pred
-                    # loss_pred += log_p_masked.sum(1)
-
-                    log_p_masked = 0
-                    for i in range(m):
-                        
-                        theta_r = theta[m:]
-                        P_mr = torch.outer(grad[perm[i]].unsqueeze(0), grad[perm[m:]])
-                        P_mm = grad[perm[i]]
-                       
-                        m_pred = m_k[perm[i]] - (1/P_mm) @ P_mr @ (theta_r - m_k[perm[m:]])
-                        p_pred = P_mm
-
-                        log_p_masked += - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[i] - m_pred)**2)
-       
+                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
+                    loss_pred += log_p_masked.sum(1)
 
             loss_pred = loss_pred/(args.max_perm * m * args.num_k)
             loss += loss_pred.sum()
@@ -221,7 +186,7 @@ class MetaPosterior(torch.nn.Module):
 ############################################
 # Definition of Meta-Model and ELBO fitting
 ############################################
-grads = [compute_gradients(model, datasets[k]) for k, model in enumerate(models)]
+grads = [compute_gradients(i) for i, model in enumerate(models)]
 meta_model = MetaPosterior(models, grads, datasets, args)
 optimizer = torch.optim.SGD(params=meta_model.parameters(), lr=1e-4, momentum=0.9)
 # optimizer = torch.optim.SGD([{'params':meta_model.m, 'lr':1e-3},{'params':meta_model.L,'lr':1e-6}], lr=1e-4, momentum=0.9)

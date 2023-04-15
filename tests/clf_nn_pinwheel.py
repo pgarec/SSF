@@ -173,7 +173,6 @@ models = []
 n_models = 5
 max_epoch = 100
 
-
 for m in range(n_models):
     model = Model(num_features, H, num_output, seed)
     weight_decay = cfg.train.weight_decay * 2
@@ -229,7 +228,7 @@ print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, cr
 
 # metamodel = models[1]
 metamodel = isotropic_model
-# metamodel = Model(num_features, H, num_output, seed)
+# metamodel = Model(num_features, H, num_output, seed)
 grads = [compute_grads_init(m, train_loader, num_clusters) for m in models]
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
