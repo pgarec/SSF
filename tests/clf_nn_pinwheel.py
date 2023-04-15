@@ -19,8 +19,6 @@ from torch import nn
 from torch.distributions import MultivariateNormal
 from tqdm import tqdm
 from src.model_merging.datasets.pinwheel import make_pinwheel_data
-from src.metrics import accuracy, nll, brier, calibration
-from sklearn.metrics import brier_score_loss
 import hydra
 from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
