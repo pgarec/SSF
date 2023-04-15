@@ -15,7 +15,8 @@ def log_prob(logit, y, sigma_sq):
     return logprob
 
 
-def _compute_exact_fisher_for_batch(batch_x, batch_y, model, variables, sigma_sq):
+def compute_fisher_for_model(model, dataset, fisher_samples=-1, sigma_sq=-1):
+
     def fisher_single_example(x, y, sigma_sq):
         logit = model(x)
         lp = log_prob(logit, y, sigma_sq)
@@ -24,42 +25,34 @@ def _compute_exact_fisher_for_batch(batch_x, batch_y, model, variables, sigma_sq
         sq_grad = [g**2 for g in grad]
 
         return sq_grad
-
-    fishers = torch.zeros((len(variables)),requires_grad=False)
-    for element_x, element_y in zip(batch_x, batch_y):
-       model.zero_grad()
-       fish_elem = fisher_single_example(element_x.unsqueeze(0), element_y.unsqueeze(0), sigma_sq)
-       fish_elem = [x.detach() for x in fish_elem]
-       fishers = [x + y for (x,y) in zip(fishers, fish_elem)]
-
-    return fishers
-
-
-def compute_fisher_for_model(model, dataset, fisher_samples=-1, sigma_sq=-1):
+    
     variables = [p for p in model.parameters()]
-    # list of the model variables initialized to zero
     fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
-
     n_examples = 0
 
     for batch_x, batch_y in dataset:
         print(n_examples)
         n_examples += batch_x.shape[0]
-        batch_fishers = _compute_exact_fisher_for_batch(
-            batch_x, batch_y, model, variables, sigma_sq
-        )
-        fishers = [x+y for (x,y) in zip(fishers, batch_fishers)]
+        
+        fishers_batch = torch.zeros((len(variables)),requires_grad=False)
+        for element_x, element_y in zip(batch_x, batch_y):
+            model.zero_grad()
+            fish_elem = fisher_single_example(element_x.unsqueeze(0), element_y.unsqueeze(0), sigma_sq)
+            fish_elem = [x.detach() for x in fish_elem]
+            fishers_batch = [x + y for (x,y) in zip(fishers_batch, fish_elem)]
+
+        fishers = [x+y for (x,y) in zip(fishers, fishers_batch)]
 
         if fisher_samples != -1 and n_examples > fisher_samples:
             break
-
+        
     for i, fisher in enumerate(fishers):
         fishers[i] = fisher / n_examples
 
     return fishers
 
 
-def _compute_exact_grads_for_batch(batch_x, batch_y, model, variables, sigma_sq):
+def compute_grads_for_model(model, dataset, grad_samples=-1, sigma_sq=-1):
     def grads_single_example(x, y, sigma_sq):
         model.zero_grad()
         logit = model(x)
@@ -69,34 +62,25 @@ def _compute_exact_grads_for_batch(batch_x, batch_y, model, variables, sigma_sq)
 
         return grad
 
-    grads = torch.zeros((len(variables)),requires_grad=False)
-
-    for element_x, element_y in zip(batch_x, batch_y):
-       grad_elem = grads_single_example(element_x.unsqueeze(0), element_y.unsqueeze(0), sigma_sq)
-       grad_elem = [x.detach() for x in grad_elem]
-       grads = [x + y for (x,y) in zip(grads, grad_elem)]
-
-    return grads
-
-
-def compute_grads_for_model(model, dataset, grad_samples=-1, sigma_sq=-1):
     variables = [p for p in model.parameters()]
-    # list of the model variables initialized to zero
     grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
-
     n_examples = 0
 
     for batch_x, batch_y in dataset:
         print(n_examples)
         n_examples += batch_x.shape[0]
-        batch_grads = _compute_exact_grads_for_batch(
-            batch_x, batch_y, model, variables, sigma_sq
-        )
+        batch_grads = torch.zeros((len(variables)),requires_grad=False)
+
+        for element_x, element_y in zip(batch_x, batch_y):
+            grad_elem = grads_single_example(element_x.unsqueeze(0), element_y.unsqueeze(0), sigma_sq)
+            grad_elem = [x.detach() for x in grad_elem]
+            batch_grads = [x + y for (x,y) in zip(batch_grads, grad_elem)]
+
         grads = [x+y for (x,y) in zip(grads, batch_grads)]
 
         if grad_samples != -1 and n_examples > grad_samples:
             break
-
+        
     for i, grad in enumerate(grads):
         grads[i] = grad / n_examples
 
