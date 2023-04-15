@@ -10,10 +10,10 @@ import hydra
 import torch.optim as optim
 import tqdm
 
-from fisher.model_merging.merging import merging_models_isotropic 
-from fisher.model_merging.data import load_models, load_fishers, create_dataset
-from fisher.train import inference
-from fisher.merge_shannon import shannon_loss
+from src.model_merging.merging import merging_models_isotropic 
+from src.model_merging.data import load_models, load_fishers, create_dataset
+from src.train import inference
+from src.merge_shannon import shannon_loss
 
 ############################################
 # Main

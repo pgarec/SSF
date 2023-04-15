@@ -18,15 +18,15 @@ from torch import nn
 # from manifold import cross_entropy_manifold
 from torch.distributions import MultivariateNormal
 from tqdm import tqdm
-from fisher.model_merging.datasets.pinwheel import make_pinwheel_data
-from fisher.metrics import accuracy, nll, brier, calibration
+from src.model_merging.datasets.pinwheel import make_pinwheel_data
+from src.metrics import accuracy, nll, brier, calibration
 from sklearn.metrics import brier_score_loss
 import hydra
-from fisher.model_merging.curvature import compute_fisher_diagonals, compute_gradients
-from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
-from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
-from fisher.model_merging.permutation import compute_permutations_init
-from fisher.model_merging.permutation import scaling_permutation, random_weight_permutation
+from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients
+from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
+from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
+from src.model_merging.permutation import compute_permutations_init
+from src.model_merging.permutation import scaling_permutation, random_weight_permutation
 import omegaconf
 
 # CONFIGURATION

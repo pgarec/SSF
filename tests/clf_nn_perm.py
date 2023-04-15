@@ -7,11 +7,11 @@
 import torch
 import hydra
 
-from fisher.model_merging.model import MLP
-from fisher.model_merging.data import load_models, load_fishers, load_grads, create_dataset
-from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
-from fisher.train import inference
-from fisher.merge_permutation import merging_models_permutation
+from src.model_merging.model import MLP
+from src.model_merging.data import load_models, load_fishers, load_grads, create_dataset
+from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
+from src.train import inference
+from src.merge_permutation import merging_models_permutation
 
 ############################################
 # Main

@@ -14,8 +14,6 @@ from torch.distributions.multivariate_normal import MultivariateNormal as Normal
 import torch.nn as nn
 import math
 
-from fisher.model_merging.curvature_regression import _compute_exact_grads_for_batch
-
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
 
@@ -102,8 +100,6 @@ for k in range(args.num_k):
 
     models.append({'m': m_k, 'iS': iS_k, 'S': S_k})
 
-# i think there is a tiny mistake on the equations
-
 ############################################
 # True Meta Posterior
 ############################################
@@ -150,13 +146,11 @@ class MetaPosterior(torch.nn.Module):
 
     def forward(self):
         prior = Normal(loc=torch.zeros(args.dim+1), covariance_matrix=args.alpha*torch.eye(args.dim+1))
-        # loss = (args.num_k - 1)*prior.log_prob(self.meta_theta.squeeze())
         loss = (1 - (1/args.num_k))*prior.log_prob(self.meta_theta.squeeze())
         for a in range(args.dim):
             # m = a+1
             m = 2
 
-            # average over permutations -- 
             loss_pred = 0.0
             for p in range(args.max_perm):
                 for k, model_k in enumerate(models):
@@ -179,9 +173,8 @@ class MetaPosterior(torch.nn.Module):
 
             loss_pred = loss_pred/(args.max_perm * m * args.num_k)
             loss += loss_pred.sum()
-            # masked_loss += loss_pred.sum()/args.dim
 
-        return -loss # minimization 
+        return -loss 
 
 ############################################
 # Definition of Meta-Model and ELBO fitting

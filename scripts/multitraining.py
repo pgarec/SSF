@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import wandb
 
-from fisher.model_merging.model import MLP
-from fisher.model_merging.curvature import compute_and_store_fisher_diagonals, compute_and_store_gradients
-from fisher.model_merging.data import create_dataset
-from fisher.train import train, inference 
-from fisher.evaluation import evaluate_techniques
+from src.model_merging.model import MLP
+from src.model_merging.curvature import compute_and_store_fisher_diagonals, compute_and_store_gradients
+from src.model_merging.data import create_dataset
+from src.train import train, inference 
+from src.evaluation import evaluate_techniques
 
 
 @hydra.main(config_path="./configurations", config_name="multitrain.yaml")

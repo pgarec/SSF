@@ -14,10 +14,10 @@ import torch.nn as nn
 import numpy as np
 from sklearn.manifold import TSNE
 
-from fisher.model_merging.model import MLP
-from fisher.model_merging.data import load_models, load_fishers, create_dataset
-from fisher.model_merging.merging import merging_models_fisher_subsets
-from fisher.train import inference
+from src.model_merging.model import MLP
+from src.model_merging.data import load_models, load_fishers, create_dataset
+from src.model_merging.merging import merging_models_fisher_subsets
+from src.train import inference
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'

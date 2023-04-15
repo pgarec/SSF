@@ -17,12 +17,12 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 import random
 
-from fisher.model_merging.model import clone_model
-from fisher.model_merging.data import load_models_regression, load_fishers, create_dataset, load_grads
-from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
-from fisher.model_merging.model import MLP_regression
-from fisher.train_regression import train, inference
-from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation
+from src.model_merging.model import clone_model
+from src.model_merging.data import load_models_regression, load_fishers, create_dataset, load_grads
+from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
+from src.model_merging.model import MLP_regression
+from src.train_regression import train, inference
+from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation
 from model_merging.fisher_regression import compute_and_store_fisher_diagonals, compute_and_store_gradients
 from model_merging.permutation import compute_permutations_init, l2_permutation
 
