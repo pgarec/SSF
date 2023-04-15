@@ -22,7 +22,7 @@ from fisher.model_merging.datasets.pinwheel import make_pinwheel_data
 from fisher.metrics import accuracy, nll, brier, calibration
 from sklearn.metrics import brier_score_loss
 import hydra
-from fisher.model_merging.curvature import compute_fisher_diags_init, compute_grads_init
+from fisher.model_merging.curvature import compute_and_store_fisher_diagonals_init, compute_grads_init
 from fisher.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
 from fisher.model_merging.permutation import compute_permutations_init
@@ -222,7 +222,7 @@ isotropic_model = merging_models_isotropic(output_model, models)
 print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
 
 output_model = clone_model(models[0], num_features, H, num_output, seed)
-fishers = [compute_fisher_diags_init(m, train_loader, num_clusters) for m in models]
+fishers = [compute_and_store_fisher_diagonals_init(m, train_loader, num_clusters) for m in models]
 fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 

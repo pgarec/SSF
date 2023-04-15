@@ -20,7 +20,7 @@ data:
   fisher_path: "./fisher/computed_fishers/"
   grad_path: "./fisher/computed_grads/"
   model_path: "./fisher/models/"
-  perm_path: "./fisher/perms/"
+  perm_path: "./fisher/computed_permutations/"
 
   m: 200
   permutations: 5

@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 
 from model_merging.model import MLP
-from model_merging.curvature import compute_fisher_diags, compute_fisher_grads
+from model_merging.curvature import compute_and_store_fisher_diagonals, compute_and_store_gradients
 from model_merging.data import create_dataset
 from model_merging.permutation import l2_permutation, compute_permutations
 
@@ -141,7 +141,7 @@ def train_subsets(cfg):
 
         if cfg_subset.train.fisher:
             cfg_subset.train.name = name
-            compute_fisher_diags(cfg_subset)
+            compute_and_store_fisher_diagonals(cfg_subset)
  
 
 @hydra.main(config_path="./configurations", config_name="train.yaml")
@@ -179,10 +179,10 @@ def main(cfg):
         inference(cfg, model, test_loader, criterion)
 
         if cfg.train.fisher_diagonal:
-            compute_fisher_diags(model, name, cfg.data.fisher_path, train_loader, cfg.data.n_classes)
+            compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, train_loader, cfg.data.n_classes)
 
         if cfg.train.fisher_gradients:
-            compute_fisher_grads(model, name, cfg.data.grad_path, train_loader, cfg.data.n_classes)
+            compute_and_store_gradients(model, name, cfg.data.grad_path, train_loader, cfg.data.n_classes)
 
         if cfg.train.weight_permutations:
             name_perm = "{}{}_{}_perm_epoch{}.pt".format(
@@ -192,8 +192,8 @@ def main(cfg):
             )
 
             # model_perm = l2_permutation(cfg, model)
-            torch.save(model_perm.state_dict(), name_perm)
-            compute_permutations(cfg, name_perm)
+            # torch.save(model_perm.state_dict(), name_perm)
+            # compute_permutations(cfg, name_perm)
 
 
 if __name__ == "__main__":

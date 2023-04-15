@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 
 from fisher.model_merging.model import MLP
-from fisher.model_merging.curvature import compute_fisher_diags, compute_fisher_grads
+from fisher.model_merging.curvature import compute_and_store_fisher_diagonals, compute_and_store_gradients
 from fisher.model_merging.data import create_dataset
 from fisher.train import train, inference 
 from fisher.evaluation import evaluate_techniques
@@ -37,10 +37,10 @@ def main(cfg):
         inference(cfg, model, test_loader, criterion)
 
         if cfg.train.fisher_diagonal:
-            compute_fisher_diags(cfg, path)
+            compute_and_store_fisher_diagonals(cfg, path)
 
         if cfg.train.fisher_gradients:
-            compute_fisher_grads(cfg, path)
+            compute_and_store_gradients(cfg, path)
 
     evaluate_techniques(cfg, name_models) 
 

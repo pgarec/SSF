@@ -23,7 +23,7 @@ from fisher.model_merging.merging import merging_models_fisher, merging_models_i
 from fisher.model_merging.model import MLP_regression
 from fisher.train_regression import train, inference
 from fisher.merge_permutation import merging_models_permutation, merging_models_weight_permutation
-from model_merging.fisher_regression import compute_fisher_diags, compute_fisher_grads
+from model_merging.fisher_regression import compute_and_store_fisher_diagonals, compute_and_store_gradients
 from model_merging.permutation import compute_permutations_init, l2_permutation
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
@@ -95,8 +95,8 @@ def main(cfg):
         cfg.train.epochs = random.randint(30,50)
 
         name = train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
-        compute_fisher_diags(cfg, name, train_loader)
-        compute_fisher_grads(cfg, name, train_loader)
+        compute_and_store_fisher_diagonals(cfg, name, train_loader)
+        compute_and_store_gradients(cfg, name, train_loader)
         model.eval()
         models.append(model)
         names.append(name)

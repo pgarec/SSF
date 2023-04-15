@@ -25,7 +25,7 @@ data:
   unbalanced: []
   fisher_path: "./computed_fishers/"
   grad_path: "./computed_grads/"
-  perm_path: "./perms/"
+  perm_path: "./computed_permutations/"
 
   model_path: "./models/"
   fisher_samples: 10000
