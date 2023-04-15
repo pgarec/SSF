@@ -18,7 +18,7 @@ data:
   n_models: 2
   image_shape: 784
   unbalanced: []
-  fisher_path: "./fisher_diags/"
+  fisher_path: "./computed_fishers/"
   model_path: "./models/"
 
 models:

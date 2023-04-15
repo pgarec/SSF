@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 
 from model_merging.model import MLP_regression
-from model_merging.fisher_regression import compute_fisher_diags, compute_fisher_grads
+from model_merging.curvature_regression import compute_fisher_diags, compute_fisher_grads
 from model_merging.data import create_dataset
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']

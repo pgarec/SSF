@@ -14,7 +14,7 @@ from torch.distributions.multivariate_normal import MultivariateNormal as Normal
 import torch.nn as nn
 import math
 
-from fisher.model_merging.fisher_regression import _compute_exact_grads_for_batch
+from fisher.model_merging.curvature_regression import _compute_exact_grads_for_batch
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'

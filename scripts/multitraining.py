@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 
 from fisher.model_merging.model import MLP
-from fisher.model_merging.fisher import compute_fisher_diags, compute_fisher_grads
+from fisher.model_merging.curvature import compute_fisher_diags, compute_fisher_grads
 from fisher.model_merging.data import create_dataset
 from fisher.train import train, inference 
 from fisher.evaluation import evaluate_techniques

@@ -17,8 +17,8 @@ data:
   n_classes: 4
   image_shape: 784
   model_path: "./models/"
-  grad_path: "./grad_diags/"
-  fisher_path: "./fisher_diags/"
+  grad_path: "./computed_grads/"
+  fisher_path: "./computed_fishers/"
   results_path: "./results/"
   plot: True
   permutations: 10

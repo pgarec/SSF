@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 
 from model_merging.model import MLP
-from model_merging.fisher import compute_fisher_diags, compute_fisher_grads
+from model_merging.curvature import compute_fisher_diags, compute_fisher_grads
 from model_merging.data import create_dataset
 from model_merging.permutation import l2_permutation, compute_permutations
 

@@ -20,7 +20,7 @@ data:
   max_samples_test: 0
   image_shape: 784
   unbalanced: []
-  fisher_path: "./fisher/fisher_diags/"
+  fisher_path: "./fisher/computed_fishers/"
   model_path: "./fisher/models/"
 
 models:

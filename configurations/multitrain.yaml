@@ -23,8 +23,8 @@ data:
   subset_length: 0
   image_shape: 784
   unbalanced: []
-  fisher_path: "./fisher/fisher_diags/"
-  grad_path: "./fisher/grad_diags/"
+  fisher_path: "./fisher/computed_fishers/"
+  grad_path: "./fisher/computed_grads/"
   model_path: "./fisher/models/"
   results_path: "./results/"
 
