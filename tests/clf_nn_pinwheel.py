@@ -213,7 +213,7 @@ metatheta = nn.utils.parameters_to_vector(parameters)
 print("Number of parameters: {}".format(len(metatheta)))
 
 for n, model in enumerate(models):
-    print("Loss model {}: {}".format(n, evaluate_model(model, val_loader, criterion)))
+    print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
 
 output_model = clone_model(models[0], num_features, H, num_output, seed)
 isotropic_model = merging_models_isotropic(output_model, models)
