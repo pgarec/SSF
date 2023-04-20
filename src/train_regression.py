@@ -7,7 +7,7 @@ import numpy as np
 import wandb
 
 from model_merging.model import MLP_regression
-from model_merging.curvature_regression import compute_and_store_fisher_diagonalssher_diagonals, compute_and_store_gradientsadients
+from model_merging.curvature_regression import compute_and_store_fisher_diagonals, compute_and_store_gradients
 from model_merging.data import create_dataset
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
@@ -40,7 +40,6 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
             loss.backward()
             optimizer.step()
             train_loss += loss
-            # wandb.log({"Training loss": loss/len(train_loader)})
 
 
         train_loss = train_loss.detach()/len(train_loader)
@@ -57,7 +56,6 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
                 out = model(x.to(device))
                 loss = criterion(out,y)
                 val_loss += loss
-            # wandb.log({"Validation loss": loss/len(val_loader)})
             print(
                 f"Epoch [{epoch + 1}/{cfg.train.epochs}], Validation Loss: {val_loss/len(test_loader):.4f}"
             )
@@ -127,7 +125,7 @@ def main(cfg):
         compute_and_store_fisher_diagonals(cfg, name)
 
     if cfg.train.fisher_gradients:
-        compute_and_store_gradientsadients(cfg, name)
+        compute_and_store_gradients(cfg, name)
 
 
 if __name__ == "__main__":

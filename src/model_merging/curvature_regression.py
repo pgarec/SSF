@@ -9,14 +9,14 @@ import math
 
 
 def log_prob(logit, y, sigma_sq):
+    sigma_sq = 0.01
     sigma_sq = torch.tensor([sigma_sq])
-    logprob = - 0.5*torch.log(2*torch.tensor([math.pi])) - 0.5*torch.log(sigma_sq) - ((0.5*(logit-y)**2)/sigma_sq)
+    logprob = - 0.5*torch.log(2*torch.tensor([math.pi])) - 0.5*torch.log(sigma_sq) - ((0.5*(1/sigma_sq)*(logit-y)**2))
 
     return logprob
 
 
 def compute_fisher_model(model, dataset, fisher_samples=-1, sigma_sq=-1):
-
     def fisher_single_example(x, y, sigma_sq):
         logit = model(x)
         lp = log_prob(logit, y, sigma_sq)
@@ -53,12 +53,47 @@ def compute_fisher_model(model, dataset, fisher_samples=-1, sigma_sq=-1):
 
 
 def compute_gradients_model(model, dataset, grad_samples=-1, sigma_sq=-1):
-
     def grads_single_example(x, y, sigma_sq):
         model.zero_grad()
         logit = model(x)
         lp = log_prob(logit, y, sigma_sq)
         lp.backward()
+        grad = [p.grad.clone() for p in model.get_trainable_parameters()]
+        # grad = [p.grad.clone() for p in model.parameters()]
+
+        return grad
+
+    variables = [p for p in model.parameters()]
+    grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
+    n_examples = 0
+
+    for batch_x, batch_y in dataset:
+        print(n_examples)
+        n_examples += batch_x.shape[0]
+        batch_grads = torch.zeros((len(variables)),requires_grad=False)
+
+        for element_x, element_y in zip(batch_x, batch_y):
+            grad_elem = grads_single_example(element_x.unsqueeze(0), element_y.unsqueeze(0), sigma_sq)
+            grad_elem = [x.detach() for x in grad_elem]
+            batch_grads = [x + y for (x,y) in zip(batch_grads, grad_elem)]
+
+        grads = [x+y for (x,y) in zip(grads, batch_grads)]
+
+        if grad_samples != -1 and n_examples > grad_samples:
+            break
+            
+    # for i, grad in enumerate(grads):
+    #     grads[i] = grad / n_examples
+
+    return grads
+
+
+def compute_gradients_model_mse(model, dataset, grad_samples=-1, sigma_sq=-1):
+    def grads_single_example(x, y, sigma_sq):
+        model.zero_grad()
+        logit = model(x)
+        loss = criterion(logit, y)
+        loss.backward()
         grad = [p.grad.clone() for p in model.parameters()]
 
         return grad
@@ -66,6 +101,7 @@ def compute_gradients_model(model, dataset, grad_samples=-1, sigma_sq=-1):
     variables = [p for p in model.parameters()]
     grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
     n_examples = 0
+    criterion = torch.nn.MSELoss()
 
     for batch_x, batch_y in dataset:
         print(n_examples)

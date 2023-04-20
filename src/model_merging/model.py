@@ -72,7 +72,7 @@ class MLP(nn.Module):
     
     def get_trainable_parameters(self):
         return [param for param in self.parameters() if param.requires_grad]
-    
+  
     def get_featuremap_trainable_parameters(self):
         return [param for param in self.feature_map.parameters() if param.requires_grad]
     
@@ -90,10 +90,10 @@ class MLP_regression(nn.Module):
         self.hidden_dim = cfg.train.hidden_dim
         self.model = nn.Sequential(
             nn.Linear(cfg.data.dimensions, self.hidden_dim),
-            # nn.ReLU(),
+            # nn.ReLU(),
             nn.Tanh(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.ReLU(),
+            # nn.ReLU(),
             nn.Tanh(),
             nn.Linear(self.hidden_dim, 1),
         )
@@ -112,7 +112,7 @@ class MLP_regression(nn.Module):
     
     def get_trainable_parameters(self):
         return [param for param in self.parameters() if param.requires_grad]
-  
+    
     def get_regressor_trainable_parameters(self):
         return [param for param in self.regressor.parameters() if param.requires_grad]
     

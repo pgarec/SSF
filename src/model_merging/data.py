@@ -106,7 +106,7 @@ def load_grads(cfg, names=[]):
     else:
         for model_name in names:
             name = model_name.split('/')[-1][:-3] 
-            path = cfg.data.fisher_path + name
+            path = cfg.data.grad_path + name
             grad = load_file(path)            
             grads.append(grad)
 

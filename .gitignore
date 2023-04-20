@@ -2,13 +2,13 @@ data/
 baselines/nn/wandb/
 outputs/
 wandb/
-fisher/data
-fisher/fisher_diags
-fisher/models
-fisher/grad_diags
-fisher/perms
-fisher/results
-fisher/model_merging/__pycache__
+src/data
+src/computed_fishers
+src/models
+src/computer_diagonals
+src/computed_permutations
+src/results
+src/model_merging/__pycache__
 scripts/results
 test/results
 

@@ -9,7 +9,7 @@ hydra:
     dir: .
 
 data:
-  batch_size_train: 16
+  batch_size_train: 4
   batch_size_test: 1
   data_path: "./data"
   dataset: "SNELSON"
@@ -17,25 +17,25 @@ data:
   n_models: 3
   max_samples_train: 0
   max_samples_test: 0
-  fisher_path: "./fisher/computed_fishers/"
-  grad_path: "./fisher/computed_grads/"
-  model_path: "./fisher/models/"
+  fisher_path: "./src/computed_fishers/"
+  grad_path: "./src/computed_gradients/"
+  model_path: "./src/models/"
   fisher_samples: 10000
   
   plot: True
   permutations: 20
-  m: 100
+  m: 200
   weight_permutations: 20
   layer_weight_permutation: 0
 
 train:
   lr: 0.01
   perm_lr: 0.01
-  hidden_dim: 16
-  epochs: 100
-  epochs_perm: 5000
+  hidden_dim: 32
+  epochs: 200
+  epochs_perm: 1000
   step_size: 212
-  weight_decay: 0.01
+  weight_decay: 0.001
   gamma: 0.1
   momentum: 0.9
   plot_sample: False

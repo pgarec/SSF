@@ -20,7 +20,7 @@ from torch.distributions import MultivariateNormal
 from tqdm import tqdm
 from src.model_merging.datasets.pinwheel import make_pinwheel_data
 import hydra
-from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients
+from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients, compute_gradients_double
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
 from src.model_merging.permutation import compute_permutations_init
@@ -28,7 +28,7 @@ from src.model_merging.permutation import scaling_permutation, random_weight_per
 import omegaconf
 
 # CONFIGURATION
-seed = 40
+seed = -1
 
 if seed > -1:
     np.random.seed(seed)
@@ -66,6 +66,11 @@ class Model(nn.Module):
     
     def get_trainable_parameters(self):
         return [param for param in self.parameters() if param.requires_grad]
+    
+    def get_trainable_linear_parameters(self):
+        for p in self.named_parameters():
+            print(p)
+        return [param for param in self.named_parameters() if param.requires_grad and isinstance(param, nn.Linear)]
 
 
 def clone_model(model, num_features, H, num_output, seed):
@@ -168,7 +173,7 @@ print(num_features)
 num_output = num_clusters
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models = []
-n_models = 5
+n_models = 3
 max_epoch = 100
 
 for m in range(n_models):
@@ -176,6 +181,7 @@ for m in range(n_models):
     weight_decay = cfg.train.weight_decay * 2
     optimizer = torch.optim.SGD(model.parameters(),  lr=1e-2, momentum=cfg.train.momentum, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss(reduction='sum')
+    # criterion = nn.CrossEntropyLoss()
 
     best_valid_accuracy = 0
     max = max_epoch*(m+1)
@@ -225,8 +231,8 @@ fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
 # metamodel = models[1]
-metamodel = isotropic_model
-# metamodel = Model(num_features, H, num_output, seed)
+# metamodel = isotropic_model
+metamodel = Model(num_features, H, num_output, seed)
 grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
