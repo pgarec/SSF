@@ -7,9 +7,6 @@ from .data import create_dataset
 import random
 import numpy as np
 
-from backpack import backpack
-from backpack.extensions import BatchGrad
-
 
 def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
 
