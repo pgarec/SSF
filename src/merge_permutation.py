@@ -113,6 +113,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         plt.xlabel('Steps')
         plt.ylabel('Test loss')
         plt.show()
+        plt.savefig('./images/{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed))
     
     return metamodel
 
