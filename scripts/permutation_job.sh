@@ -10,4 +10,4 @@
 #BSUB -o ./lsf_output/modeldriven_%J_%I.out
 #BSUB -e ./lsf_output/modeldriven_%J_%I.err
 source ../../venv/bin/activate
-python ./tests/clf_nn_pinwheel.py 
+python3 ./tests/clf_nn_pinwheel.py 
