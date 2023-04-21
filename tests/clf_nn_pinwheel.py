@@ -242,12 +242,12 @@ print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, cr
 metamodel = Model(num_features, H, num_output, seed)
 grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
 permutations = compute_permutations(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
-perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion, plot=True)
-print("Weight permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+weight_symmetries_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion, plot=True)
+print("Weight permutation model loss: {}".format(evaluate_model(weight_symmetries_model, val_loader, criterion)))
 
 # print("scaled0: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
-# scaled = scaling_permutation(cfg, isotropic_model, 0, 5)
-# print("scaled1: {}".format(evaluate_model(scaled, val_loader, criterion)))
+# scaling_symmetries_model = scaling_permutation(cfg, isotropic_model, 0, 5)
+# print("scaled1: {}".format(evaluate_model(scaling_symmetries_model, val_loader, criterion)))
 
 # isotropic_model = merging_models_isotropic(output_model, models)
 # print("weight0: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
