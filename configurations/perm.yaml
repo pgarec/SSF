@@ -41,7 +41,7 @@ train:
   weight_decay: 0.01
   hidden_dim: 16
   epochs: 50
-  epochs_perm: 1000
+  epochs_perm: 3000000
   step_size: 212
   gamma: 0.1
   momentum: 0.9
