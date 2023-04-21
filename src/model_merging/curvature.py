@@ -54,53 +54,6 @@ def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
     return fishers
 
 
-def compute_gradients_model_double(model, dataset, num_classes, grad_samples=-1):
-    
-    def gradients_single_example(single_example_batch):
-        # Cast the input to float64
-        logits = model(single_example_batch)
-        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-        grads = []
-
-        for i in range(num_classes):
-            model.zero_grad()
-            log_prob = log_probs[0][i]
-            log_prob.backward(retain_graph=True)
-            grad = [p.grad.clone().double() for p in model.parameters()] # Cast the gradients to float64
-            g = [g for g in grad]
-            grads.append(g)
-        
-        log_prob.backward()
-        model.zero_grad()
-
-        return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*grads)]
-
-    variables = [p for p in model.parameters()]
-    grads = [torch.zeros(w.shape, requires_grad=False).double() for w in variables] # Cast the initial gradients to float64
-    
-    n_examples = 0
-
-    for batch, _ in dataset:
-        n_examples += batch.shape[0]
-        grads_batch = torch.zeros((len(variables)),requires_grad=False).double() # Cast the batch gradients to float64
-
-        for element in batch:
-            model.zero_grad()
-            grad_elem = gradients_single_example(element.unsqueeze(0))
-            grad_elem = [x.detach().double() for x in grad_elem] # Cast the gradients to float64
-            grads_batch = [x.double() + y for (x,y) in zip(grads_batch, grad_elem)] # Cast x to float64
-            
-        grads = [x.double() + y for (x,y) in zip(grads, grads_batch)] # Cast x to float64
-
-        if grad_samples != -1 and n_examples > grad_samples:
-            break
-
-    for i, grad in enumerate(grads):
-        grads[i] = grad / n_examples
-
-    return grads
-
-
 def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
     
     def gradients_single_example(single_example_batch):
@@ -157,12 +110,6 @@ def compute_fisher_diagonals(model, train_loader, num_classes, fisher_samples=10
 
 def compute_gradients(model, train_loader, num_classes, grad_samples=10000):
     grad_diag = compute_gradients_model(model, train_loader, num_classes, grad_samples=grad_samples)
-    
-    return grad_diag
-
-
-def compute_gradients_double(model, train_loader, num_classes, grad_samples=10000):
-    grad_diag = compute_gradients_model_double(model, train_loader, num_classes, grad_samples=grad_samples)
     
     return grad_diag
 
