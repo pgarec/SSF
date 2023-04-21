@@ -68,8 +68,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
-            P_mr = torch.outer(grads_m, grads_r) / 10000 
-            P_mm = torch.outer(grads_m, grads_m) / 10000 + cfg.train.weight_decay * torch.eye(m)
+            P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
+            P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
             
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
             p_pred = torch.diagonal(P_mm)
@@ -214,8 +214,8 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
             perms = permutations[k]
 
             for perm_model in perms:
-                model = implement_permutation(model, perm_model, cfg.data.layer_weight_permutation)            
                 grad = grads[k]
+                model = implement_permutation(model, perm_model, cfg.data.layer_weight_permutation)            
                 grad = implement_permutation_grad(grad, perm_model, cfg.data.layer_weight_permutation)
                 params = model.get_trainable_parameters()
                 theta = nn.utils.parameters_to_vector(params)
@@ -228,12 +228,12 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
 
                 grads_r = grad[perm[m:]]
                 grads_m = grad[perm[:m]]
-                precision_m = torch.clamp(grads_m ** 2, min=1e-40)
-                precision_mr = torch.outer(grads_m, grads_r)
-
-                m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-                posterior = n_models*logprob_normal(metatheta_m, m_pred, precision_m).sum()
-                posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
+                P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
+                P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
+                
+                m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
+                p_pred = torch.diagonal(P_mm)
+                posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
 
                 cond_prior_m = torch.zeros(m)    
                 cond_prior_prec = cfg.train.weight_decay * torch.ones(m)

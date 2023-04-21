@@ -30,6 +30,7 @@ data:
   scaling_perm_max: 50
   number_scalations: 5
   plot: True
+  grad_samples: 1000
 
 models:
   model0: "MNIST_0123_epoch20"
