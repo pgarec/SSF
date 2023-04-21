@@ -59,7 +59,6 @@ def compute_gradients_model(model, dataset, grad_samples=-1, sigma_sq=-1):
         lp = log_prob(logit, y, sigma_sq)
         lp.backward()
         grad = [p.grad.clone() for p in model.get_trainable_parameters()]
-        # grad = [p.grad.clone() for p in model.parameters()]
 
         return grad
 

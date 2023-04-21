@@ -137,8 +137,6 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
             grad =  nn.utils.parameters_to_vector(grad)
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
-            precision_m = torch.clamp(grads_m ** 2, min=1e-20)
-            precision_mr = torch.outer(grads_m, grads_r)
 
             # model = l2_permutation(cfg, model)
 
@@ -151,10 +149,14 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
                 theta_m = theta[perm[:m]]
                 metatheta_r = metatheta[perm[m:]]
                 metatheta_m = metatheta[perm[:m]]
-    
-                m_pred = theta_m - (1/precision_m) * (precision_mr @ (metatheta_r - theta_r))
-                posterior = logprob_normal(metatheta_m, m_pred, precision_m).sum()
 
+                P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
+                P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
+                
+                m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
+                p_pred = torch.diagonal(P_mm)
+                posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
+    
                 cond_prior_m = torch.zeros(m)    
                 cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
                 prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
