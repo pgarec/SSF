@@ -116,7 +116,7 @@ def compute_permutations_for_model(model, layer_wp, weight_permutations):
     return list_indices
 
 
-def compute_permutations(model, model_name, perm_path, layer_wp=0, weight_permutations=100):
+def compute_and_store_permutations(model, model_name, perm_path, layer_wp=0, weight_permutations=100):
     print("Starting permutations computation")
     permutations = compute_permutations_for_model(model, layer_wp, weight_permutations)
     print("Permutations computed. Saving to file...")
@@ -125,7 +125,7 @@ def compute_permutations(model, model_name, perm_path, layer_wp=0, weight_permut
     print("Permutations saved to file")
 
 
-def compute_permutations_init(models, layer_wp=0, weight_permutations=100):
+def compute_permutations(models, layer_wp=0, weight_permutations=100):
     permutations = []
 
     for model in models:
