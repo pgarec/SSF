@@ -4,7 +4,6 @@ import torch.optim as optim
 import hydra
 import matplotlib.pyplot as plt
 import numpy as np
-import wandb
 
 from model_merging.model import MLP
 from model_merging.curvature import compute_and_store_fisher_diagonals, compute_and_store_gradients
