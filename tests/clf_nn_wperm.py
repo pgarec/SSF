@@ -20,7 +20,7 @@ import torch.nn as nn
 # Main
 ############################################
 
-@hydra.main(config_path="./configurations", config_name="perm.yaml")
+@hydra.main(config_path="./configurations", config_name="perm_mnist.yaml")
 def main(cfg):
     grads = load_grads(cfg)
     models = load_models(cfg)

@@ -1,0 +1,53 @@
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+
+data:
+  batch_size_train: 64
+  batch_size_test: 64
+  data_path: "./data"
+  dataset: "MNIST"
+  classes: [0,1,2,3]
+  n_classes: 4
+  image_shape: 784
+  unbalanced: []
+  fisher_path: "./fisher/computed_fishers/"
+  grad_path: "./fisher/computed_grads/"
+  model_path: "./fisher/models/"
+  perm_path: "./fisher/computed_permutations/"
+
+  m: 200
+  permutations: 5
+  weight_permutations: 5
+  layer_weight_permutation: 2
+  scaling_perm_min: 1
+  scaling_perm_max: 5
+  number_scalations: 5
+  plot: True
+  grad_samples: 10000
+
+models:
+  model0: "MNIST_0123_epoch20"
+  model1: "MNIST_0123_epoch30"
+
+train:
+  lr: 0.01
+  perm_lr: 0.01
+  weight_decay: 0.01
+  hidden_dim: 16
+  epochs: 50
+  epochs_perm: 3000000
+  step_size: 212
+  gamma: 0.1
+  momentum: 0.9
+  fisher: True
+  name: ""
+  plot_sample: False
+  plot: False
+  torch_seed: 40
