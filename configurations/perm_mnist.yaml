@@ -17,10 +17,10 @@ data:
   n_classes: 4
   image_shape: 784
   unbalanced: []
-  fisher_path: "./fisher/computed_fishers/"
-  grad_path: "./fisher/computed_grads/"
-  model_path: "./fisher/models/"
-  perm_path: "./fisher/computed_permutations/"
+  fisher_path: "./src/computed_fishers/"
+  grad_path: "./src/computed_gradients/"
+  model_path: "./src/models/"
+  perm_path: "./src/computed_permutations/"
 
   m: 200
   permutations: 5
@@ -31,6 +31,7 @@ data:
   number_scalations: 5
   plot: True
   grad_samples: 10000
+  n_examples: 10000
 
 models:
   model0: "MNIST_0123_epoch20"

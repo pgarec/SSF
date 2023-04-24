@@ -228,7 +228,6 @@ fishers = [compute_fisher_diagonals(m, train_loader, num_clusters) for m in mode
 fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-metamodel = models[1]
 metamodel = isotropic_model
 # metamodel = Model(num_features, H, num_output, seed)
 grads = [compute_gradients(m, train_loader, num_clusters) for m in models]

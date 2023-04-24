@@ -115,10 +115,10 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         plt.show()
         plt.savefig('./images/{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed))
 
-        with open('./images/inference_{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
+        with open('./images/inference_{}_{}epochsperm_{}seed.pkl'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
             pickle.dump(inference_loss, f)
 
-        with open('./images/permutation_{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
+        with open('./images/permutation_{}_{}epochsperm_{}seed.pkl'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
             pickle.dump(perm_losses, f)
 
     return metamodel
