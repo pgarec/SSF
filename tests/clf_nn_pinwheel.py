@@ -28,7 +28,8 @@ from src.model_merging.permutation import scaling_permutation, random_weight_per
 import omegaconf
 
 # CONFIGURATION
-seed = 40
+cfg = omegaconf.OmegaConf.load('./configurations/perm_pinwheel.yaml')
+seed = cfg.train.torch_seed
 
 if seed > -1:
     np.random.seed(seed)
@@ -117,7 +118,6 @@ def evaluate_model_in_depth(model, val_loader, criterion, plot=False):
         plt.xticks(list(y_classes.keys()))
         plt.show()
 
-cfg = omegaconf.OmegaConf.load('./configurations/perm_pinwheel.yaml')
 
 sns.set_style('darkgrid')
 palette = sns.color_palette('colorblind')

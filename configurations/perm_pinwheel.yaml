@@ -19,6 +19,7 @@ data:
   model_path: "./fisher/models/"
   perm_path: "./fisher/computed_permutations/"
 
+  dataset: "PINWHEEL"
   m: 200
   permutations: 5
   weight_permutations: 5
@@ -36,7 +37,7 @@ train:
   weight_decay: 0.01
   hidden_dim: 16
   epochs: 50
-  epochs_perm: 5000
+  epochs_perm: 15000
   step_size: 212
   gamma: 0.1
   momentum: 0.9

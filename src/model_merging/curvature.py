@@ -68,7 +68,6 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
             log_prob.backward(retain_graph=True)
             grad = [p.grad.clone() for p in model.parameters()]
             g = [probs[0][i] * g for g in grad]
-            # g = [g for g in grad]
             grads.append(g)
         
         log_prob.backward()
@@ -95,9 +94,6 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
 
         if grad_samples != -1 and n_examples > grad_samples:
             break
-
-    # for i, grad in enumerate(grads):
-    #     grads[i] = grad / n_examples
 
     return grads
 
