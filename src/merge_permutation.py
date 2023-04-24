@@ -16,6 +16,7 @@ from model_merging.evaluation import evaluate_metamodel
 from model_merging.permutation import implement_permutation, implement_permutation_grad
 from model_merging.permutation import scaling_permutation, l2_permutation
 import numpy as np
+import pickle
 
 
 def logprob_normal(x, mu, precision):
@@ -68,8 +69,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
-            P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
-            P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
+            P_mr = torch.outer(grads_m, grads_r) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m)
+            P_mm = torch.outer(grads_m, grads_m) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m)
             
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
             p_pred = torch.diagonal(P_mm)
@@ -114,7 +115,13 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         plt.ylabel('Test loss')
         plt.show()
         plt.savefig('./images/{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed))
-    
+
+        with open('./images/inference_{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
+            pickle.dump(inference_loss, f)
+
+        with open('./images/permutation_{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
+            pickle.dump(perm_losses, f)
+
     return metamodel
 
 
@@ -135,8 +142,11 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
             model = models[k]
             grad = grads[k]
             grad =  nn.utils.parameters_to_vector(grad)
-            grads_r = grad[perm[m:]]
-            grads_m = grad[perm[:m]]
+            grads_r = grad[perm[m:]] 
+            grads_m = grad[perm[:m]] 
+
+            P_mr = torch.outer(grads_m, grads_r) / 350
+            P_mm = torch.outer(grads_m, grads_m) / 350 + cfg.train.weight_decay * torch.eye(m)
 
             # model = l2_permutation(cfg, model)
 
@@ -149,9 +159,6 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
                 theta_m = theta[perm[:m]]
                 metatheta_r = metatheta[perm[m:]]
                 metatheta_m = metatheta[perm[:m]]
-
-                P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
-                P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
                 
                 m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
                 p_pred = torch.diagonal(P_mm)
@@ -161,14 +168,13 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
                 cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
                 prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
 
-                # loss += (posterior + prior)/(m * n_perm)
                 loss += (posterior + prior)/(n_perm * n_models * n_scalations * m)
 
     return -loss
 
 
 def merging_models_scaling_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
-    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr)#, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     perm_losses = []
@@ -230,8 +236,10 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
 
                 grads_r = grad[perm[m:]]
                 grads_m = grad[perm[:m]]
-                P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
-                P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
+                # P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
+                # P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
+                P_mr = torch.outer(grads_m, grads_r) / 350
+                P_mm = torch.outer(grads_m, grads_m) / 350 + cfg.train.weight_decay * torch.eye(m)
                 
                 m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
                 p_pred = torch.diagonal(P_mm)
