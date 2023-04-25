@@ -103,8 +103,8 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         perm_losses.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
 
-        if it % 100000:
-            name = "{}metamodel_{}_{}epochs_{}classes".format(cfg.data.model_path, cfg.data.dataset, cfg.train.epochs_perm, cfg.data.n_classes)
+        if it % 10000:
+            name = "{}metamodel_{}_{}epochs_{}classes".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.n_classes)
             torch.save(metamodel.state_dict(), name)
 
     if plot:
