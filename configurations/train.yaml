@@ -17,14 +17,14 @@ data:
   max_samples_train: -1
   max_samples_test: -1
 
-  classes: [0,1,2,3]
-  n_classes: 4
+  classes: [0,1,2,3,4,5,6,7,8,9]
+  n_classes: 10
 
   subset_length: 0
   image_shape: 784
   unbalanced: []
   fisher_path: "./computed_fishers/"
-  grad_path: "./computed_grads/"
+  grad_path: "./computed_gradients/"
   perm_path: "./computed_permutations/"
 
   model_path: "./models/"
@@ -35,9 +35,9 @@ data:
   m: 500
 
 train:
-  lr: 0.01
+  lr: 0.05
   hidden_dim: 16
-  epochs: 40
+  epochs: 80
   epochs_perm: 500
   step_size: 212
   weight_decay: 0.01

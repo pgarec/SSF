@@ -13,7 +13,7 @@ def load_models(cfg, names=[]):
     if names == []:
         for model_name in cfg.models:
             model = MLP(cfg)
-            model.load_state_dict(torch.load(cfg.data.model_path+cfg.models[model_name]+".pt"))
+            model.load_state_dict(torch.load(cfg.data.model_path+cfg.models[model_name]+".pt"), strict=False)
             models.append(model)
     
     else:
@@ -21,7 +21,7 @@ def load_models(cfg, names=[]):
             model = MLP(cfg)
             name = model_name.split('/')[-1][:-3] 
             path = cfg.data.model_path + name + ".pt"
-            model.load_state_dict(torch.load(path))
+            model.load_state_dict(torch.load(path), strict=False)
             models.append(model)
 
     return models
