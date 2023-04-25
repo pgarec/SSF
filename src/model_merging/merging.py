@@ -42,7 +42,7 @@ def merging_models_fisher(
         
         d[k] = s / s_fisher
 
-    output_model.load_state_dict(d)
+    output_model.load_state_dict(d, strict=False)
        
     return output_model
 
@@ -113,9 +113,8 @@ def merging_models_isotropic(
         for m in mergeable_models:
             s = torch.add(s, m.get_parameter(k))
 
-        # print(s)
         d[k].data = s / len(mergeable_models)
 
-    output_model.load_state_dict(d)
+    output_model.load_state_dict(d, strict=False)
 
     return output_model

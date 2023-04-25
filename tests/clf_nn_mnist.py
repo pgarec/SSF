@@ -25,7 +25,7 @@ def main(cfg):
     grads = load_grads(cfg)
     models = load_models(cfg)
     fishers = load_fishers(cfg)
-    permutations = load_permutations(cfg)
+    # permutations = load_permutations(cfg)
     criterion = torch.nn.CrossEntropyLoss()
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()
@@ -69,7 +69,7 @@ def main(cfg):
     # WEIGHT PERMUTATION
     # models = load_models(cfg)
     # random_model = MLP(cfg)
-    # metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
+    # metamodel = isotropic_model
     # weight_perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, test_loader, criterion)
 
     # avg_loss = inference(cfg, weight_perm_model, test_loader, criterion)
