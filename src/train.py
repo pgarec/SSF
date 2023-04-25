@@ -152,7 +152,7 @@ def main(cfg):
         train_subsets(cfg)
     
     else:
-        dataset = create_dataset(cfg)
+        dataset = create_dataset(cfg)   
         train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
         model = MLP(cfg)
         optimizer = optim.SGD(
