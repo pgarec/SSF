@@ -105,7 +105,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         pbar.set_description(f'[Loss: {-l.item():.3f}')
 
         if it % 10000:
-            name = "{}metamodel_{}_{}epochs_{}classes".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.n_classes)
+            name = "{}metamodel_{}models_{}_{}epochs_{}classes".format(cfg.data.model_path, cfg.data.dataset, len(list(cfg.models)), it, cfg.data.n_classes)
             torch.save(metamodel.state_dict(), name)
 
     if plot:
