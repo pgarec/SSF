@@ -22,26 +22,20 @@ data:
   model_path: "./src/models/"
   perm_path: "./src/computed_permutations/"
 
-  m: 200
+  m: 6000
   permutations: 5
   weight_permutations: 5
   layer_weight_permutation: 2
   scaling_perm_min: 1
   scaling_perm_max: 5
   number_scalations: 5
-  plot: True
+  plot: False
   grad_samples: 10000
   n_examples: 10000
 
 models:
   model0: "MNIST_0123456789_epoch80"
   model1: "MNIST_0123456789_epoch100"
-  model2: "MNIST_0123456789_epoch90"
-  model3: "MNIST_0123456789_epoch120"
-  model4: "MNIST_0123456789_epoch72"
-  model5: "MNIST_0123456789_epoch88"
-  model6: "MNIST_0123456789_epoch96"
-  model7: "MNIST_0123456789_epoch53"
 
 train:
   initialization: ""
@@ -50,7 +44,7 @@ train:
   weight_decay: 0.01
   hidden_dim: 16
   epochs: 100
-  epochs_perm: 20000
+  epochs_perm: 5000
   step_size: 212
   gamma: 0.1
   momentum: 0.9
