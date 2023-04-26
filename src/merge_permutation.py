@@ -17,6 +17,7 @@ from model_merging.permutation import implement_permutation, implement_permutati
 from model_merging.permutation import scaling_permutation, l2_permutation
 import numpy as np
 import pickle
+import os
 
 
 def logprob_normal(x, mu, precision):
@@ -108,6 +109,10 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             torch.save(metamodel.state_dict(), name)
 
     if plot:
+        directory = "./images/{}_{}models_{}_{}epochs_seed{}/".format(cfg.data.dataset, len(list(cfg.models)), cfg.train.initialization, cfg.train.epochs_perm, cfg.train.torch_seed)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         plt.subplot(2,1,1)
         plt.plot(perm_losses)
         plt.xlabel('Permutations')
@@ -117,12 +122,12 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         plt.xlabel('Steps')
         plt.ylabel('Test loss')
         plt.show()
-        plt.savefig('./images/{}_{}epochsperm_{}seed.png'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed))
+        plt.savefig('{}plot.png'.format(directory))
 
-        with open('./images/inference_{}_{}epochsperm_{}seed.pkl'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
+        with open('{}inference_loss'.format(directory), 'wb') as f:
             pickle.dump(inference_loss, f)
 
-        with open('./images/permutation_{}_{}epochsperm_{}seed.pkl'.format(cfg.data.dataset,cfg.train.epochs_perm, cfg.train.torch_seed), 'wb') as f:
+        with open('{}perm_loss'.format(directory), 'wb') as f:
             pickle.dump(perm_losses, f)
 
     return metamodel

@@ -58,8 +58,9 @@ def main(cfg):
 
     # PERMUTATION
     models = load_models(cfg)
-    metamodel = MLP(cfg)
-    # metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
+    # metamodel = MLP(cfg)
+    cfg.train.initialization = "isotropic"
+    metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
     # metamodel = fisher_model
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion, plot=True)
 

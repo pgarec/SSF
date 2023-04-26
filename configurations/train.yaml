@@ -23,11 +23,11 @@ data:
   subset_length: 0
   image_shape: 784
   unbalanced: []
-  fisher_path: "./computed_fishers/"
-  grad_path: "./computed_gradients/"
-  perm_path: "./computed_permutations/"
+  fisher_path: "./src/computed_fishers/"
+  grad_path: "./src/computed_gradients/"
+  perm_path: "./src/computed_permutations/"
 
-  model_path: "./models/"
+  model_path: "./src/models/"
   fisher_samples: 10000
   weight_permutations: 200
   layer_wp: 2
@@ -35,9 +35,9 @@ data:
   m: 500
 
 train:
-  lr: 0.01
+  lr: 0.05
   hidden_dim: 16
-  epochs: 100
+  epochs: 80
   epochs_perm: 500
   step_size: 212
   weight_decay: 0.01
