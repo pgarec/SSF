@@ -73,7 +73,9 @@ def inference(cfg, model, test_loader, criterion):
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(test_loader):
             out = model(x.to(device))
+            print("out device {}".format(out.get_device()))
             batch_onehot = y.apply_(lambda i: y_classes[i]).to(device)
+            print("batch device {}".format(batch_onehot.get_device()))
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
             avg_loss[y] += loss.item()
             count[y] += 1
