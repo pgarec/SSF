@@ -38,7 +38,7 @@ def main(cfg):
     avg_loss = inference(cfg, models[0], test_loader, criterion)
     print("Model 0 - Average loss {}".format(avg_loss))
 
-    random_model = MLP(cfg)
+    random_model = MLP(cfg).to(device)
     avg_loss = inference(cfg, random_model, test_loader, criterion)
     print("Random untrained - Average loss {}".format(avg_loss))
 
