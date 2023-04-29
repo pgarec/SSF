@@ -80,8 +80,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
 
-            cond_prior_m = torch.zeros(m)    
-            cond_prior_prec = cfg.train.weight_decay * torch.ones(m)
+            cond_prior_m = torch.zeros(m).to(device)    
+            cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
             prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
             
             loss += (posterior + prior)/(m * n_perm)
