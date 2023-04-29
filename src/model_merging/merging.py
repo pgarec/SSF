@@ -14,6 +14,7 @@ def merging_models_fisher(
         favor_target_model=True):
     output_variables = get_mergeable_variables(output_model)
     variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     assert len({len(output_variables)} | set(len(v) for v in variables_to_merge)) == 1
 
@@ -28,7 +29,7 @@ def merging_models_fisher(
 
     for idx, k in enumerate(list(d.keys())):
         # iterate over models
-        s = torch.zeros_like(output_model.get_parameter(k)) 
+        s = torch.zeros_like(output_model.get_parameter(k)).to(device) 
         s_fisher = torch.zeros_like(output_model.get_parameter(k))
 
         for m in range(len(mergeable_models)):
