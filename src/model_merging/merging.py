@@ -43,7 +43,7 @@ def merging_models_fisher(
         
         d[k] = s / s_fisher
 
-    output_model.load_state_dict(d, strict=False)
+    output_model.load_state_dict(d, strict=False).to(device)
        
     return output_model
 
@@ -94,12 +94,8 @@ def merging_models_fisher_subsets(
             if not 'clf' in k:
                 d[k] = s / s_fisher
     
-    # assumption that the models are ordered in the config file
     d[clf_key] = torch.cat(clf, dim=0)
     output_model.load_state_dict(d)
-    # cfg.data.n_classes = int(cfg.data.n_classes/cfg.data.n_models)
-    # print(cfg.data.n_classes)
-
 
     return output_model
 
