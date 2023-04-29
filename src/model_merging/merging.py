@@ -30,7 +30,7 @@ def merging_models_fisher(
     for idx, k in enumerate(list(d.keys())):
         # iterate over models
         s = torch.zeros_like(output_model.get_parameter(k)).to(device) 
-        s_fisher = torch.zeros_like(output_model.get_parameter(k))
+        s_fisher = torch.zeros_like(output_model.get_parameter(k)).to(device)
 
         for m in range(len(mergeable_models)):
             diag = fishers[m] if isinstance(fishers[m], float) else fishers[m][idx]
