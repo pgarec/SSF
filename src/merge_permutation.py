@@ -59,7 +59,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
         perm.requires_grad = False
         for k in range(n_models):
             model = models[k].to(device)
-            grad = grads[k].to(device)
+            grad = grads[k]
             params = model.get_trainable_parameters()
             theta = nn.utils.parameters_to_vector(params)
             grad =  nn.utils.parameters_to_vector(grad)
@@ -72,8 +72,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
-            P_mr = torch.outer(grads_m, grads_r) / cfg.data.n_examples # + cfg.train.weight_decay * torch.eye(m)
-            P_mm = torch.outer(grads_m, grads_m) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m)
+            P_mr = torch.outer(grads_m, grads_r).to(device) / cfg.data.n_examples # + cfg.train.weight_decay * torch.eye(m)
+            P_mm = torch.outer(grads_m, grads_m).to(device) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m)
             
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
             p_pred = torch.diagonal(P_mm)
