@@ -93,6 +93,10 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
     optimizer = optim.SGD(metamodel.get_trainable_parameters(), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        metamodel = nn.DataParallel(metamodel)
+
     perm_losses = []
     inference_loss = []
 
