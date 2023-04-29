@@ -116,7 +116,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
                 name = "{}metamodel_{}_{}epochs_{}m".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m)
             
             else:
-                name = "{}metamodel_{}_{}models_{}_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, len(list(cfg.models)), it, cfg.data.m, cfg.data.n_classes)
+                name = "{}metamodel_{}_{}models_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, len(list(cfg.models)), it, cfg.data.m, cfg.data.n_classes)
             torch.save(metamodel.state_dict(), name)
 
     if plot:
