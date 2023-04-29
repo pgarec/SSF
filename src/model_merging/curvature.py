@@ -9,9 +9,9 @@ import numpy as np
 
 
 def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def fisher_single_example(single_example_batch):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logits = model(single_example_batch.to(device))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(logits, dim=-1)
@@ -31,13 +31,13 @@ def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*sq_grads)]
 
     variables = [p for p in model.parameters()]
-    fishers = [torch.zeros(w.shape, requires_grad=False) for w in variables]
+    fishers = [torch.zeros(w.shape, requires_grad=False).to(device) for w in variables]
 
     n_examples = 0
     
     for batch, _ in dataset:
         n_examples += batch.shape[0]
-        fishers_batch = torch.zeros((len(variables)),requires_grad=False)
+        fishers_batch = torch.zeros((len(variables)),requires_grad=False).to(device)
         for element in batch:
             model.zero_grad()
             fish_elem = fisher_single_example(element.unsqueeze(0))
@@ -56,9 +56,9 @@ def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
 
 
 def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
-    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     def gradients_single_example(single_example_batch):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logits = model(single_example_batch.to(device))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(logits, dim=-1)
@@ -78,13 +78,13 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
         return [torch.sum(torch.stack(g), dim=0) / num_classes for g in zip(*grads)]
 
     variables = [p for p in model.parameters()]
-    grads = [torch.zeros(w.shape, requires_grad=False) for w in variables]
+    grads = [torch.zeros(w.shape, requires_grad=False).to(device) for w in variables]
     
     n_examples = 0
 
     for batch, _ in dataset:
         n_examples += batch.shape[0]
-        grads_batch = torch.zeros((len(variables)),requires_grad=False)
+        grads_batch = torch.zeros((len(variables)),requires_grad=False).to(device)
 
         for element in batch:
             model.zero_grad()
