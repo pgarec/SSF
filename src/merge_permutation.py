@@ -38,7 +38,7 @@ def evaluate_model(model, val_loader, criterion):
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(val_loader):
             out = model(x.to(device))
-            loss = criterion(out, y)
+            loss = criterion(out, y.to(device))
             avg_loss += loss
 
     return avg_loss / len(val_loader)
