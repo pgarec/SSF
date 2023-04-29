@@ -18,16 +18,16 @@ def l2_permutation(cfg, model):
 
     assert f"model.{layer_index+2}.weight" in parameters.keys()
 
-    l2_norm = torch.linalg.norm(parameters[weight], dim=-1, ord=2)
+    l2_norm = torch.linalg.norm(parameters[weight], dim=-1)
     _, permuted_indices = torch.sort(l2_norm)
-    parameters[weight] = nn.Parameter(parameters[weight][permuted_indices])
-    parameters[bias] = nn.Parameter(parameters[bias][permuted_indices])
+    parameters[weight] = nn.Parameter(parameters[weight][permuted_indices]).detach()
+    parameters[bias] = nn.Parameter(parameters[bias][permuted_indices]).detach()
 
     weight_next = f"model.{layer_index+2}.weight"
-    parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices])
+    parameters[weight_next] = nn.Parameter(parameters[weight_next][:, permuted_indices]).detach()
     model.load_state_dict(parameters)
 
-    return model
+    return model, permuted_indices
 
 
 def implement_permutation(model, permuted_indices, layer_index):
@@ -48,8 +48,8 @@ def implement_permutation(model, permuted_indices, layer_index):
 def implement_permutation_grad(grad, permuted_indices, layer_weight_perm):
     grad[layer_weight_perm] = grad[layer_weight_perm][permuted_indices]
     grad[layer_weight_perm+1] = grad[layer_weight_perm+1][permuted_indices]
-    grad[layer_weight_perm+2] = nn.Parameter(grad[layer_weight_perm+2][:, permuted_indices])
-    
+    grad[layer_weight_perm+2] = grad[layer_weight_perm+2][:, permuted_indices]
+
     return grad
 
 

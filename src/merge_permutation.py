@@ -55,6 +55,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
     m = cfg.data.m
     for p in range(n_perm):
         perm = torch.randperm(n_dim)
+        perm.requires_grad = False
         for k in range(n_models):
             model = models[k]
             grad = grads[k]
@@ -64,7 +65,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
 
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:]]
+            metatheta_r = metatheta[perm[m:]]# .detach()
             metatheta_m = metatheta[perm[:m]]
 
             grads_r = grad[perm[m:]]
@@ -87,7 +88,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
-    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(metamodel.get_trainable_parameters(), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     perm_losses = []
@@ -98,6 +99,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
+        
         l = perm_loss_fisher(cfg, metamodel, models, grads)
         l.backward()      
         optimizer.step()
@@ -105,11 +107,26 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         pbar.set_description(f'[Loss: {-l.item():.3f}')
 
         if it % 10000:
-            name = "{}metamodel_{}models_{}_{}epochs_{}classes".format(cfg.data.model_path, cfg.data.dataset, len(list(cfg.models)), it, cfg.data.n_classes)
+            if cfg.data.dataset == "PINWHEEL":
+                name = "{}metamodel_{}_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m, cfg.data.n_classes)
+
+            elif cfg.data.dataset == "SNELSON":
+                name = "{}metamodel_{}_{}epochs_{}m".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m)
+            
+            else:
+                name = "{}metamodel_{}_{}models_{}_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, len(list(cfg.models)), it, cfg.data.m, cfg.data.n_classes)
             torch.save(metamodel.state_dict(), name)
 
     if plot:
-        directory = "./images/{}_{}models_{}_{}epochs_seed{}/".format(cfg.data.dataset, len(list(cfg.models)), cfg.train.initialization, cfg.train.epochs_perm, cfg.train.torch_seed)
+        if cfg.data.dataset == "PINWHEEL":
+            directory = "./images/{}_{}_m{}_{}epochs_seed{}/".format(cfg.data.dataset, cfg.train.initialization, cfg.data.m, cfg.train.epochs_perm, cfg.train.torch_seed)
+        
+        elif cfg.data.dataset == "SNELSON":
+            directory = "./images/{}_{}_m{}_{}epochs_seed{}/".format(cfg.data.dataset, cfg.train.initialization, cfg.data.m, cfg.train.epochs_perm, cfg.train.torch_seed)
+
+        else:
+            directory = "./images/{}_{}models_{}_m{}_{}epochs_seed{}/".format(cfg.data.dataset, len(list(cfg.models)), cfg.train.initialization, cfg.data.m, cfg.train.epochs_perm, cfg.train.torch_seed)
+
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -244,10 +261,8 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
 
                 grads_r = grad[perm[m:]]
                 grads_m = grad[perm[:m]]
-                # P_mr = torch.outer(grads_m, grads_r) / cfg.data.grad_samples 
-                # P_mm = torch.outer(grads_m, grads_m) / cfg.data.grad_samples + cfg.train.weight_decay * torch.eye(m)
-                P_mr = torch.outer(grads_m, grads_r) / 350
-                P_mm = torch.outer(grads_m, grads_m) / 350 + cfg.train.weight_decay * torch.eye(m)
+                P_mr = torch.outer(grads_m, grads_r) / cfg.data.n_examples
+                P_mm = torch.outer(grads_m, grads_m) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m)
                 
                 m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
                 p_pred = torch.diagonal(P_mm)

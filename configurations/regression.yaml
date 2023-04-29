@@ -21,19 +21,21 @@ data:
   grad_path: "./src/computed_gradients/"
   model_path: "./src/models/"
   fisher_samples: 10000
-  
+  n_examples: 10000
+
   plot: True
   permutations: 20
-  m: 200
+  m: 100
   weight_permutations: 20
   layer_weight_permutation: 0
 
 train:
+  initialization: ""
   lr: 0.01
   perm_lr: 0.01
-  hidden_dim: 32
+  hidden_dim: 16
   epochs: 200
-  epochs_perm: 1000
+  epochs_perm: 30000
   step_size: 212
   weight_decay: 0.001
   gamma: 0.1

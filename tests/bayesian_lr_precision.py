@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from torch.distributions import kl_divergence
 from torch.distributions.multivariate_normal import MultivariateNormal as Normal
 import math
+import os 
+import pickle
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -27,7 +29,7 @@ plt.rc('text.latex', preamble=r'\usepackage{bm}')
 parser = argparse.ArgumentParser()
 parser.add_argument('--overlapping', '-over', type=bool, default=True)
 parser.add_argument('--dim', '-d', type=int, default=1)
-parser.add_argument('--mask', '-m', type=int, default=1)
+parser.add_argument('--mask', '-m', type=int, default=2)
 parser.add_argument('--num_k', '-k', type=int, default=2)
 parser.add_argument('--post_samples', '-s', type=int, default=10)
 parser.add_argument('--nof', '-n', type=int, default=1000)
@@ -42,6 +44,7 @@ args = parser.parse_args()
 # DATA - 3 Linear Regression problems
 ############################################
 
+seed = 444
 torch.manual_seed(444)
 np.random.seed(444)
 
@@ -143,7 +146,7 @@ class MetaPosterior(torch.nn.Module):
         loss = (1 - (1/args.num_k))*prior.log_prob(self.meta_theta.squeeze())
         for a in range(args.dim):
             # m = a+1
-            m = 2
+            m = args.mask
 
             # average over permutations -- 
             loss_pred = 0.0
@@ -195,6 +198,11 @@ for it in pbar:
 
 
 if args.plot:
+    directory = "./images/{}_d{}_m{}_{}epochs_seed{}/".format("LR_PRECISION ", args.dim, args.mask, args.max_perm, seed)
+   
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     plt.figure()
     plt.plot(elbo_its, c=meta_color, ls='-', alpha=0.7)
     plt.title(r'Training the Meta Posterior')
@@ -213,14 +221,9 @@ if args.plot:
     plt.title(r'Difference -- true \textsc{map} vs \textsc{meta-map}')
     plt.show()
 
-# if args.plot:
-#     # plt.figure()
-#     x_meta = torch.rand(args.nof,args.dim)
-#     meta_w = meta_model.meta_theta.detach()
+    with open('{}map_mse'.format(directory), 'wb') as f:
+        pickle.dump(map_mse, f)
 
-#     f_meta =  meta_w[0] + x_meta @ meta_w[1:]
-#     plt.plot(x_meta, f_meta.detach().numpy(), c=meta_color, ls='-', lw=0.5, alpha=0.5)
-#     plt.show()
+    with open('{}elbo_its'.format(directory), 'wb') as f:
+        pickle.dump(elbo_its, f)
 
-
-# check on test data

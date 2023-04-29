@@ -22,7 +22,7 @@ data:
   model_path: "./src/models/"
   perm_path: "./src/computed_permutations/"
 
-  m: 6000
+  m: 400
   permutations: 5
   weight_permutations: 5
   layer_weight_permutation: 2
@@ -44,7 +44,7 @@ train:
   weight_decay: 0.01
   hidden_dim: 16
   epochs: 100
-  epochs_perm: 5000
+  epochs_perm: 1000
   step_size: 212
   gamma: 0.1
   momentum: 0.9

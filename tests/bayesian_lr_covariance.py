@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from torch.distributions import kl_divergence
 from torch.distributions.multivariate_normal import MultivariateNormal as Normal
 import math
+import pickle
+import os 
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -27,7 +29,7 @@ plt.rc('text.latex', preamble=r'\usepackage{bm}')
 parser = argparse.ArgumentParser()
 parser.add_argument('--overlapping', '-over', type=bool, default=True)
 parser.add_argument('--dim', '-d', type=int, default=1)
-parser.add_argument('--mask', '-m', type=int, default=1)
+parser.add_argument('--mask', '-m', type=int, default=2)
 parser.add_argument('--num_k', '-k', type=int, default=2)
 parser.add_argument('--post_samples', '-s', type=int, default=10)
 parser.add_argument('--nof', '-n', type=int, default=1000)
@@ -42,8 +44,9 @@ args = parser.parse_args()
 # DATA - 3 Linear Regression problems
 ############################################
 
-torch.manual_seed(444)
-np.random.seed(444)
+seed = 444
+torch.manual_seed(seed)
+np.random.seed(seed)
 
 # Set up true curves and models
 if args.overlapping:
@@ -137,11 +140,11 @@ class MetaPosterior(torch.nn.Module):
 
     def forward(self):
         prior = Normal(loc=torch.zeros(args.dim+1), covariance_matrix=args.alpha*torch.eye(args.dim+1))
-        # loss = (args.num_k - 1)*prior.log_prob(self.meta_theta.squeeze())
         loss = (1 - (1/args.num_k))*prior.log_prob(self.meta_theta.squeeze())
+
         for a in range(args.dim):
             # m = a+1
-            m = 2
+            m = args.mask
             # average over permutations -- 
             loss_pred = 0.0
             for p in range(args.max_perm):
@@ -151,7 +154,6 @@ class MetaPosterior(torch.nn.Module):
                     theta = self.meta_theta[perm]
                     m_k = model_k['m']
                     S_k = model_k['S']
-                    iS_k = model_k['iS']
 
                     # Computation // forgetting other extra elements
                     theta_r = theta[m:]
@@ -159,26 +161,14 @@ class MetaPosterior(torch.nn.Module):
                     S_mr = S_k[perm[:m],:][:,perm[m:]]
                     iS_rr = torch.inverse(S_k[perm[m:],:][:,perm[m:]])
 
-                    theta_r = theta[m:]
-                    P_mr = iS_k[perm[:m],:][:,perm[m:]]
-                    P_mm = iS_k[perm[:m],:][:,perm[:m]]
-                    iP_mm = torch.inverse(P_mm)
+                    m_pred = m_k[perm[:m]] + S_mr @ iS_rr @ (theta_r - m_k[perm[m:]])
+                    v_pred = torch.diagonal(S_mm - S_mr @ iS_rr @ S_mr.T)                    
 
-                    m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
-                    v_pred = torch.diagonal(torch.inverse(P_mm))
-                    p_pred = torch.diagonal(P_mm)
-
-                    # m_pred = m_k[perm[:m]] + S_mr @ iS_rr @ (theta_r - m_k[perm[m:]])
-                    # v_pred = torch.diagonal(S_mm - S_mr @ iS_rr @ S_mr.T)                    
-
-                    # log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(theta[:m] - m_pred)**2) / v_pred
-                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
-
+                    log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) - 0.5*torch.log(v_pred)  - (0.5*(theta[:m] - m_pred)**2) / v_pred
                     loss_pred += log_p_masked.sum(1)
 
             loss_pred = loss_pred/(args.max_perm * m * args.num_k)
             loss += loss_pred.sum()
-            # masked_loss += loss_pred.sum()/args.dim
         
         return -loss # minimization 
 
@@ -187,8 +177,6 @@ class MetaPosterior(torch.nn.Module):
 ############################################
 meta_model = MetaPosterior(models, args)
 optimizer = torch.optim.SGD(params=meta_model.parameters(), lr=1e-4, momentum=0.9)
-# optimizer = torch.optim.SGD([{'params':meta_model.m, 'lr':1e-3},{'params':meta_model.L,'lr':1e-6}], lr=1e-4, momentum=0.9)
-# optimizer = torch.optim.Adam(meta_model.parameters(), lr=1e-2)
 pbar = tqdm.trange(args.epochs)
 
 map_mse = []
@@ -205,6 +193,11 @@ for it in pbar:
 
 
 if args.plot:
+    directory = "./images/{}_d{}_m{}_{}epochs_seed{}/".format("LR_COVARIANCE", args.dim, args.mask, args.max_perm, seed)
+   
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     plt.figure()
     plt.plot(elbo_its, c=meta_color, ls='-', alpha=0.7)
     plt.title(r'Training the Meta Posterior')
@@ -223,14 +216,9 @@ if args.plot:
     plt.title(r'Difference -- true \textsc{map} vs \textsc{meta-map}')
     plt.show()
 
-# if args.plot:
-#     # plt.figure()
-#     x_meta = torch.rand(args.nof,args.dim)
-#     meta_w = meta_model.meta_theta.detach()
+    with open('{}map_mse'.format(directory), 'wb') as f:
+        pickle.dump(map_mse, f)
 
-#     f_meta =  meta_w[0] + x_meta @ meta_w[1:]
-#     plt.plot(x_meta, f_meta.detach().numpy(), c=meta_color, ls='-', lw=0.5, alpha=0.5)
-#     plt.show()
+    with open('{}elbo_its'.format(directory), 'wb') as f:
+        pickle.dump(elbo_its, f)
 
-
-# check on test data

@@ -23,7 +23,7 @@ import hydra
 from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
-from src.model_merging.permutation import compute_permutations
+from src.model_merging.permutation import compute_permutations, l2_permutation, implement_permutation, implement_permutation_grad
 from src.model_merging.permutation import scaling_permutation, random_weight_permutation
 import omegaconf
 
@@ -212,6 +212,8 @@ for m in range(n_models):
     
     models.append(model)
 
+print("m {}".format(cfg.data.m))
+
 parameters = models[0].get_trainable_parameters()
 metatheta = nn.utils.parameters_to_vector(parameters)
 print("Number of parameters: {}".format(len(metatheta)))
@@ -232,11 +234,22 @@ metamodel = isotropic_model
 # metamodel = Model(num_features, H, num_output, seed)
 grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
 cfg.data.n_examples = 350
+cfg.train.initialization = "isotropic"
+cfg.data.n_classes = num_clusters
+
+# l2_permutation_results = [l2_permutation(cfg, m) for m in models]
+# l2_indices = [i for (_,i) in l2_permutation_results]
+# models = [m for (m,_) in l2_permutation_results]
+# grads = [implement_permutation_grad(grads[k], l2_indices[k], 0) for k,_ in enumerate(grads)]
+
+output_model = clone_model(models[0], num_features, H, num_output, seed)
+metamodel = merging_models_isotropic(output_model, models)
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
 # metamodel = models[0]
-# metamodel = isotropic_model
+# metamodel = isotropic_model
+# cfg.data.n_examples = 350
 # metamodel = Model(num_features, H, num_output, seed)
 # grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
 # permutations = compute_permutations(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)

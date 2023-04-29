@@ -24,7 +24,7 @@ from src.model_merging.model import MLP_regression
 from src.train_regression import train, inference
 from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation
 from model_merging.curvature_regression import compute_and_store_fisher_diagonals, compute_and_store_gradients
-from model_merging.permutation import compute_permutations_init, l2_permutation
+from model_merging.permutation import compute_permutations, l2_permutation
 
 palette = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51']
 meta_color = 'r'
@@ -77,6 +77,8 @@ def main(cfg):
     names = []
     models = []
     
+    random.seed(cfg.train.torch_seed)
+
     # train_loader, test_loader, inference_loader = manual_dataset(cfg, dim=dim)
     dataset = create_dataset(cfg)
     train_loader, test_loader = dataset.create_dataloaders()
@@ -130,9 +132,11 @@ def main(cfg):
     print("Isotropic - Average loss {}".format(avg_loss_isotropic))
 
     # PERMUTATION
+    cfg.train.initialization = "MLP"
+    # cfg.data.n_classes = num_clusters    
     models = load_models_regression(cfg, names)
     grads = load_grads(cfg, names)
-    # metamodel = merging_models_isotropic(output_model, models)
+    # metamodel = merging_models_isotropic(output_model, models)
     metamodel = MLP_regression(cfg)
     perm_model = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion, plot=True)
     x_perm, y_perm, avg_loss_permutation = inference(perm_model, inference_loader, criterion)
@@ -141,7 +145,7 @@ def main(cfg):
     # WEIGHT SYMMETRIES
     # models = load_models_regression(cfg, names)
     # grads = load_grads(cfg, names)
-    # permutations = compute_permutations_init(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+    # permutations = compute_permutations(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
     # # metamodel = merging_models_isotropic(output_model, models)
     # metamodel = MLP_regression(cfg)
     # wperm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, inference_loader, criterion, plot=True)
