@@ -43,9 +43,9 @@ def merging_models_fisher(
         
         d[k] = s / s_fisher
 
-    output_model.load_state_dict(d, strict=False).to(device)
+    output_model.load_state_dict(d, strict=False)
        
-    return output_model
+    return output_model.to(device)
 
 
 
