@@ -104,9 +104,10 @@ def merging_models_isotropic(
         output_model,
         mergeable_models,
 ):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     d = dict(output_model.named_parameters())
     for idx, k in enumerate(list(d.keys())):
-        s = torch.zeros_like(output_model.get_parameter(k)) 
+        s = torch.zeros_like(output_model.get_parameter(k)).to(device)
         for m in mergeable_models:
             s = torch.add(s, m.get_parameter(k))
 
@@ -114,4 +115,4 @@ def merging_models_isotropic(
 
     output_model.load_state_dict(d, strict=False)
 
-    return output_model
+    return output_model.to(device)
