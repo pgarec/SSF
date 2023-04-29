@@ -21,10 +21,11 @@ import os
 
 
 def logprob_normal(x, mu, precision):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n = x.shape[0]    
     precision = precision # + 10e-5
     
-    log_p = -0.5*torch.log(2*torch.tensor([math.pi])) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
+    log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
 
     return log_p
 
