@@ -46,6 +46,7 @@ def evaluate_model(model, val_loader, criterion):
 def perm_loss_fisher(cfg, metamodel, models, grads):
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
@@ -54,11 +55,11 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
     loss = 0.0
     m = cfg.data.m
     for p in range(n_perm):
-        perm = torch.randperm(n_dim)
+        perm = torch.randperm(n_dim).to(device)
         perm.requires_grad = False
         for k in range(n_models):
-            model = models[k]
-            grad = grads[k]
+            model = models[k].to(device)
+            grad = grads[k].to(device)
             params = model.get_trainable_parameters()
             theta = nn.utils.parameters_to_vector(params)
             grad =  nn.utils.parameters_to_vector(grad)
