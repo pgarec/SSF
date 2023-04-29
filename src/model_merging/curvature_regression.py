@@ -57,7 +57,7 @@ def compute_gradients_model(model, dataset, grad_samples=-1, sigma_sq=-1):
     def grads_single_example(x, y, sigma_sq):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.zero_grad()
-        logit = model(x).to(device)
+        logit = model(x.to(device))
         lp = log_prob(logit, y, sigma_sq)
         lp.backward()
         grad = [p.grad.clone() for p in model.get_trainable_parameters()]
@@ -92,7 +92,8 @@ def compute_gradients_model(model, dataset, grad_samples=-1, sigma_sq=-1):
 def compute_gradients_model_mse(model, dataset, grad_samples=-1, sigma_sq=-1):
     def grads_single_example(x, y, sigma_sq):
         model.zero_grad()
-        logit = model(x)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        logit = model(x.to(device))
         loss = criterion(logit, y)
         loss.backward()
         grad = [p.grad.clone() for p in model.parameters()]

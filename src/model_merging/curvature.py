@@ -12,7 +12,7 @@ def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
 
     def fisher_single_example(single_example_batch):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logits = model(single_example_batch).to(device)
+        logits = model(single_example_batch.to(device))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(logits, dim=-1)
         sq_grads = []
@@ -59,7 +59,7 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
     
     def gradients_single_example(single_example_batch):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logits = model(single_example_batch).to(device)
+        logits = model(single_example_batch.to(device))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(logits, dim=-1)
         grads = []
