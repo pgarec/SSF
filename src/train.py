@@ -49,7 +49,7 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
             model.eval()
             for _, (x, y) in enumerate(test_loader):
                 out = model(x.to(device))
-                batch_onehot = y.apply_(lambda x: y_classes[x])
+                batch_onehot = y.apply_(lambda x: y_classes[x]).to(device)
                 loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
                 val_loss += loss
             # wandb.log({"Validation loss": loss/len(val_loader)})
