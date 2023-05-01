@@ -140,7 +140,6 @@ class MetaPosterior(torch.nn.Module):
         prior = Normal(loc=torch.zeros(args.dim+1), covariance_matrix=args.alpha*torch.eye(args.dim+1))
         loss = (1 - (1/args.num_k))*prior.log_prob(self.meta_theta.squeeze())
         for a in range(args.dim):
-            # m = a+1
             m = args.mask
 
             loss_pred = 0.0
@@ -156,7 +155,7 @@ class MetaPosterior(torch.nn.Module):
 
                     P_mm = fisher[perm[:m],:][:,perm[:m]]
                     iP_mm = torch.inverse(P_mm)
-                    m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
+                    m_pred = m_k[perm[:m]] - iP_mm * P_mr @ (theta_r - m_k[perm[m:]])
                     
                     # P_mm = fisher[perm[:m],:][:,perm[:m]] ** 2
                     # m_pred = m_k[perm[:m]] - (torch.diag(1/torch.diagonal(P_mm))) * (P_mr @ (theta_r - m_k[perm[m:]]))
