@@ -244,6 +244,7 @@ cfg.data.n_classes = num_clusters
 
 output_model = clone_model(models[0], num_features, H, num_output, seed)
 metamodel = merging_models_isotropic(output_model, models)
+# metamodel = Model(num_features, H, num_output, seed)
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 

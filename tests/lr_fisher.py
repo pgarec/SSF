@@ -128,11 +128,11 @@ def compute_fisher(k):
 
 # Meta Posterior
 class MetaPosterior(torch.nn.Module):
-    def __init__(self, models, grads, datasets, args):
+    def __init__(self, models, fishers, datasets, args):
         super(MetaPosterior, self).__init__()
 
         self.models = models
-        self.grads = grads
+        self.fishers = fishers
         self.meta_theta = torch.nn.Parameter(args.alpha*torch.randn(args.dim+1,1), requires_grad=True)  # MAP of the meta-posterior
         self.datasets = datasets
 
@@ -147,16 +147,19 @@ class MetaPosterior(torch.nn.Module):
             for p in range(args.max_perm):
                 for k, model_k in enumerate(models):
                     perm = torch.randperm(args.dim+1)
-                    grad = grads[k]
+                    fisher = self.fishers[k]
                     m_k = model_k['m']
                     theta = self.meta_theta[perm]
 
                     theta_r = theta[m:]
-                    P_mr = grad[perm[:m],:][:,perm[m:]]
-                    P_mm = grad[perm[:m],:][:,perm[:m]] + 0.01 * torch.eye(m)
+                    P_mr = fisher[perm[:m],:][:,perm[m:]]
 
-                    # m_pred = m_k[perm[:m]] - torch.linalg.solve(P_mm, P_mr) @ (theta_r - m_k[perm[m:]])
-                    m_pred = m_k[perm[:m]] - (1/torch.diag(P_mm)) * (P_mr @ (theta_r - m_k[perm[m:]]))
+                    P_mm = fisher[perm[:m],:][:,perm[:m]]
+                    iP_mm = torch.inverse(P_mm)
+                    m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
+                    
+                    # P_mm = fisher[perm[:m],:][:,perm[:m]] ** 2
+                    # m_pred = m_k[perm[:m]] - (torch.diag(1/torch.diagonal(P_mm))) * (P_mr @ (theta_r - m_k[perm[m:]]))
                     p_pred = torch.diagonal(P_mm)
 
                     log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
