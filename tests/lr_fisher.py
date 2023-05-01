@@ -120,22 +120,10 @@ true_theta = m
 # Models from models
 ############################################
 
-def active_set_permutation(x, W):
-    """ Description:    Does a random permutation of data and selects a subset
-    Input:          Data observations X (NxD)
-    Return:         Active Set X_A and X_rest / X_A U X_rest = X
-    """ 
-    permutation = torch.randperm(x.size()[1])
-
-    W_perm = W[permutation]
-    x_perm = x[:, permutation]
-
-    return x_perm, W_perm, permutation
-
-
-def compute_gradients(k):
+def compute_fisher(k):
     S = torch.tensor([0.5])
-    
+    # N = X[:,:,k].shape[0]
+
     return (X[:,:,k] @ X[:,:,k].T) / (S)
 
 # Meta Posterior
@@ -166,9 +154,9 @@ class MetaPosterior(torch.nn.Module):
                     theta_r = theta[m:]
                     P_mr = grad[perm[:m],:][:,perm[m:]]
                     P_mm = grad[perm[:m],:][:,perm[:m]] + 0.01 * torch.eye(m)
-                    # iP_mm = 1/P_mm
 
-                    m_pred = m_k[perm[:m]] - torch.linalg.solve(P_mm, P_mr) @ (theta_r - m_k[perm[m:]])
+                    # m_pred = m_k[perm[:m]] - torch.linalg.solve(P_mm, P_mr) @ (theta_r - m_k[perm[m:]])
+                    m_pred = m_k[perm[:m]] - (1/torch.diag(P_mm)) * (P_mr @ (theta_r - m_k[perm[m:]]))
                     p_pred = torch.diagonal(P_mm)
 
                     log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
@@ -182,7 +170,7 @@ class MetaPosterior(torch.nn.Module):
 ############################################
 # Definition of Meta-Model and ELBO fitting
 ############################################
-grads = [compute_gradients(i) for i, model in enumerate(models)]
+grads = [compute_fisher(i) for i, _ in enumerate(models)]
 meta_model = MetaPosterior(models, grads, datasets, args)
 optimizer = torch.optim.SGD(params=meta_model.parameters(), lr=1e-4, momentum=0.9)
 # optimizer = torch.optim.SGD([{'params':meta_model.m, 'lr':1e-3},{'params':meta_model.L,'lr':1e-6}], lr=1e-4, momentum=0.9)
