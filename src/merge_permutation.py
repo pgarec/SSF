@@ -67,18 +67,20 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
 
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:]]#.detach()
+            metatheta_r = metatheta[perm[m:]]
             metatheta_m = metatheta[perm[:m]]
 
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
             P_mr = torch.outer(grads_m, grads_r).to(device) / cfg.data.n_examples 
-            # P_mm = torch.outer(grads_m, grads_m).to(device) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m).to(device)
-            P_mm = torch.diag(grads_m ** 2) / cfg.data.n_examples + torch.eye(m) * cfg.train.weight_decay 
+            P_mm = torch.outer(grads_m, grads_m).to(device) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m).to(device)
+            # P_mm = torch.diag((grads_m ** 2) / cfg.data.n_examples) + torch.eye(m) * cfg.train.weight_decay 
 
-            # m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
-            m_pred = theta_m - (1/torch.diag(P_mm)) * (P_mr @ (metatheta_r - theta_r))
+            m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
+            # m_pred = theta_m - torch.diag(1/torch.diagonal(P_mm)) * (P_mr @ (metatheta_r - theta_r))
+            # m_pred = theta_m - torch.inverse(P_mm) * (P_mr @ (metatheta_r - theta_r))
+       
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
 

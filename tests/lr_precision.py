@@ -157,6 +157,7 @@ class MetaPosterior(torch.nn.Module):
 
                     m_k = model_k['m']
                     iS_k = model_k['iS']
+                    S_k = model_k['S']
 
                     theta_r = theta[m:]
                     P_mr = iS_k[perm[:m],:][:,perm[m:]]

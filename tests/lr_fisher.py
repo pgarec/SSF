@@ -122,9 +122,9 @@ true_theta = m
 
 def compute_fisher(k):
     S = torch.tensor([0.5])
-    # N = X[:,:,k].shape[0]
+    N = X[:,:,k].shape[0]
 
-    return (X[:,:,k] @ X[:,:,k].T) / (S)
+    return (X[:,:,k].T @ X[:,:,k]) / (S)
 
 # Meta Posterior
 class MetaPosterior(torch.nn.Module):
@@ -145,20 +145,17 @@ class MetaPosterior(torch.nn.Module):
             loss_pred = 0.0
             for p in range(args.max_perm):
                 for k, model_k in enumerate(models):
-                    perm = torch.randperm(args.dim+1)
+                    perm = torch.randperm(args.dim)
                     fisher = self.fishers[k]
                     m_k = model_k['m']
                     theta = self.meta_theta[perm]
 
                     theta_r = theta[m:]
                     P_mr = fisher[perm[:m],:][:,perm[m:]]
-
-                    P_mm = fisher[perm[:m],:][:,perm[:m]]
+                    P_mm = fisher[perm[:m],:][:,perm[:m]] 
                     iP_mm = torch.inverse(P_mm)
-                    m_pred = m_k[perm[:m]] - iP_mm * P_mr @ (theta_r - m_k[perm[m:]])
-                    
-                    # P_mm = fisher[perm[:m],:][:,perm[:m]] ** 2
-                    # m_pred = m_k[perm[:m]] - (torch.diag(1/torch.diagonal(P_mm))) * (P_mr @ (theta_r - m_k[perm[m:]]))
+                    m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
+                    # m_pred = m_k[perm[:m]] - (torch.diag(1/torch.diagonal(P_mm))) * (P_mr @ (theta_r - m_k[perm[m:]]))
                     p_pred = torch.diagonal(P_mm)
 
                     log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
