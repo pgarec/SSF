@@ -155,7 +155,7 @@ class MetaPosterior(torch.nn.Module):
                     P_mm = fisher[perm[:m],:][:,perm[:m]] 
                     iP_mm = torch.inverse(P_mm)
                     m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
-                    # m_pred = m_k[perm[:m]] - (torch.diag(1/torch.diagonal(P_mm))) * (P_mr @ (theta_r - m_k[perm[m:]]))
+                    # m_pred = m_k[perm[:m]] - (torch.diag(1/torch.diagonal(P_mm))) @ P_mr @ (theta_r - m_k[perm[m:]])
                     p_pred = torch.diagonal(P_mm)
 
                     log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
