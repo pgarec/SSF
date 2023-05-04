@@ -25,6 +25,7 @@ from src.model_merging.merging import merging_models_fisher, merging_models_isot
 from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
 from src.model_merging.permutation import compute_permutations, l2_permutation, implement_permutation, implement_permutation_grad
 from src.model_merging.permutation import scaling_permutation, random_weight_permutation
+import random
 import omegaconf
 
 # CONFIGURATION
@@ -122,15 +123,8 @@ def evaluate_model_in_depth(model, val_loader, criterion, plot=False):
 sns.set_style('darkgrid')
 palette = sns.color_palette('colorblind')
 
-subset_of_weights = 'last_layer' # either 'last_layer' or 'all'
-hessian_structure = 'full' # other possibility is 'diag' or 'full'
-n_posterior_samples = 20
-security_check = True
 
 batch_data = True
-
-# run with several seeds
-
 data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25)
 
 # define train and validation 
@@ -178,7 +172,9 @@ max_epoch = 100
 
 for m in range(n_models):
     model = Model(num_features, H, num_output, seed)
-    optimizer = torch.optim.SGD(model.parameters(),  lr=cfg.train.lr, momentum=cfg.train.momentum, weight_decay=cfg.train.weight_decay)
+    lr = cfg.train.lr*((m+1)*0.5)
+
+    optimizer = torch.optim.SGD(model.parameters(),  lr=lr, momentum=cfg.train.momentum, weight_decay=cfg.train.weight_decay)
     criterion = nn.CrossEntropyLoss(reduction='sum')
 
     best_valid_accuracy = 0

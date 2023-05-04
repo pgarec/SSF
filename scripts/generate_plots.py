@@ -61,6 +61,8 @@ def generate_plots(cfg, directory):
     plt.plot(inference_loss)
     plt.xlabel('Steps')
     plt.ylabel('Test loss')
+
+
     plt.axhline(avg_loss_fisher, color='b', linestyle='--')
     plt.text(0.05, avg_loss_fisher + 0.1, f'Fisher loss', color='b', fontsize=10)
     plt.axhline(avg_loss_isotropic, color='r', linestyle='--')
