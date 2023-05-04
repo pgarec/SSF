@@ -33,7 +33,7 @@ def merging_models_fisher(
         s_fisher = torch.zeros_like(output_model.get_parameter(k)).to(device)
 
         for m in range(len(mergeable_models)):
-            diag = fishers[m] if isinstance(fishers[m], float) else fishers[m][idx]
+            diag = fishers[m].to(device) if isinstance(fishers[m], float) else fishers[m][idx].to(device)
             s = torch.add(s, mergeable_models[m].get_parameter(k)*diag)
 
             if not favor_target_model or m == 0:
