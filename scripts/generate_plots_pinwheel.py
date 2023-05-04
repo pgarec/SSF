@@ -11,13 +11,11 @@ import matplotlib.colors as colors
 from src.model_merging.data import load_models, load_fishers, create_dataset
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.train import inference
-from src.model_merging.model import clone_model
 import pickle
 import os
 import matplotlib.pyplot as plt
 import omegaconf
 import numpy as np
-import seaborn as sns
 from tests.clf_nn_pinwheel import Model
 from tests.clf_nn_pinwheel import clone_model, evaluate_model
 from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients
@@ -50,6 +48,7 @@ P = 2                      # number of observation dimensions
 H = 16
 plot = False
 batch_data = True
+m_trial = [25,50,100,200]
 
 
 def train_pinwheel_models():
@@ -134,27 +133,42 @@ def train_pinwheel_models():
         
         models.append(model)
 
-    return models, train_loader, val_loader
+    return models, train_loader, val_loader, num_features, num_output
 
 
 def generate_plots_m(cfg, directory):
-    models, train_loader, val_loader = train_pinwheel_models()
+    models, train_loader, val_loader, num_features, num_output = train_pinwheel_models()
     fishers = [compute_fisher_diagonals(m, train_loader, num_clusters) for m in models]
     criterion = torch.nn.CrossEntropyLoss()
-    dataset = create_dataset(cfg)
-    test_loader = dataset.create_inference_dataloader()
-  
-    # FISHER
-    models = load_models(cfg)
-    output_model = clone_model(models[0], cfg)
-    fisher_model = merging_models_fisher(output_model, models, fishers)
-    avg_loss_fisher = inference(cfg, fisher_model, test_loader, criterion)
+    cfg.data.n_classes = num_clusters
 
     # ISOTROPIC
-    models = load_models(cfg)
-    output_model = clone_model(models[0], cfg)
+    output_model = clone_model(models[0], num_features, H, num_output, seed)
     isotropic_model = merging_models_isotropic(output_model, models)
-    avg_loss_isotropic = inference(cfg, isotropic_model, test_loader, criterion)
+    avg_loss_isotropic = evaluate_model(isotropic_model, val_loader, criterion)
+    print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
+
+    # FISHER
+    output_model = clone_model(models[0], num_features, H, num_output, seed)
+    fisher_model = merging_models_fisher(output_model, models, fishers)
+    avg_loss_fisher = evaluate_model(fisher_model, val_loader, criterion)
+    print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
+
+    inference_losses, perm_losses = [], []
+    for m in m_trial:
+        # metamodel = isotropic_model
+        grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
+        cfg.data.n_examples = 350
+        cfg.train.initialization = "MLP"
+        cfg.data.m = m
+
+        output_model = clone_model(models[0], num_features, H, num_output, seed)
+        metamodel = merging_models_isotropic(output_model, models)
+        metamodel = Model(num_features, H, num_output, seed)
+        perm_model, inference_loss, perm_loss = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=False)
+        perm_losses.append(perm_loss)
+        inference_losses.append(inference_loss)
+        print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
    
     path_inference = '{}inference_loss'.format(directory)
     path_permutation = '{}perm_loss'.format(directory)
@@ -163,37 +177,30 @@ def generate_plots_m(cfg, directory):
     plt.xlabel('Steps')
     plt.ylabel('Permutation loss')
 
-    for m in [25,50,100,200]:
-        path = directory.format(m)
-        path_permutation = '{}perm_loss'.format(path)
-        
-        with open(path_permutation, 'rb') as f:
-            perm_losses = pickle.load(f)
-
-        plt.plot(perm_losses)
+    legend = []
+    for m,_ in enumerate(m_trial):
+        legend.append("m={}".format(m))
+        plt.plot(perm_losses[m])
         break
     
     plt.subplot(2,1,2)
     plt.xlabel('Steps')
     plt.ylabel('Test loss')
 
-    for m in [25,50,100,200]:
-        path = directory.format(m)
-        path_inference = '{}inference_loss'.format(path)
+    for m,_ in enumerate(m_trial):
+        plt.plot(inference_losses[m])
 
-        with open(path_inference, 'rb') as f:
-            inference_loss = pickle.load(f)
-            plt.plot(np.log(inference_loss))
+    plt.axhline(avg_loss_fisher, color='b', linestyle='--')
+    plt.text(0.05, avg_loss_fisher + 0.1, f'Fisher loss', color='b', fontsize=10)
+    plt.axhline(avg_loss_isotropic, color='r', linestyle='--')
+    plt.text(0.15, avg_loss_isotropic + 0.1, f'Isotropic loss', color='r', fontsize=10)
 
-    # plt.axhline(avg_loss_fisher, color='b', linestyle='--')
-    # plt.text(0.05, avg_loss_fisher + 0.1, f'Fisher loss', color='b', fontsize=10)
-    # plt.axhline(avg_loss_isotropic, color='r', linestyle='--')
-    # plt.text(0.05, avg_loss_isotropic + 0.1, f'Isotropic loss', color='r', fontsize=10)
+    plt.legend(legend)
     plt.show()
-    plt.savefig('{}plot.png'.format(path))
+    plt.savefig('./images/plot_m_pinwheel.png')
+
 
 if __name__ == "__main__":
-    cfg = omegaconf.OmegaConf.load('./configurations/perm_mnist.yaml')
     directory = "./images/PINWHEEL_MLP_m{}_200000epochs_seed40/"
 
     generate_plots_m(cfg, directory)

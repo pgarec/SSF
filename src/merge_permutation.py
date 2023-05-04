@@ -22,8 +22,6 @@ import os
 
 def logprob_normal(x, mu, precision):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    n = x.shape[0]    
-    precision = precision # + 10e-5
     
     log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
 
@@ -169,7 +167,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         metamodel = nn.DataParallel(metamodel)
 
-    perm_losses = []
+    perm_loss = []
     inference_loss = []
 
     for it in pbar:
@@ -181,7 +179,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         l = perm_loss_fisher_optimized(cfg, metamodel, models, grads)
         l.backward()      
         optimizer.step()
-        perm_losses.append(-l.item())
+        perm_loss.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
 
         if it % 10000:
@@ -209,7 +207,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             os.makedirs(directory)
 
         plt.subplot(2,1,1)
-        plt.plot(perm_losses)
+        plt.plot(perm_loss)
         plt.xlabel('Permutations')
         plt.ylabel('Permutation loss')
         plt.subplot(2,1,2)
@@ -219,13 +217,15 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
         plt.show()
         plt.savefig('{}plot.png'.format(directory))
 
+    store = False
+    if store:
         with open('{}inference_loss'.format(directory), 'wb') as f:
             pickle.dump(inference_loss, f)
 
         with open('{}perm_loss'.format(directory), 'wb') as f:
-            pickle.dump(perm_losses, f)
+            pickle.dump(perm_loss, f)
 
-    return metamodel
+    return metamodel, inference_loss, perm_loss
 
 
 def scaling_perm_loss(cfg, metamodel, models, grads):
