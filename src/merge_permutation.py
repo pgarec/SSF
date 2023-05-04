@@ -78,8 +78,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
             # P_mm = torch.diag((grads_m ** 2) / cfg.data.n_examples) + torch.eye(m) * cfg.train.weight_decay 
 
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
-            # m_pred = theta_m - torch.diag(1/torch.diagonal(P_mm)) * (P_mr @ (metatheta_r - theta_r))
-            # m_pred = theta_m - torch.inverse(P_mm) * (P_mr @ (metatheta_r - theta_r))
+            # m_pred = theta_m - torch.diag(1/torch.diagonal(P_mm)) * (P_mr @ (metatheta_r - theta_r))
        
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
@@ -192,7 +191,7 @@ def scaling_perm_loss(cfg, metamodel, models, grads):
 
                 theta_r = theta[perm[m:]]
                 theta_m = theta[perm[:m]]
-                metatheta_r = metatheta[perm[m:]]
+                metatheta_r = metatheta[perm[m:]].detach()
                 metatheta_m = metatheta[perm[:m]]
                 
                 m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)

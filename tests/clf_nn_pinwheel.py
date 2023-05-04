@@ -231,20 +231,13 @@ fisher_model = merging_models_fisher(output_model, models, fishers)
 print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
 metamodel = isotropic_model
-# metamodel = Model(num_features, H, num_output, seed)
 grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
 cfg.data.n_examples = 350
-cfg.train.initialization = "isotropic"
+cfg.train.initialization = "MLP"
 cfg.data.n_classes = num_clusters
-
-# l2_permutation_results = [l2_permutation(cfg, m) for m in models]
-# l2_indices = [i for (_,i) in l2_permutation_results]
-# models = [m for (m,_) in l2_permutation_results]
-# grads = [implement_permutation_grad(grads[k], l2_indices[k], 0) for k,_ in enumerate(grads)]
-
 output_model = clone_model(models[0], num_features, H, num_output, seed)
-metamodel = merging_models_isotropic(output_model, models)
-# metamodel = Model(num_features, H, num_output, seed)
+# metamodel = merging_models_isotropic(output_model, models)
+metamodel = Model(num_features, H, num_output, seed)
 perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
 print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
