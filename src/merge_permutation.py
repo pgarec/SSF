@@ -34,6 +34,7 @@ def evaluate_model(model, val_loader, criterion):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     avg_loss = 0
+    model = model.to(device)
 
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(val_loader):
@@ -45,25 +46,24 @@ def evaluate_model(model, val_loader, criterion):
 
 
 def perm_loss_fisher(cfg, metamodel, models, grads):
-    params = metamodel.get_trainable_parameters()
-    metatheta = nn.utils.parameters_to_vector(params)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    params = metamodel.get_trainable_parameters()
+    metatheta = nn.utils.parameters_to_vector(params).to(device)
 
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
     n_models = len(models)
 
     loss = 0.0
-    m = cfg.data.m
+    m = torch.tensor(cfg.data.m).to(device)
     for p in range(n_perm):
         perm = torch.randperm(n_dim).to(device)
-        perm.requires_grad = False
         for k in range(n_models):
             model = models[k].to(device)
             grad = grads[k]
             params = model.get_trainable_parameters()
-            theta = nn.utils.parameters_to_vector(params)
-            grad =  nn.utils.parameters_to_vector(grad)
+            theta = nn.utils.parameters_to_vector(params).to(device)
+            grad =  nn.utils.parameters_to_vector(grad).to(device)
 
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
@@ -73,13 +73,12 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
-            P_mr = torch.outer(grads_m, grads_r).to(device) / cfg.data.n_examples 
-            P_mm = torch.outer(grads_m, grads_m).to(device) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m).to(device)
+            P_mr = torch.outer(grads_m, grads_r) / cfg.data.n_examples 
+            P_mm = torch.outer(grads_m, grads_m) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m).to(device)
             # P_mm = torch.diag((grads_m ** 2) / cfg.data.n_examples) + torch.eye(m) * cfg.train.weight_decay 
 
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
             # m_pred = theta_m - torch.diag(1/torch.diagonal(P_mm)) * (P_mr @ (metatheta_r - theta_r))
-            # m_pred = theta_m - torch.inverse(P_mm) * (P_mr @ (metatheta_r - theta_r))
        
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
@@ -94,6 +93,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
 
 
 def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    metamodel = metamodel.to(device)
     optimizer = optim.SGD(metamodel.get_trainable_parameters(), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 

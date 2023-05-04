@@ -22,8 +22,8 @@ data:
   model_path: "./src/models/"
   perm_path: "./src/computed_permutations/"
 
-  m: 1000
-  permutations: 5
+  m: 200
+  permutations: 10
   weight_permutations: 5
   layer_weight_permutation: 2
   scaling_perm_min: 1
