@@ -32,9 +32,7 @@ def logprob_normal(x, mu, precision):
 
 def logprob_normal_optimized(x, mu, precision):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    n = x.shape[0]    
-    x = x.T
-    precision = precision # + 10e-5
+    mu = mu.T
     
     log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
 
@@ -180,7 +178,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
         
-        l = perm_loss_fisher_optimized(cfg, metamodel, models, grads)
+        l = perm_loss_fisher(cfg, metamodel, models, grads)
         l.backward()      
         optimizer.step()
         perm_losses.append(-l.item())
