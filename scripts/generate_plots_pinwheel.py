@@ -179,7 +179,6 @@ def generate_plots_m(cfg, directory):
 
     legend = []
     for m,_ in enumerate(m_trial):
-        legend.append("m={}".format(m))
         plt.plot(perm_losses[m])
         break
     
@@ -187,7 +186,8 @@ def generate_plots_m(cfg, directory):
     plt.xlabel('Steps')
     plt.ylabel('Test loss')
 
-    for m,_ in enumerate(m_trial):
+    for m,n_mask in enumerate(m_trial):
+        legend.append("m={}".format(n_mask))
         plt.plot(inference_losses[m])
 
     plt.axhline(avg_loss_fisher, color='b', linestyle='--')
@@ -197,7 +197,7 @@ def generate_plots_m(cfg, directory):
 
     plt.legend(legend)
     plt.show()
-    plt.savefig('./images/plot_m_pinwheel.png')
+    plt.savefig('./images/plots/plot_m_pinwheel.png')
 
 
 if __name__ == "__main__":
