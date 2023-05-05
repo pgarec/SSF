@@ -193,7 +193,7 @@ def generate_plots_m(cfg, directory):
     plt.axhline(avg_loss_fisher, color='b', linestyle='--')
     plt.text(0.05, avg_loss_fisher + 0.1, f'Fisher loss', color='b', fontsize=10)
     plt.axhline(avg_loss_isotropic, color='r', linestyle='--')
-    plt.text(0.05, avg_loss_isotropic + 0.2, f'Isotropic loss', color='r', fontsize=10)
+    plt.text(0.05, avg_loss_isotropic + 0.3, f'Isotropic loss', color='r', fontsize=10)
 
     plt.legend(legend)
     plt.show()

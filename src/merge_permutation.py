@@ -132,7 +132,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
 
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:]]
+            metatheta_r = metatheta[perm[m:]].detach()
             metatheta_m = metatheta[perm[:m]]
 
             grads_r = grad[perm[m:]]
