@@ -176,7 +176,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
         
-        l = perm_loss_fisher_optimized(cfg, metamodel, models, grads)
+        l = perm_loss_fisher(cfg, metamodel, models, grads)
         l.backward()      
         optimizer.step()
         perm_loss.append(-l.item())
