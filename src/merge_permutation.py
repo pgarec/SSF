@@ -15,6 +15,7 @@ from model_merging.data import load_grads
 from model_merging.evaluation import evaluate_metamodel
 from model_merging.permutation import implement_permutation, implement_permutation_grad
 from model_merging.permutation import scaling_permutation, l2_permutation
+from torch_cg import CG
 import numpy as np
 import pickle
 import os
@@ -99,6 +100,7 @@ def perm_loss_fisher_optimized(cfg, metamodel, models, grads):
         metatheta_m = torch.stack(metatheta_m_list)
 
         m_pred = theta_m.T - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r).T
+        # m_pred = theta_m.T - CG(P_mm, torch.diag(grads_m**2)).apply(P_mr) @ (metatheta_r - theta_r).T
         p_pred = torch.diagonal(P_mm, dim1=-2, dim2=-1)
         posterior = logprob_normal_optimized(metatheta_m, m_pred, p_pred).sum()
 
@@ -132,7 +134,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
 
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:]].detach()
+            metatheta_r = metatheta[perm[m:]]
             metatheta_m = metatheta[perm[:m]]
 
             grads_r = grad[perm[m:]]
@@ -176,7 +178,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
         
-        l = perm_loss_fisher(cfg, metamodel, models, grads)
+        l = perm_loss_fisher_optimized(cfg, metamodel, models, grads)
         l.backward()      
         optimizer.step()
         perm_loss.append(-l.item())

@@ -139,8 +139,17 @@ def train_pinwheel_models():
 def generate_plots_m(cfg, directory):
     models, train_loader, val_loader, num_features, num_output = train_pinwheel_models()
     fishers = [compute_fisher_diagonals(m, train_loader, num_clusters) for m in models]
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss(reduction='sum')
     cfg.data.n_classes = num_clusters
+
+    print("m {}".format(cfg.data.m))
+
+    parameters = models[0].get_trainable_parameters()
+    metatheta = nn.utils.parameters_to_vector(parameters)
+    print("Number of parameters: {}".format(len(metatheta)))
+
+    for n, model in enumerate(models):
+        print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
 
     # ISOTROPIC
     output_model = clone_model(models[0], num_features, H, num_output, seed)

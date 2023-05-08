@@ -1,0 +1,3 @@
+[submodule "torch_cg"]
+	path = torch_cg
+	url = https://github.com/sbarratt/torch_cg.git
