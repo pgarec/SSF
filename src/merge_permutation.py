@@ -15,7 +15,6 @@ from model_merging.data import load_grads
 from model_merging.evaluation import evaluate_metamodel
 from model_merging.permutation import implement_permutation, implement_permutation_grad
 from model_merging.permutation import scaling_permutation, l2_permutation
-from torch_cg import CG
 import numpy as np
 import pickle
 import os
