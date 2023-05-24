@@ -65,7 +65,7 @@ def main(cfg):
     cfg.train.initialization = "MLP"
     # metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
     # metamodel = fisher_model
-    perm_model = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion, plot=True)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, test_loader, criterion, plot=True)
 
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
     print("Permutation - Average loss {}".format(avg_loss))  

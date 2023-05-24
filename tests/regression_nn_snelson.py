@@ -138,7 +138,7 @@ def main(cfg):
     grads = load_grads(cfg, names)
     # metamodel = merging_models_isotropic(output_model, models)
     metamodel = MLP_regression(cfg)
-    perm_model = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion, plot=True)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, inference_loader, criterion, plot=True)
     x_perm, y_perm, avg_loss_permutation = inference(perm_model, inference_loader, criterion)
     print("Permutation - Average loss {}".format(avg_loss_permutation)) 
 

@@ -25,6 +25,7 @@ from src.model_merging.merging import merging_models_fisher, merging_models_isot
 from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
 from src.model_merging.permutation import compute_permutations, l2_permutation, implement_permutation, implement_permutation_grad
 from src.model_merging.permutation import scaling_permutation, random_weight_permutation
+import random
 import omegaconf
 
 # CONFIGURATION
@@ -119,147 +120,135 @@ def evaluate_model_in_depth(model, val_loader, criterion, plot=False):
         plt.show()
 
 
-sns.set_style('darkgrid')
-palette = sns.color_palette('colorblind')
+if __name__ == "__main__":
+    sns.set_style('darkgrid')
+    palette = sns.color_palette('colorblind')
 
-subset_of_weights = 'last_layer' # either 'last_layer' or 'all'
-hessian_structure = 'full' # other possibility is 'diag' or 'full'
-n_posterior_samples = 20
-security_check = True
+    batch_data = True
+    data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25)
 
-batch_data = True
+    # define train and validation 
+    X_train = data[:350]
+    X_valid = data[350:400]
+    X_test = data[400:]
 
-# run with several seeds
+    y_train = labels[:350].astype('int32')
+    y_valid = labels[350:400].astype('int32')
+    y_test = labels[400:].astype('int32')
 
-data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25)
+    one_hot_yvtest = np.zeros((y_test.size, y_test.max() + 1))
+    one_hot_yvtest[np.arange(y_test.size), y_test.reshape(-1)] = 1
 
-# define train and validation 
-X_train = data[:350]
-X_valid = data[350:400]
-X_test = data[400:]
+    X_train = torch.from_numpy(X_train).float()
+    X_valid = torch.from_numpy(X_valid).float()
+    X_test = torch.from_numpy(X_test).float()
 
-y_train = labels[:350].astype('int32')
-y_valid = labels[350:400].astype('int32')
-y_test = labels[400:].astype('int32')
+    y_train = torch.from_numpy(y_train).long().reshape(-1)
+    y_valid = torch.from_numpy(y_valid).long().reshape(-1)
+    y_test = torch.from_numpy(y_test).long().reshape(-1)
 
-one_hot_yvtest = np.zeros((y_test.size, y_test.max() + 1))
-one_hot_yvtest[np.arange(y_test.size), y_test.reshape(-1)] = 1
+    if batch_data:
+        train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True)
+        val_dataset = torch.utils.data.TensorDataset(X_valid, y_valid)
+        val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=100, shuffle=True)
 
-X_train = torch.from_numpy(X_train).float()
-X_valid = torch.from_numpy(X_valid).float()
-X_test = torch.from_numpy(X_test).float()
+    if plot:
+        plt.scatter(X_train[:,0], X_train[:,1], s=40, c=y_train, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
+        plt.title("Train data")
+        plt.show()
 
-y_train = torch.from_numpy(y_train).long().reshape(-1)
-y_valid = torch.from_numpy(y_valid).long().reshape(-1)
-y_test = torch.from_numpy(y_test).long().reshape(-1)
+        plt.scatter(X_valid[:,0], X_valid[:,1], s=40, c=y_valid, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
+        plt.title("Validation data")
+        plt.show()
 
-if batch_data:
-    train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True)
-    val_dataset = torch.utils.data.TensorDataset(X_valid, y_valid)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=100, shuffle=True)
+    num_features = X_train.shape[-1]
+    print(num_features)
+    num_output = num_clusters
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    models = []
+    n_models = 3
+    max_epoch = 100
 
-if plot:
-    plt.scatter(X_train[:,0], X_train[:,1], s=40, c=y_train, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
-    plt.title("Train data")
-    plt.show()
+    for m in range(n_models):
+        model = Model(num_features, H, num_output, seed)
+        lr = cfg.train.lr*((m+1)*0.5)
 
-    plt.scatter(X_valid[:,0], X_valid[:,1], s=40, c=y_valid, cmap=colors.ListedColormap(plt.cm.tab10.colors[:5]))
-    plt.title("Validation data")
-    plt.show()
+        optimizer = torch.optim.SGD(model.parameters(),  lr=lr, momentum=cfg.train.momentum, weight_decay=cfg.train.weight_decay)
+        criterion = nn.CrossEntropyLoss(reduction='sum')
 
-num_features = X_train.shape[-1]
-print(num_features)
-num_output = num_clusters
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-models = []
-n_models = 3
-max_epoch = 100
+        best_valid_accuracy = 0
+        max = max_epoch*(m+1)
 
-for m in range(n_models):
-    model = Model(num_features, H, num_output, seed)
-    optimizer = torch.optim.SGD(model.parameters(),  lr=cfg.train.lr, momentum=cfg.train.momentum, weight_decay=cfg.train.weight_decay)
-    criterion = nn.CrossEntropyLoss(reduction='sum')
-
-    best_valid_accuracy = 0
-    max = max_epoch*(m+1)
-
-    for epoch in range(max):
-        train_loss = 0
-        for _, (x, y) in enumerate(train_loader):
-            optimizer.zero_grad()
-            out = model(x.to(device))
-            loss = criterion(out, y)
-            loss.backward()
-            optimizer.step()
-
-            train_loss += loss
-        print(
-            f"Epoch [{epoch + 1}/{max}], Training Loss: {train_loss/len(train_loader):.4f}"
-        )
-
-        val_loss = 0
-        with torch.no_grad():
-            model.eval()
-            for _, (x, y) in enumerate(val_loader):
+        for epoch in range(max):
+            train_loss = 0
+            for _, (x, y) in enumerate(train_loader):
+                optimizer.zero_grad()
                 out = model(x.to(device))
                 loss = criterion(out, y)
-                val_loss += loss
+                loss.backward()
+                optimizer.step()
 
+                train_loss += loss
             print(
-                f"Epoch [{epoch + 1}/{max}], Validation Loss: {val_loss/len(val_loader):.4f}"
+                f"Epoch [{epoch + 1}/{max}], Training Loss: {train_loss/len(train_loader):.4f}"
             )
-    
-    models.append(model)
 
-print("m {}".format(cfg.data.m))
+            val_loss = 0
+            with torch.no_grad():
+                model.eval()
+                for _, (x, y) in enumerate(val_loader):
+                    out = model(x.to(device))
+                    loss = criterion(out, y)
+                    val_loss += loss
 
-parameters = models[0].get_trainable_parameters()
-metatheta = nn.utils.parameters_to_vector(parameters)
-print("Number of parameters: {}".format(len(metatheta)))
+                print(
+                    f"Epoch [{epoch + 1}/{max}], Validation Loss: {val_loss/len(val_loader):.4f}"
+                )
+        
+        models.append(model)
 
-for n, model in enumerate(models):
-    print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
+    print("m {}".format(cfg.data.m))
 
-output_model = clone_model(models[0], num_features, H, num_output, seed)
-isotropic_model = merging_models_isotropic(output_model, models)
-print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
+    parameters = models[0].get_trainable_parameters()
+    metatheta = nn.utils.parameters_to_vector(parameters)
+    print("Number of parameters: {}".format(len(metatheta)))
 
-output_model = clone_model(models[0], num_features, H, num_output, seed)
-fishers = [compute_fisher_diagonals(m, train_loader, num_clusters) for m in models]
-fisher_model = merging_models_fisher(output_model, models, fishers)
-print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
+    for n, model in enumerate(models):
+        print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
 
-metamodel = isotropic_model
-# metamodel = Model(num_features, H, num_output, seed)
-grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
-cfg.data.n_examples = 350
-cfg.train.initialization = "isotropic"
-cfg.data.n_classes = num_clusters
+    output_model = clone_model(models[0], num_features, H, num_output, seed)
+    isotropic_model = merging_models_isotropic(output_model, models)
+    print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
 
-# l2_permutation_results = [l2_permutation(cfg, m) for m in models]
-# l2_indices = [i for (_,i) in l2_permutation_results]
-# models = [m for (m,_) in l2_permutation_results]
-# grads = [implement_permutation_grad(grads[k], l2_indices[k], 0) for k,_ in enumerate(grads)]
+    output_model = clone_model(models[0], num_features, H, num_output, seed)
+    fishers = [compute_fisher_diagonals(m, train_loader, num_clusters) for m in models]
+    fisher_model = merging_models_fisher(output_model, models, fishers)
+    print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-output_model = clone_model(models[0], num_features, H, num_output, seed)
-metamodel = merging_models_isotropic(output_model, models)
-# metamodel = Model(num_features, H, num_output, seed)
-perm_model = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
-print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+    metamodel = isotropic_model
+    grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
+    cfg.data.n_examples = 350
+    cfg.train.initialization = "MLP"
+    cfg.data.n_classes = num_clusters
+    output_model = clone_model(models[0], num_features, H, num_output, seed)
+    # metamodel = merging_models_isotropic(output_model, models)
+    metamodel = Model(num_features, H, num_output, seed)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
+    print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
-# metamodel = models[0]
-# metamodel = isotropic_model
-# cfg.data.n_examples = 350
-# metamodel = Model(num_features, H, num_output, seed)
-# grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
-# permutations = compute_permutations(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
-# weight_symmetries_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion, plot=True)
-# print("Weight permutation model loss: {}".format(evaluate_model(weight_symmetries_model, val_loader, criterion)))
+    # metamodel = models[0]
+    # metamodel = isotropic_model
+    # cfg.data.n_examples = 350
+    # metamodel = Model(num_features, H, num_output, seed)
+    # grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
+    # permutations = compute_permutations(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+    # weight_symmetries_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion, plot=True)
+    # print("Weight permutation model loss: {}".format(evaluate_model(weight_symmetries_model, val_loader, criterion)))
 
-# metamodel = models[0]
-# metamodel = isotropic_model 
-# # metamodel = Model(num_features, H, num_output, seed)
-# grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
-# perm_model = merging_models_scaling_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
-# print("Scaling permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+    # metamodel = models[0]
+    # metamodel = isotropic_model 
+    # # metamodel = Model(num_features, H, num_output, seed)
+    # grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
+    # perm_model = merging_models_scaling_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
+    # print("Scaling permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))

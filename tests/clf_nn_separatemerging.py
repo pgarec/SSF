@@ -127,7 +127,7 @@ def main(cfg):
     # isotropic_model = merging_models_fisher_subsets(cfg, models)
     # # inference(cfg, isotropic_model, test_loader, criterion)
 
-    # # SHANNON 
+    # SHANNON 
     # cfg.data.n_classes = 2
     # metamodel = merging_models_isotropic(cfg, models)
     for name, param in fisher_model.named_parameters():
