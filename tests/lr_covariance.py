@@ -101,8 +101,6 @@ for k in range(args.num_k):
     m_k = args.beta*S_k @ phi_k.T @ y_k
     models.append({'m': m_k, 'iS': iS_k, 'S': S_k})
 
-# i think there is a tiny mistake on the equations
-
 ############################################
 # True Meta Posterior
 ############################################
