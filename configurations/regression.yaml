@@ -40,8 +40,8 @@ train:
   weight_decay: 0.001
   gamma: 0.1
   momentum: 0.9
-  plot_sample: False
-  plot: False
+  plot_sample: True
+  plot: True
   torch_seed: 40
   sigma_sq: 0.5
   

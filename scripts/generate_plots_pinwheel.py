@@ -165,6 +165,7 @@ def generate_plots_m(cfg, directory):
 
     inference_losses, perm_losses = [], []
     for m in m_trial:
+        print("m {}".format(m))
         # metamodel = isotropic_model
         grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
         cfg.data.n_examples = 350
@@ -199,10 +200,10 @@ def generate_plots_m(cfg, directory):
         legend.append("m={}".format(n_mask))
         plt.plot(inference_losses[m])
 
-    plt.axhline(avg_loss_fisher, color='b', linestyle='--')
-    plt.text(0.05, avg_loss_fisher + 0.1, f'Fisher loss', color='b', fontsize=10)
-    plt.axhline(avg_loss_isotropic, color='r', linestyle='--')
-    plt.text(0.05, avg_loss_isotropic + 0.3, f'Isotropic loss', color='r', fontsize=10)
+    # plt.axhline(avg_loss_fisher, color='b', linestyle='--')
+    # plt.text(0.05, avg_loss_fisher + 0.1, f'Fisher loss', color='b', fontsize=10)
+    # plt.axhline(avg_loss_isotropic, color='r', linestyle='--')
+    # plt.text(0.05, avg_loss_isotropic + 0.3, f'Isotropic loss', color='r', fontsize=10)
 
     plt.legend(legend)
     plt.show()
@@ -210,6 +211,6 @@ def generate_plots_m(cfg, directory):
 
 
 if __name__ == "__main__":
-    directory = "./images/PINWHEEL_MLP_m{}_200000epochs_seed40/"
+    directory = "./images/PINWHEEL_isotropic_m200_300000epochs_seed-1/"
 
     generate_plots_m(cfg, directory)

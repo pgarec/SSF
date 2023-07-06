@@ -127,7 +127,7 @@ def generate_plots_m(cfg, directory):
     plt.savefig('{}plot.png'.format(path))
 
 if __name__ == "__main__":
-    cfg = omegaconf.OmegaConf.load('./configurations/perm_mnist.yaml')
-    directory = "./images/PINWHEEL_MLP_m{}_200000epochs_seed40/"
+    cfg = omegaconf.OmegaConf.load('./configurations/perm_pinwheel.yaml')
+    directory = "./images/PINWHEEL_isotropic_m200_300000epochs_seed-1/"
 
-    generate_plots_m(cfg, directory)
+    generate_plots(cfg, directory)

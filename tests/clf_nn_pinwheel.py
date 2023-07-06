@@ -22,7 +22,7 @@ from src.model_merging.datasets.pinwheel import make_pinwheel_data
 import hydra
 from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
-from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
+from src.merge_permutation import merging_models_permutation, merging_models_weight_l2_permutation, merging_models_weight_permutation, merging_models_scaling_permutation
 from src.model_merging.permutation import compute_permutations, l2_permutation, implement_permutation, implement_permutation_grad
 from src.model_merging.permutation import scaling_permutation, random_weight_permutation
 import random
@@ -42,7 +42,7 @@ K = 15                     # number of components in mixture model
 N = 2                      # number of latent dimensions
 P = 2                      # number of observation dimensions
 H = 16
-plot = False
+plot = True
 
 class Model(nn.Module):
     def __init__(self, num_features, H, num_output, torch_seed=-1):
@@ -53,11 +53,11 @@ class Model(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(num_features, H),
-            # torch.nn.ReLU(),
-            torch.nn.Tanh(),
+            torch.nn.ReLU(),
+            # torch.nn.Tanh(),
             nn.Linear(H, H),
-            # torch.nn.ReLU(),
-            torch.nn.Tanh(),
+            torch.nn.ReLU(),
+            # torch.nn.Tanh(),
             nn.Linear(H,num_output, bias=False)
         )
 
@@ -121,11 +121,14 @@ def evaluate_model_in_depth(model, val_loader, criterion, plot=False):
 
 
 if __name__ == "__main__":
+    # plot = True
     sns.set_style('darkgrid')
     palette = sns.color_palette('colorblind')
 
     batch_data = True
     data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25)
+
+    print("X data shape {}".format(data.shape))
 
     # define train and validation 
     X_train = data[:350]
@@ -226,19 +229,30 @@ if __name__ == "__main__":
     fisher_model = merging_models_fisher(output_model, models, fishers)
     print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-    metamodel = isotropic_model
+    # metamodel = isotropic_model
+    # grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
+    # cfg.data.n_examples = 350
+    # cfg.train.initialization = "MLP"
+    # cfg.data.n_classes = num_clusters
+    # output_model = clone_model(models[0], num_features, H, num_output, seed)
+    # # metamodel = merging_models_isotropic(output_model, models)
+    # metamodel = Model(num_features, H, num_output, seed)
+    # perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
+    # print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+
     grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
     cfg.data.n_examples = 350
     cfg.train.initialization = "MLP"
     cfg.data.n_classes = num_clusters
     output_model = clone_model(models[0], num_features, H, num_output, seed)
-    # metamodel = merging_models_isotropic(output_model, models)
     metamodel = Model(num_features, H, num_output, seed)
+    permutations = compute_permutations(models, cfg.data.layer_weight_permutation, cfg.data.weight_permutations)
+    models=[l2_permutation(cfg,model)[0] for model in models]
     perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
     print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
-    # metamodel = models[0]
-    # metamodel = isotropic_model
+    # metamodel = models[0]
+    # metamodel = isotropic_model
     # cfg.data.n_examples = 350
     # metamodel = Model(num_features, H, num_output, seed)
     # grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
@@ -246,9 +260,9 @@ if __name__ == "__main__":
     # weight_symmetries_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, val_loader, criterion, plot=True)
     # print("Weight permutation model loss: {}".format(evaluate_model(weight_symmetries_model, val_loader, criterion)))
 
-    # metamodel = models[0]
+    # metamodel = models[0]
     # metamodel = isotropic_model 
-    # # metamodel = Model(num_features, H, num_output, seed)
+    # metamodel = Model(num_features, H, num_output, seed)
     # grads = [compute_gradients(m, train_loader, num_clusters) for m in models]
     # perm_model = merging_models_scaling_permutation(cfg, metamodel, models, grads, val_loader, criterion, plot=True)
     # print("Scaling permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))

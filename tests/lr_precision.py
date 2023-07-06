@@ -76,7 +76,7 @@ for k in range(args.num_k):
 if args.plot and args.dim<2:
     plt.xlabel('$X$')
     plt.ylabel('$Y$')
-    # plt.show()
+    plt.show()
 
 ############################################
 # Models - Bayesian Linear Regression

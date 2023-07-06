@@ -388,6 +388,38 @@ def merging_models_weight_permutation(cfg, metamodel, models, permutations, grad
     return metamodel
 
 
+def merging_models_weight_l2_permutation(cfg, metamodel, models, permutations, grads, test_loader = "", criterion="", plot=False):
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum)
+    pbar = tqdm.trange(cfg.train.epochs_perm)
+
+    perm_losses = []
+    inference_loss = []
+
+    for it in pbar:
+        optimizer.zero_grad()
+        l = weight_perm_loss(cfg, metamodel, models, permutations, grads)
+        l.backward()      # Backward pass <- computes gradients
+        optimizer.step()
+        perm_losses.append(-l.item())
+        pbar.set_description(f'[Loss: {-l.item():.3f}')
+
+        if it % 10:
+            inference_loss.append(evaluate_model(metamodel, test_loader, criterion))
+
+    if plot:
+        plt.subplot(2,1,1)
+        plt.plot(perm_losses)
+        plt.xlabel('Permutations')
+        plt.ylabel('Permutation loss')
+        plt.subplot(2,1,2)
+        plt.plot(inference_loss)
+        plt.xlabel('Permutations')
+        plt.ylabel('Test loss')
+        plt.show()
+    
+    return metamodel
+
+
 def evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_names = []):
     if model_names != []:
         grads = load_grads(cfg, model_names)
