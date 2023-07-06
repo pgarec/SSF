@@ -53,11 +53,11 @@ class Model(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(num_features, H),
-            torch.nn.ReLU(),
-            # torch.nn.Tanh(),
+            # torch.nn.ReLU(),
+            torch.nn.Tanh(),
             nn.Linear(H, H),
-            torch.nn.ReLU(),
-            # torch.nn.Tanh(),
+            # torch.nn.ReLU(),
+            torch.nn.Tanh(),
             nn.Linear(H,num_output, bias=False)
         )
 
