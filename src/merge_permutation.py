@@ -139,9 +139,6 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
-            # P_mr = torch.outer(grads_m, grads_r) / cfg.data.n_examples 
-            # P_mm = torch.outer(grads_m, grads_m) / cfg.data.n_examples # + cfg.train.weight_decay * torch.eye(m).to(device)
-
             # The rank-one corrected diagonal Fisher approximation
             avg_grad_m =  grads_m / cfg.data.n_examples
             avg_grad_r = grads_r / cfg.data.n_examples
@@ -150,7 +147,10 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
             delta = u - v**2
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
-            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) # + cfg.train.weight_decay * torch.eye(m).to(device)
+            # P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.eye(m)*cfg.train.weight_decay
+            # print("delta {}".format(delta))
+            # print(torch.outer(avg_grad_m, avg_grad_m))
+            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta)
 
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
             p_pred = torch.diagonal(P_mm)

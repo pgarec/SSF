@@ -46,4 +46,4 @@ train:
   name: ""
   plot_sample: False
   plot: False
-  torch_seed: 50
+  torch_seed: 44

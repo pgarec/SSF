@@ -103,7 +103,6 @@ def main(cfg):
         models.append(model)
         names.append(name)
 
-
     params = models[0].get_trainable_parameters()
     metatheta = torch.nn.utils.parameters_to_vector(params)
     print("Parameters: {}".format(len(metatheta)))

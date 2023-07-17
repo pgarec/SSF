@@ -60,7 +60,7 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
 
     def gradients_single_example(single_example_batch):
         logits = model(single_example_batch.to(device))
-        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+        # log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
         probs = torch.nn.functional.softmax(logits, dim=-1)
         grads = []
 
@@ -82,11 +82,11 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
     
     n_examples = 0
 
-    for batch, _ in dataset:
-        n_examples += batch.shape[0]
+    for batch_x, batch_y in dataset:
+        n_examples += batch_x.shape[0]
         grads_batch = torch.zeros((len(variables)),requires_grad=False).to(device)
 
-        for element in batch:
+        for element in batch_x:
             model.zero_grad()
             grad_elem = gradients_single_example(element.unsqueeze(0))
             grad_elem = [x.detach() for x in grad_elem]
