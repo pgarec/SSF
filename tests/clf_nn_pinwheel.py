@@ -53,11 +53,11 @@ class Model(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(num_features, H),
-            # torch.nn.ReLU(),
             torch.nn.Tanh(),
+            nn.BatchNorm1d(H),  
             nn.Linear(H, H),
-            # torch.nn.ReLU(),
             torch.nn.Tanh(),
+            nn.BatchNorm1d(H),  
             nn.Linear(H,num_output, bias=False)
         )
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         model = Model(num_features, H, num_output, seed)
         lr = cfg.train.lr*((m+1)*0.5)
 
-        optimizer = torch.optim.SGD(model.parameters(),  lr=lr, momentum=cfg.train.momentum, weight_decay=cfg.train.weight_decay)
+        optimizer = torch.optim.SGD(model.parameters(),  lr=lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum,)
         criterion = nn.CrossEntropyLoss(reduction='sum')
 
         best_valid_accuracy = 0

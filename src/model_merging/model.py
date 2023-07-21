@@ -45,15 +45,15 @@ class MLP(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(self.image_shape, self.hidden_dim),
             nn.Tanh(),
+            # nn.ReLU(),
+            nn.BatchNorm1d(self.hidden_dim),  
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.Tanh(),
+            # nn.ReLU(),
+            nn.BatchNorm1d(self.hidden_dim),  
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.Tanh(),
             # nn.ReLU(),
-            nn.BatchNorm1d(self.hidden_dim),  
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.Tanh(),
-            # nn.ReLU(),
-            nn.BatchNorm1d(self.hidden_dim),  
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.Tanh(),
-            # nn.ReLU(),
         )
 
         self.clf = nn.Sequential(
