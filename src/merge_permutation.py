@@ -148,8 +148,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
             # P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.eye(m)*cfg.train.weight_decay
-            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta)
-            # P_mm = avg_grad_m @ avg_grad_m.T + torch.eye(m)*cfg.train.weight_decay
+            # P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m)*cfg.train.weight_decay
+            P_mm = avg_grad_m @ avg_grad_m.T + torch.diag(delta) + torch.eye(m)*cfg.train.weight_decay
 
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
             p_pred = torch.diagonal(P_mm)

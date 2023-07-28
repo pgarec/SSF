@@ -37,7 +37,7 @@ if seed > -1:
     torch.manual_seed(seed)
 
 num_clusters = 5        # number of clusters in pinwheel data
-samples_per_cluster = 1000  # number of samples per cluster in pinwheel
+samples_per_cluster = 2000  # number of samples per cluster in pinwheel
 K = 15                     # number of components in mixture model
 N = 2                      # number of latent dimensions
 P = 2                      # number of observation dimensions
@@ -53,11 +53,13 @@ class Model(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(num_features, H),
-            torch.nn.Tanh(),
-            nn.BatchNorm1d(H),  
+            # torch.nn.Tanh(),
+            torch.nn.ReLU(),
+            # nn.BatchNorm1d(H),  
             nn.Linear(H, H),
-            torch.nn.Tanh(),
-            nn.BatchNorm1d(H),  
+            # torch.nn.Tanh(),
+            torch.nn.ReLU(),
+            # nn.BatchNorm1d(H),  
             nn.Linear(H,num_output, bias=False)
         )
 

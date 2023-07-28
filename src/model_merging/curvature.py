@@ -8,24 +8,10 @@ import random
 import numpy as np
 from torch.distributions import Categorical
 
+sf = 1
 
 def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    def fisher_single_example_sampling(single_example_batch):
-        logits = model(single_example_batch.to(device))
-        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-        grads = []
-
-        outdx = Categorical(logits=log_probs).sample().unsqueeze(1).detach()
-        samples = log_probs.gather(1, outdx)
-        samples.backward(retain_graph=True)
-        grad = [p.grad.clone() for p in model.parameters()]
-        sq_grad = [g**2 for g in grad]
-        grads.append(sq_grad)
-        model.zero_grad()
-
-        return [torch.sum(torch.stack(g), dim=0) for g in zip(*grads)]
 
     def fisher_single_example(single_example_batch):
         logits = model(single_example_batch.to(device))
@@ -45,7 +31,7 @@ def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
         log_prob.backward()
         model.zero_grad()
 
-        return [torch.sum(torch.stack(g), dim=0) for g in zip(*sq_grads)]
+        return [torch.sum(torch.stack(g), dim=0)*sf for g in zip(*sq_grads)]
 
     variables = [p for p in model.parameters()]
     fishers = [torch.zeros(w.shape, requires_grad=False).to(device) for w in variables]
@@ -74,19 +60,6 @@ def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
 
 def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    def gradients_single_example_sampling(single_example_batch):
-        logits = model(single_example_batch.to(device))
-        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-
-        outdx = Categorical(logits=log_probs).sample().unsqueeze(1).detach()
-        samples = log_probs.gather(1, outdx)
-        samples.backward(retain_graph=True)
-        grad = [p.grad.clone() for p in model.parameters()]
-        model.zero_grad()
-        samples.backward()
-
-        return grad 
         
     def gradients_single_example(single_example_batch):
         logits = model(single_example_batch.to(device))
@@ -105,7 +78,9 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
         log_prob.backward()
         model.zero_grad()
 
-        return [torch.sum(torch.stack(g), dim=0) for g in zip(*grads)]
+        # print("gradients {}".format([torch.sum(torch.stack(g), dim=0) for g in zip(*grads)]))
+
+        return [torch.sum(torch.stack(g), dim=0)*sf for g in zip(*grads)]
 
     variables = [p for p in model.parameters()]
     grads = [torch.zeros(w.shape, requires_grad=False).to(device) for w in variables]
@@ -126,7 +101,7 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
 
         if grad_samples != -1 and n_examples > grad_samples:
             break
-
+    
     return grads
 
 
