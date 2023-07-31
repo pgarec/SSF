@@ -78,15 +78,12 @@ def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
         log_prob.backward()
         model.zero_grad()
 
-        # print("gradients {}".format([torch.sum(torch.stack(g), dim=0) for g in zip(*grads)]))
-
         return [torch.sum(torch.stack(g), dim=0)*sf for g in zip(*grads)]
 
     variables = [p for p in model.parameters()]
     grads = [torch.zeros(w.shape, requires_grad=False).to(device) for w in variables]
     
     n_examples = 0
-
     for batch_x, batch_y in dataset:
         n_examples += batch_x.shape[0]
         grads_batch = torch.zeros((len(variables)),requires_grad=False).to(device)
