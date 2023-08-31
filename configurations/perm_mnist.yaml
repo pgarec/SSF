@@ -13,8 +13,8 @@ data:
   batch_size_test: 64
   data_path: "./data"
   dataset: "MNIST"
-  classes: [0,1,2,3]
-  n_classes: 4
+  classes: [0,1,2,3,4,5,6,7,8,9]
+  n_classes: 10
   image_shape: 784
   unbalanced: []
   fisher_path: "./src/computed_fishers/"
@@ -34,8 +34,8 @@ data:
   n_examples: 10000
 
 models:
-  model0: "MNIST_0123_epoch80"
-  model1: "MNIST_0123_epoch100"
+  model0: "MNIST_0123456789_epoch100"
+  model1: "MNIST_0123456789_epoch80"
 
 train:
   initialization: ""
@@ -44,7 +44,7 @@ train:
   weight_decay: 0.001
   hidden_dim: 16
   epochs: 100
-  epochs_perm: 200000
+  epochs_perm: 100000
   step_size: 212
   gamma: 0.1
   momentum: 0.9
