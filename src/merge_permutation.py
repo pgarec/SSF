@@ -99,7 +99,6 @@ def perm_loss_fisher_optimized(cfg, metamodel, models, grads):
         metatheta_m = torch.stack(metatheta_m_list)
 
         m_pred = theta_m.T - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r).T
-        # m_pred = theta_m.T - CG(P_mm, torch.diag(grads_m**2)).apply(P_mr) @ (metatheta_r - theta_r).T
         p_pred = torch.diagonal(P_mm, dim1=-2, dim2=-1)
         posterior = logprob_normal_optimized(metatheta_m, m_pred, p_pred).sum()
 
@@ -111,7 +110,7 @@ def perm_loss_fisher_optimized(cfg, metamodel, models, grads):
     return -loss
 
 
-def perm_loss_fisher(cfg, metamodel, models, grads):
+def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params).to(device)
@@ -127,6 +126,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
         for k in range(n_models):
             model = models[k].to(device)
             grad = grads[k]
+            fisher = fishers[k]
             params = model.get_trainable_parameters()
             theta = nn.utils.parameters_to_vector(params).to(device)
             grad =  nn.utils.parameters_to_vector(grad).to(device)
@@ -139,13 +139,30 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
-            P_mr = torch.outer(grads_m, grads_r) / cfg.data.n_examples 
-            P_mm = torch.outer(grads_m, grads_m) / cfg.data.n_examples + cfg.train.weight_decay * torch.eye(m).to(device)
-            # P_mm = torch.diag((grads_m ** 2) / cfg.data.n_examples) + torch.eye(m) * cfg.train.weight_decay 
+            # The rank-one corrected diagonal Fisher approximation
+            avg_grad_m =  grads_m / cfg.data.n_examples
+            avg_grad_r = grads_r / cfg.data.n_examples
+            v = avg_grad_m
+            u = nn.utils.parameters_to_vector(fisher).to(device)[perm[:m]]
+            delta = u - v**2
 
+            P_mr = torch.outer(avg_grad_m, avg_grad_r)
+            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m)*cfg.train.weight_decay
+
+            # Inversion of Soren
+            # order of norm is 10e-08, norm4 is 10e-30, alpha is 0
+            # norm2 = torch.norm(avg_grad_m)**2
+            # norm4 = torch.norm(avg_grad_m)**4
+            # alpha = (1/(norm2+norm4)) - (1/norm2)
+            # A_inv = torch.eye(m) + alpha * v @ v.T
+            # P_mm_inv = torch.diag(delta**(-1/2)) @ A_inv @ torch.diag(delta**(-1/2))
+
+            # m_pred = theta_m - P_mm_inv @ P_mr @ (metatheta_r - theta_r)
+            # p_pred = torch.diagonal(P_mm)
+            # posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()     
+
+            # Standard inversion
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
-            # m_pred = theta_m - torch.diag(1/torch.diagonal(P_mm)) * (P_mr @ (metatheta_r - theta_r))
-       
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
 
@@ -158,7 +175,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads):
     return -loss
 
 
-def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="", plot=False):
+def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader = "", criterion="", plot=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     metamodel = metamodel.to(device)
     optimizer = optim.SGD(metamodel.get_trainable_parameters(), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
@@ -177,7 +194,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", 
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
         
-        l = perm_loss_fisher_optimized(cfg, metamodel, models, grads)
+        l = perm_loss_fisher(cfg, metamodel, models, grads, fishers)
         l.backward()      
         optimizer.step()
         perm_loss.append(-l.item())
@@ -357,6 +374,38 @@ def weight_perm_loss(cfg, metamodel, models, permutations, grads):
 
 
 def merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, test_loader = "", criterion="", plot=False):
+    optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum)
+    pbar = tqdm.trange(cfg.train.epochs_perm)
+
+    perm_losses = []
+    inference_loss = []
+
+    for it in pbar:
+        optimizer.zero_grad()
+        l = weight_perm_loss(cfg, metamodel, models, permutations, grads)
+        l.backward()      # Backward pass <- computes gradients
+        optimizer.step()
+        perm_losses.append(-l.item())
+        pbar.set_description(f'[Loss: {-l.item():.3f}')
+
+        if it % 10:
+            inference_loss.append(evaluate_model(metamodel, test_loader, criterion))
+
+    if plot:
+        plt.subplot(2,1,1)
+        plt.plot(perm_losses)
+        plt.xlabel('Permutations')
+        plt.ylabel('Permutation loss')
+        plt.subplot(2,1,2)
+        plt.plot(inference_loss)
+        plt.xlabel('Permutations')
+        plt.ylabel('Test loss')
+        plt.show()
+    
+    return metamodel
+
+
+def merging_models_weight_l2_permutation(cfg, metamodel, models, permutations, grads, test_loader = "", criterion="", plot=False):
     optimizer = optim.SGD(metamodel.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)#, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 

@@ -153,7 +153,7 @@ def compute_and_store_gradients(cfg, model_name, train_loader=[]):
         train_loader, _ = dataset.create_dataloaders()
 
     print("Starting Grads computation")
-    grad_diag = compute_gradients_model(model, train_loader, grad_samples=1000, sigma_sq=cfg.train.sigma_sq)
+    grad_diag = compute_gradients_model(model, train_loader, grad_samples=10000, sigma_sq=cfg.train.sigma_sq)
     print("Grads computed. Saving to file...")
     grad_name = model_name.split('/')[-1][:-3]
     store_file(grad_diag, cfg.data.grad_path + grad_name)

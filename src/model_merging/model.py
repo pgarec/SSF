@@ -44,16 +44,16 @@ class MLP(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(self.image_shape, self.hidden_dim),
-            nn.Tanh(),
-            # nn.ReLU(),
-            nn.BatchNorm1d(self.hidden_dim),  
+            # nn.Tanh(),
+            nn.ReLU(),
+            # nn.BatchNorm1d(self.hidden_dim),  
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.Tanh(),
-            # nn.ReLU(),
-            nn.BatchNorm1d(self.hidden_dim),  
+            # nn.Tanh(),
+            nn.ReLU(),
+            # nn.BatchNorm1d(self.hidden_dim),  
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.Tanh(),
-            # nn.ReLU(),
+            # nn.Tanh(),
+            nn.ReLU(),
         )
 
         self.clf = nn.Sequential(
@@ -92,11 +92,11 @@ class MLP_regression(nn.Module):
         self.hidden_dim = cfg.train.hidden_dim
         self.model = nn.Sequential(
             nn.Linear(cfg.data.dimensions, self.hidden_dim),
-            # nn.ReLU(),
-            nn.Tanh(),
+            nn.ReLU(),
+            # nn.Tanh(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.ReLU(),
-            nn.Tanh(),
+            nn.ReLU(),
+            # nn.Tanh(),
             nn.Linear(self.hidden_dim, 1),
         )
 

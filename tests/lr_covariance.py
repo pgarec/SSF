@@ -101,8 +101,6 @@ for k in range(args.num_k):
     m_k = args.beta*S_k @ phi_k.T @ y_k
     models.append({'m': m_k, 'iS': iS_k, 'S': S_k})
 
-# i think there is a tiny mistake on the equations
-
 ############################################
 # True Meta Posterior
 ############################################
@@ -118,17 +116,6 @@ true_theta = m
 ############################################
 # Models from models
 ############################################
-def active_set_permutation(x, W):
-    """ Description:    Does a random permutation of data and selects a subset
-    Input:          Data observations X (NxD)
-    Return:         Active Set X_A and X_rest / X_A U X_rest = X
-    """ 
-    permutation = torch.randperm(x.size()[1])
-
-    W_perm = W[permutation]
-    x_perm = x[:, permutation]
-
-    return x_perm, W_perm, permutation
 
 # Meta Posterior
 class MetaPosterior(torch.nn.Module):

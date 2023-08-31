@@ -23,7 +23,7 @@ data:
   fisher_samples: 10000
   n_examples: 10000
 
-  plot: True
+  plot: False
   permutations: 20
   m: 100
   weight_permutations: 20
@@ -35,7 +35,7 @@ train:
   perm_lr: 0.01
   hidden_dim: 16
   epochs: 200
-  epochs_perm: 30000
+  epochs_perm: 5000
   step_size: 212
   weight_decay: 0.001
   gamma: 0.1
