@@ -149,15 +149,17 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
             P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m)*cfg.train.weight_decay
 
-            # Inversion Soren
-            # order of norm is 10e-08 
+            # Inversion of Soren
+            # order of norm is 10e-08, norm4 is 10e-30, alpha is 0
             # norm2 = torch.norm(avg_grad_m)**2
             # norm4 = torch.norm(avg_grad_m)**4
             # alpha = (1/(norm2+norm4)) - (1/norm2)
             # A_inv = torch.eye(m) + alpha * v @ v.T
             # P_mm_inv = torch.diag(delta**(-1/2)) @ A_inv @ torch.diag(delta**(-1/2))
 
-            # s
+            # m_pred = theta_m - P_mm_inv @ P_mr @ (metatheta_r - theta_r)
+            # p_pred = torch.diagonal(P_mm)
+            # posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()     
 
             # Standard inversion
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
