@@ -26,7 +26,6 @@ def main(cfg):
     models = load_models(cfg)
     models = [model.to(device) for model in models]
     fishers = load_fishers(cfg)
-    # permutations = load_permutations(cfg)
     criterion = torch.nn.CrossEntropyLoss()
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()
@@ -42,7 +41,7 @@ def main(cfg):
     print("Random untrained - Average loss {}".format(avg_loss))
 
     # FISHER
-    # models = load_models(cfg)
+    models = load_models(cfg)
     output_model = clone_model(models[0], cfg)
     fisher_model = merging_models_fisher(output_model, models, fishers)
 
@@ -50,7 +49,7 @@ def main(cfg):
     print("Fisher - Average loss {}".format(avg_loss)) 
 
     # ISOTROPIC
-    # models = load_models(cfg)
+    models = load_models(cfg)
     output_model = clone_model(models[0], cfg)
     isotropic_model = merging_models_isotropic(output_model, models)
 
@@ -58,7 +57,7 @@ def main(cfg):
     print("Isotropic - Average loss {}".format(avg_loss))
 
     # PERMUTATION
-    # models = load_models(cfg)
+    models = load_models(cfg)
     metamodel = MLP(cfg)
     cfg.data.n_examples = cfg.data.grad_samples
     cfg.train.initialization = "MLP"
