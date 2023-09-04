@@ -63,21 +63,12 @@ def main(cfg):
     metamodel = MLP(cfg)
     cfg.data.n_examples = cfg.data.grad_samples
     cfg.train.initialization = "MLP"
-    # metamodel = isotropic_model # siempre inicializar en isotropic -- decision que yo tomaria
+    # metamodel = isotropic_model 
     # metamodel = fisher_model
-    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader, criterion, plot=True)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader, criterion, plot=True, store=True)
 
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
     print("Permutation - Average loss {}".format(avg_loss))  
-
-    # WEIGHT PERMUTATION
-    # models = load_models(cfg)
-    # random_model = MLP(cfg)
-    # metamodel = isotropic_model
-    # weight_perm_model = merging_models_weight_permutation(cfg, metamodel, models, permutations, grads, test_loader, criterion)
-
-    # avg_loss = inference(cfg, weight_perm_model, test_loader, criterion)
-    # print("Weight permutation - Average loss {}".format(avg_loss))   
 
 
 if __name__=="__main__":
