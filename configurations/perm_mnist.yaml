@@ -34,8 +34,8 @@ data:
   n_examples: 10000
 
 models:
-  model0: "MNIST_0123456789_epoch80"
-  model1: "MNIST_0123456789_epoch100"
+  model0: "MNIST_0123456789_epoch100"
+  model1: "MNIST_0123456789_epoch80"
 
 train:
   initialization: ""
