@@ -163,6 +163,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
 
             # Standard inversion
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
+            # m_pred = theta_m - (torch.diag(1/torch.diagonal(P_mm))) @ P_mr @ (metatheta_r - theta_r)
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
 
