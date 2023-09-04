@@ -26,8 +26,6 @@ def merging_models_fisher(
         assert len(fishers) == n_models
 
     d = dict(output_model.named_parameters())
-    print(output_model)
-    print(d)
 
     for idx, k in enumerate(list(d.keys())):
         # iterate over models
