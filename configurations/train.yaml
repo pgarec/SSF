@@ -37,7 +37,7 @@ data:
 train:
   lr: 0.01
   hidden_dim: 16
-  epochs: 100
+  epochs: 10
   epochs_perm: 500
   step_size: 212
   weight_decay: 0.01
@@ -48,6 +48,7 @@ train:
   fisher_gradients: True
   weight_permutations: False
   torch_seed: 40
+  training: True
 
   name: ""
   plot_sample: False

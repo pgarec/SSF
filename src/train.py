@@ -5,7 +5,7 @@ import hydra
 import matplotlib.pyplot as plt
 import numpy as np
 
-from model_merging.model import MLP
+from model_merging.model import MLP, CNNMnist
 from model_merging.curvature import compute_and_store_fisher_diagonals, compute_and_store_gradients
 from model_merging.data import create_dataset
 from model_merging.permutation import l2_permutation, compute_permutations
@@ -154,7 +154,7 @@ def main(cfg):
     else:
         dataset = create_dataset(cfg)   
         train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
-        model = MLP(cfg)
+        model = CNNMnist(cfg)
         optimizer = optim.SGD(
             model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay*2, momentum=cfg.train.momentum
         )

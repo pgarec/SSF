@@ -7,7 +7,7 @@
 import torch
 import hydra
 
-from src.model_merging.model import MLP
+from src.model_merging.model import MLP, CNNMnist
 from src.model_merging.data import load_models, load_fishers, load_grads, create_dataset
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.train import inference
@@ -36,7 +36,7 @@ def main(cfg):
     avg_loss = inference(cfg, models[0], test_loader, criterion)
     print("Model 0 - Average loss {}".format(avg_loss))
 
-    random_model = MLP(cfg).to(device)
+    random_model = CNNMnist(cfg).to(device)
     avg_loss = inference(cfg, random_model, test_loader, criterion)
     print("Random untrained - Average loss {}".format(avg_loss))
 
@@ -58,7 +58,7 @@ def main(cfg):
 
     # PERMUTATION
     models = load_models(cfg)
-    metamodel = MLP(cfg)
+    metamodel = CNNMnist(cfg)
     cfg.data.n_examples = cfg.data.grad_samples
     cfg.train.initialization = "MLP"
     # metamodel = isotropic_model 

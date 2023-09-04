@@ -34,10 +34,11 @@ data:
   n_examples: 10000
 
 models:
-  model0: "MNIST_0123456789_epoch100"
-  model1: "MNIST_0123456789_epoch80"
+  model0: "MNIST_0123456789_epoch10"
+  model1: "MNIST_0123456789_epoch8"
 
 train:
+  training: False
   initialization: ""
   lr: 0.01
   perm_lr: 0.01
