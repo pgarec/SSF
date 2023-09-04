@@ -8,12 +8,11 @@ import torch
 import hydra
 
 from src.model_merging.model import MLP
-from src.model_merging.data import load_permutations, load_models, load_fishers, load_grads, create_dataset
+from src.model_merging.data import load_models, load_fishers, load_grads, create_dataset
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.train import inference
 from src.model_merging.model import clone_model
-from src.merge_permutation import merging_models_permutation, merging_models_weight_permutation
-from src.model_merging.permutation import compute_permutations, sorted_weight_permutation
+from src.merge_permutation import merging_models_permutation
 import torch.nn as nn
 
 ############################################
