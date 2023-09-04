@@ -183,17 +183,6 @@ def main(cfg):
         if cfg.train.fisher_gradients:
             compute_and_store_gradients(model, name, cfg.data.grad_path, train_loader, cfg.data.n_classes)
 
-        if cfg.train.weight_permutations:
-            name_perm = "{}{}_{}_perm_epoch{}.pt".format(
-                cfg.data.model_path,
-                cfg.data.dataset,
-                "".join(map(str, cfg.data.classes)), cfg.train.epochs
-            )
-
-            # model_perm = l2_permutation(cfg, model)
-            # torch.save(model_perm.state_dict(), name_perm)
-            # compute_permutations(cfg, name_perm)
-
 
 if __name__ == "__main__":
     main()
