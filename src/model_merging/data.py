@@ -1,6 +1,6 @@
 import torch
 import pickle
-from .model import MLP, MLP_regression
+from .model import MLP, MLP_regression, CNNMnist
 from .datasets.mnist import MNIST
 from .datasets.fmnist import FashionMNIST
 from .datasets.cifar import CIFAR10, CIFAR100
@@ -19,6 +19,26 @@ def load_models(cfg, names=[]):
     else:
         for model_name in names:
             model = MLP(cfg)
+            name = model_name.split('/')[-1][:-3] 
+            path = cfg.data.model_path + name + ".pt"
+            model.load_state_dict(torch.load(path), strict=False)
+            models.append(model)
+
+    return models
+
+
+def load_models_cnn(cfg, names=[]):
+    models = []
+
+    if names == []:
+        for model_name in cfg.models:
+            model = CNNMnist(cfg)
+            model.load_state_dict(torch.load(cfg.data.model_path+cfg.models[model_name]+".pt"), strict=False)
+            models.append(model)
+    
+    else:
+        for model_name in names:
+            model = CNNMnist(cfg)
             name = model_name.split('/')[-1][:-3] 
             path = cfg.data.model_path + name + ".pt"
             model.load_state_dict(torch.load(path), strict=False)

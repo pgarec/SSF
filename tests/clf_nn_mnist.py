@@ -8,7 +8,7 @@ import torch
 import hydra
 
 from src.model_merging.model import MLP, CNNMnist
-from src.model_merging.data import load_models, load_fishers, load_grads, create_dataset
+from src.model_merging.data import load_models, load_models_cnn, load_fishers, load_grads, create_dataset
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.train import inference
 from src.model_merging.model import clone_model
@@ -23,7 +23,7 @@ import torch.nn as nn
 def main(cfg):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     grads = load_grads(cfg)
-    models = load_models(cfg)
+    models = load_models_cnn(cfg)
     models = [model.to(device) for model in models]
     fishers = load_fishers(cfg)
     criterion = torch.nn.CrossEntropyLoss()
@@ -41,7 +41,7 @@ def main(cfg):
     print("Random untrained - Average loss {}".format(avg_loss))
 
     # FISHER
-    models = load_models(cfg)
+    models = load_models_cnn(cfg)
     output_model = clone_model(models[0], cfg)
     fisher_model = merging_models_fisher(output_model, models, fishers)
 
@@ -49,7 +49,7 @@ def main(cfg):
     print("Fisher - Average loss {}".format(avg_loss)) 
 
     # ISOTROPIC
-    models = load_models(cfg)
+    models = load_models_cnn(cfg)
     output_model = clone_model(models[0], cfg)
     isotropic_model = merging_models_isotropic(output_model, models)
 
@@ -57,7 +57,7 @@ def main(cfg):
     print("Isotropic - Average loss {}".format(avg_loss))
 
     # PERMUTATION
-    models = load_models(cfg)
+    models = load_models_cnn(cfg)
     metamodel = CNNMnist(cfg)
     cfg.data.n_examples = cfg.data.grad_samples
     cfg.train.initialization = "MLP"
