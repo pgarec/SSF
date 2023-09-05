@@ -21,21 +21,16 @@ import os
 import time
 
 
-def logprob_normal(x, mu, precision):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
+def evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_names = []):
+    if model_names != []:
+        grads = load_grads(cfg, model_names)
+    else:
+        grads = load_grads(cfg)
 
-    return log_p
+    metamodel = merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="")
+    avg_loss, count = evaluate_metamodel(cfg, metamodel, criterion, test_loader)
 
-
-def logprob_normal_optimized(x, mu, precision):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    mu = mu.T
-    
-    log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
-
-    return log_p
+    return avg_loss, count
 
 
 def evaluate_model(model, val_loader, criterion):
@@ -51,6 +46,14 @@ def evaluate_model(model, val_loader, criterion):
             avg_loss += loss
 
     return avg_loss / len(val_loader)
+
+
+def logprob_normal(x, mu, precision):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
+
+    return log_p
 
 
 def permutation_loss(cfg, metamodel, models, grads, fishers):
@@ -180,15 +183,3 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
             pickle.dump(perm_loss, f)
 
     return metamodel, inference_loss, perm_loss
-
-
-def evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_names = []):
-    if model_names != []:
-        grads = load_grads(cfg, model_names)
-    else:
-        grads = load_grads(cfg)
-
-    metamodel = merging_models_permutation(cfg, metamodel, models, grads, test_loader = "", criterion="")
-    avg_loss, count = evaluate_metamodel(cfg, metamodel, criterion, test_loader)
-
-    return avg_loss, count
