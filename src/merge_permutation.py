@@ -55,25 +55,26 @@ def evaluate_model(model, val_loader, criterion):
 
 def permutation_loss(cfg, metamodel, models, grads, fishers):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    params = metamodel.get_trainable_parameters()
-    metatheta = nn.utils.parameters_to_vector(params).to(device)
-
+    metatheta = nn.utils.parameters_to_vector(metamodel.get_trainable_parameters()).to(device)
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
     n_models = len(models)
+    m = torch.tensor(cfg.data.m).to(device)
 
     loss = 0.0
-    m = torch.tensor(cfg.data.m).to(device)
+    # start_time = time.time()
+
+    # Precompute constants
+    cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
 
     for p in range(n_perm):
         perm = torch.randperm(n_dim).to(device)
-        for k in range(n_models):
-            model = models[k].to(device)
-            grad = grads[k]
-            fisher = fishers[k]
+        model_grad_fisher = [(models[k].to(device), grads[k], fishers[k]) for k in range(n_models)]
+
+        for model, grad, fisher in model_grad_fisher:
             params = model.get_trainable_parameters()
             theta = nn.utils.parameters_to_vector(params).to(device)
-            grad =  nn.utils.parameters_to_vector(grad).to(device)
+            grad = nn.utils.parameters_to_vector(grad).to(device)
 
             theta_r = theta[perm[m:]]
             theta_m = theta[perm[:m]]
@@ -83,27 +84,27 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
-
-            # The rank-one corrected diagonal Fisher approximation
-            avg_grad_m =  grads_m / cfg.data.n_examples
+            avg_grad_m = grads_m / cfg.data.n_examples
             avg_grad_r = grads_r / cfg.data.n_examples
             v = avg_grad_m
             u = nn.utils.parameters_to_vector(fisher).to(device)[perm[:m]]
             delta = u - v**2
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
-            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device)*cfg.train.weight_decay   
+            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device) * cfg.train.weight_decay
 
-            m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
+            # Solve the linear system
+            m_pred = theta_m - torch.linalg.solve(P_mm, P_mr @ (metatheta_r - theta_r))
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
 
-            cond_prior_m = torch.zeros(m).to(device)    
-            cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
-            prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
-            
-            loss += (posterior + prior)/(m * n_perm)
+            # Compute prior
+            prior = -(1 - (1 / n_models)) * logprob_normal(metatheta_m, torch.zeros(m).to(device), cond_prior_prec).sum()
 
+            loss += (posterior + prior) / (m * n_perm)
+
+    # elapsed_time = time.time() - start_time
+    # print("Elapsed time permutation loss {}".format(elapsed_time))
     return -loss
 
 
@@ -121,8 +122,8 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
     inference_loss = []
 
     for it in pbar:
-        start_time = time.time()
-        if it % 100 == 0:
+        # start_time = time.time()
+        if it % 1000 == 0:
             inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
@@ -133,11 +134,10 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         perm_loss.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
 
-        elapsed_time = time.time() - start_time
-        print("Elapsed time merging loop {}".format(elapsed_time))
+        # elapsed_time = time.time() - start_time
+        # print("Elapsed time merging loop {}".format(elapsed_time))
 
         if it % 10000 == 0:
-            print("ENTRO")
             if cfg.data.dataset == "PINWHEEL":
                 name = "{}metamodel_{}_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m, cfg.data.n_classes)
 
