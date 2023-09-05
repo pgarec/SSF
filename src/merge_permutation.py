@@ -64,7 +64,6 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
 
     loss = 0.0
     m = torch.tensor(cfg.data.m).to(device)
-    start_time = time.time()
 
     for p in range(n_perm):
         perm = torch.randperm(n_dim).to(device)
@@ -102,12 +101,9 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             cond_prior_m = torch.zeros(m).to(device)    
             cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
             prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
-
-            elapsed_time = time.time() - start_time
             
             loss += (posterior + prior)/(m * n_perm)
 
-    print("Elapsed time permutation loss {}".format(elapsed_time))
     return -loss
 
 
@@ -126,7 +122,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
 
     for it in pbar:
         start_time = time.time()
-        if it % 10:
+        if it % 100 == 0:
             inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
