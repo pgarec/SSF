@@ -1,26 +1,20 @@
 # -*- coding: utf-8 -*-
-#
 # Copyright (c) 2023 Pol Garcia Recasens
 # CogSys Section  ---  (pgare@dtu.dk)
 # Technical University of Denmark (DTU)
 
 import torch
 import hydra
-
-from src.model_merging.model import MLP, CNNMnist
-from src.model_merging.data import load_models, load_models_cnn, load_fishers, load_grads, create_dataset
-from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
-from src.train import inference
-from src.model_merging.model import clone_model
-from src.merge_permutation import merging_models_permutation
 import torch.nn as nn
 
-############################################
-# Main
-############################################
+from src.model_merging.model import MLP, CNNMnist, clone_model
+from src.model_merging.data import load_models_cnn, load_fishers, load_grads, create_dataset
+from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
+from src.train import inference
+from src.merge_permutation import merging_models_permutation
 
-@hydra.main(config_path="./configurations", config_name="perm_mnist.yaml")
-def main(cfg):
+
+def load_and_prepare_data(cfg):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     grads = load_grads(cfg)
     models = load_models_cnn(cfg)
@@ -30,44 +24,50 @@ def main(cfg):
     dataset = create_dataset(cfg)
     test_loader = dataset.create_inference_dataloader()
 
-    params = models[0].get_trainable_parameters()
-    metatheta = nn.utils.parameters_to_vector(params)
-    print("Params model {}".format(len(metatheta)))
-    avg_loss = inference(cfg, models[0], test_loader, criterion)
-    print("Model 0 - Average loss {}".format(avg_loss))
+    return device, grads, models, fishers, criterion, test_loader
 
+
+def print_average_loss(model_name, avg_loss):
+    print("{} - Average loss {}".format(model_name, avg_loss))
+
+
+def main_operations(cfg, device, grads, models, fishers, criterion, test_loader):
+    # Original Model
+    original_model = models[0]
+    avg_loss = inference(cfg, original_model, test_loader, criterion)
+    print_average_loss("Model 0", avg_loss)
+
+    # Random Untrained Model
     random_model = CNNMnist(cfg).to(device)
     avg_loss = inference(cfg, random_model, test_loader, criterion)
-    print("Random untrained - Average loss {}".format(avg_loss))
+    print_average_loss("Random untrained", avg_loss)
 
-    # FISHER
-    models = load_models_cnn(cfg)
-    output_model = clone_model(models[0], cfg)
+    # Fisher Model
+    output_model = clone_model(original_model, cfg)
     fisher_model = merging_models_fisher(output_model, models, fishers)
-
     avg_loss = inference(cfg, fisher_model, test_loader, criterion)
-    print("Fisher - Average loss {}".format(avg_loss)) 
+    print_average_loss("Fisher", avg_loss)
 
-    # ISOTROPIC
-    models = load_models_cnn(cfg)
-    output_model = clone_model(models[0], cfg)
+    # Isotropic Model
+    output_model = clone_model(original_model, cfg)
     isotropic_model = merging_models_isotropic(output_model, models)
-
     avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
-    print("Isotropic - Average loss {}".format(avg_loss))
+    print_average_loss("Isotropic", avg_loss)
 
-    # PERMUTATION
-    models = load_models_cnn(cfg)
+    # Permutation Model
     metamodel = CNNMnist(cfg)
     cfg.data.n_examples = cfg.data.grad_samples
     cfg.train.initialization = "MLP"
-    # metamodel = isotropic_model 
-    # metamodel = fisher_model
     perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader, criterion, plot=True, store=True)
-
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
-    print("Permutation - Average loss {}".format(avg_loss))  
+    print_average_loss("Permutation", avg_loss)
 
 
-if __name__=="__main__":
+@hydra.main(config_path="./configurations", config_name="perm_mnist.yaml")
+def main(cfg):
+    device, grads, models, fishers, criterion, test_loader = load_and_prepare_data(cfg)
+    main_operations(cfg, device, grads, models, fishers, criterion, test_loader)
+
+
+if __name__ == "__main__":
     main()
