@@ -18,7 +18,7 @@ from model_merging.permutation import scaling_permutation, l2_permutation
 import numpy as np
 import pickle
 import os
-import cProfile
+import time
 
 
 def logprob_normal(x, mu, precision):
@@ -53,7 +53,7 @@ def evaluate_model(model, val_loader, criterion):
     return avg_loss / len(val_loader)
 
 
-def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
+def permutation_loss(cfg, metamodel, models, grads, fishers):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     params = metamodel.get_trainable_parameters()
     metatheta = nn.utils.parameters_to_vector(params).to(device)
@@ -64,7 +64,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
 
     loss = 0.0
     m = torch.tensor(cfg.data.m).to(device)
-    
+    start_time = time.time()
+
     for p in range(n_perm):
         perm = torch.randperm(n_dim).to(device)
         for k in range(n_models):
@@ -83,6 +84,7 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
             grads_r = grad[perm[m:]]
             grads_m = grad[perm[:m]]
 
+
             # The rank-one corrected diagonal Fisher approximation
             avg_grad_m =  grads_m / cfg.data.n_examples
             avg_grad_r = grads_r / cfg.data.n_examples
@@ -91,21 +93,8 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
             delta = u - v**2
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
-            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device)*cfg.train.weight_decay
+            P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device)*cfg.train.weight_decay   
 
-            # Inversion of Soren
-            # order of norm is 10e-08, norm4 is 10e-30, alpha is 0
-            # norm2 = torch.norm(avg_grad_m)**2
-            # norm4 = torch.norm(avg_grad_m)**4
-            # alpha = (1/(norm2+norm4)) - (1/norm2)
-            # A_inv = torch.eye(m) + alpha * v @ v.T
-            # P_mm_inv = torch.diag(delta**(-1/2)) @ A_inv @ torch.diag(delta**(-1/2))
-
-            # m_pred = theta_m - P_mm_inv @ P_mr @ (metatheta_r - theta_r)
-            # p_pred = torch.diagonal(P_mm)
-            # posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()     
-
-            # Standard inversion
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr) @ (metatheta_r - theta_r)
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
@@ -113,9 +102,12 @@ def perm_loss_fisher(cfg, metamodel, models, grads, fishers):
             cond_prior_m = torch.zeros(m).to(device)    
             cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
             prior = -(1 - (1/n_models))*logprob_normal(metatheta_m, cond_prior_m, cond_prior_prec).sum()
+
+            elapsed_time = time.time() - start_time
             
             loss += (posterior + prior)/(m * n_perm)
 
+    print("Elapsed time permutation loss {}".format(elapsed_time))
     return -loss
 
 
@@ -133,18 +125,23 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
     inference_loss = []
 
     for it in pbar:
+        start_time = time.time()
         if it % 10:
             inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
         optimizer.zero_grad()
         
-        l = perm_loss_fisher_optimized(cfg, metamodel, models, grads, fishers)
+        l = permutation_loss(cfg, metamodel, models, grads, fishers)
         l.backward()      
         optimizer.step()
         perm_loss.append(-l.item())
         pbar.set_description(f'[Loss: {-l.item():.3f}')
 
-        if it % 10000:
+        elapsed_time = time.time() - start_time
+        print("Elapsed time merging loop {}".format(elapsed_time))
+
+        if it % 10000 == 0:
+            print("ENTRO")
             if cfg.data.dataset == "PINWHEEL":
                 name = "{}metamodel_{}_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m, cfg.data.n_classes)
 
