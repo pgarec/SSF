@@ -6,12 +6,22 @@
 import torch
 import hydra
 import torch.nn as nn
+import omegaconf
+import numpy as np
 
 from src.model_merging.model import MLP, CNNMnist, clone_model
-from src.model_merging.data import load_models_cnn, load_fishers, load_grads, create_dataset
+from src.model_merging.data import load_models_cnn, load_fishers, load_grads, create_dataset, load_models
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.train import inference
 from src.merge_permutation import merging_models_permutation
+
+# CONFIGURATION
+cfg = omegaconf.OmegaConf.load('./configurations/perm_mnist.yaml')
+seed = cfg.train.torch_seed
+
+if seed > -1:
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
 
 def load_and_prepare_data(cfg):
@@ -20,18 +30,19 @@ def load_and_prepare_data(cfg):
     models = load_models_cnn(cfg)
     models = [model.to(device) for model in models]
     fishers = load_fishers(cfg)
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss(reduction='sum')
     dataset = create_dataset(cfg)
+    train_loader,_ = dataset.create_dataloaders()
     test_loader = dataset.create_inference_dataloader()
 
-    return device, grads, models, fishers, criterion, test_loader
+    return device, grads, models, fishers, criterion, test_loader, train_loader
 
 
 def print_average_loss(model_name, avg_loss):
     print("{} - Average loss {}".format(model_name, avg_loss))
 
 
-def main_operations(cfg, device, grads, models, fishers, criterion, test_loader):
+def main_operations(cfg, device, grads, models, fishers, criterion, test_loader, train_loader):
     # Original Model
     original_model = models[0]
     avg_loss = inference(cfg, original_model, test_loader, criterion)
@@ -65,8 +76,8 @@ def main_operations(cfg, device, grads, models, fishers, criterion, test_loader)
 
 @hydra.main(config_path="./configurations", config_name="perm_mnist.yaml")
 def main(cfg):
-    device, grads, models, fishers, criterion, test_loader = load_and_prepare_data(cfg)
-    main_operations(cfg, device, grads, models, fishers, criterion, test_loader)
+    device, grads, models, fishers, criterion, test_loader, train_loader = load_and_prepare_data(cfg)
+    main_operations(cfg, device, grads, models, fishers, criterion, test_loader, train_loader)
 
 
 if __name__ == "__main__":

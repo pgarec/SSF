@@ -51,7 +51,7 @@ def evaluate_model(model, val_loader, criterion):
 def logprob_normal(x, mu, precision):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - 0.5*precision*(x - mu)**2
+    log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - (0.5*precision*(x - mu)**2)
 
     return log_p
 
@@ -63,12 +63,14 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
     n_perm = cfg.data.permutations
     n_models = len(models)
     m = torch.tensor(cfg.data.m).to(device)
+    maximum = torch.tensor(cfg.data.maximum).to(device)
 
     loss = 0.0
     # start_time = time.time()
 
     # Precompute constants
     cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
+    # loss = (1 - (1 / n_models)) * logprob_normal(metatheta[:m], torch.zeros(m).to(device), cond_prior_prec).sum()
 
     for p in range(n_perm):
         perm = torch.randperm(n_dim).to(device)
@@ -77,18 +79,19 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
         for model, grad, fisher in model_grad_fisher:
             params = model.get_trainable_parameters()
             theta = nn.utils.parameters_to_vector(params).to(device)
-            grad = nn.utils.parameters_to_vector(grad).to(device)
+            grad = nn.utils.parameters_to_vector(grad).to(device) # *10e05
 
-            theta_r = theta[perm[m:]]
+            theta_r = theta[perm[m:maximum]]
             theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:]]
+            metatheta_r = metatheta[perm[m:maximum]]
             metatheta_m = metatheta[perm[:m]]
 
-            grads_r = grad[perm[m:]]
+            grads_r = grad[perm[m:maximum]]
             grads_m = grad[perm[:m]]
 
             avg_grad_m = grads_m / cfg.data.n_examples
             avg_grad_r = grads_r / cfg.data.n_examples
+
             v = avg_grad_m
             u = nn.utils.parameters_to_vector(fisher).to(device)[perm[:m]]
             delta = u - v**2
@@ -96,7 +99,19 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
             P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device) * cfg.train.weight_decay
 
-            # Solve the linear system
+            # Inversion of Soren
+            # order of norm is 10e-08, norm4 is 10e-30, alpha is 0
+            # norm2 = torch.norm(avg_grad_m)**2
+            # norm4 = torch.norm(avg_grad_m)**4
+            # alpha = (1/(norm2+norm4)) - (1/norm2)
+            # A_inv = torch.eye(m) + alpha * v @ v.T
+            # P_mm_inv = torch.diag(delta**(-1/2)) @ A_inv @ torch.diag(delta**(-1/2))
+
+            # m_pred = theta_m - P_mm_inv @ P_mr @ (metatheta_r - theta_r)
+            # p_pred = torch.diagonal(P_mm)
+            # posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()  
+
+            # Original inversion
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr @ (metatheta_r - theta_r))
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
@@ -105,9 +120,14 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             prior = -(1 - (1 / n_models)) * logprob_normal(metatheta_m, torch.zeros(m).to(device), cond_prior_prec).sum()
 
             loss += (posterior + prior) / (m * n_perm)
+            # loss += posterior
+
 
     # elapsed_time = time.time() - start_time
     # print("Elapsed time permutation loss {}".format(elapsed_time))
+    # loss_pred = loss/(m *n_perm)
+    # loss += loss_pred.sum()
+
     return -loss
 
 

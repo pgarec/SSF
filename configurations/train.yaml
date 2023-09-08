@@ -34,7 +34,7 @@ data:
   permutations: 200
   m: 500
 
-train:
+train:  
   lr: 0.01
   hidden_dim: 16
   epochs: 10

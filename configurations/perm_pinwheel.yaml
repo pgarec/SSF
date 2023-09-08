@@ -9,8 +9,8 @@ hydra:
     dir: .
 
 data:
-  batch_size_train: 64
-  batch_size_test: 64
+  batch_size_train: 1
+  batch_size_test: 1
   data_path: "./data"
   image_shape: 784
   unbalanced: []
@@ -20,13 +20,9 @@ data:
   perm_path: "./src/computed_permutations/"
 
   dataset: "PINWHEEL"
+  maximum: 100000
   m: 200
-  permutations: 5
-  weight_permutations: 5
-  layer_weight_permutation: 2
-  scaling_perm_min: 1
-  scaling_perm_max: 5
-  number_scalations: 5
+  permutations: 10
   plot: False
   grad_samples: 10000
   n_examples: -1

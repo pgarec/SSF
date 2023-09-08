@@ -154,8 +154,7 @@ class MetaPosterior(torch.nn.Module):
                     P_mr = fisher[perm[:m],:][:,perm[m:]]
                     P_mm = fisher[perm[:m],:][:,perm[:m]] 
                     iP_mm = torch.inverse(P_mm)
-                    #m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
-                    m_pred = m_k[perm[:m]] - (torch.diag(1/torch.diagonal(P_mm))) @ P_mr @ (theta_r - m_k[perm[m:]])
+                    m_pred = m_k[perm[:m]] - iP_mm @ P_mr @ (theta_r - m_k[perm[m:]])
                     p_pred = torch.diagonal(P_mm)
 
                     log_p_masked = - 0.5*np.log(2*torch.tensor([math.pi])) + 0.5*torch.log(p_pred)  - (0.5* p_pred *(theta[:m] - m_pred)**2)
@@ -171,7 +170,7 @@ class MetaPosterior(torch.nn.Module):
 ############################################
 grads = [compute_fisher(i) for i, _ in enumerate(models)]
 meta_model = MetaPosterior(models, grads, datasets, args)
-optimizer = torch.optim.SGD(params=meta_model.parameters(), lr=1e-4, momentum=0.9)
+optimizer = torch.optim.SGD(params=meta_model.parameters(), lr=1e-4)#, momentum=0.9)
 # optimizer = torch.optim.SGD([{'params':meta_model.m, 'lr':1e-3},{'params':meta_model.L,'lr':1e-6}], lr=1e-4, momentum=0.9)
 # optimizer = torch.optim.Adam(meta_model.parameters(), lr=1e-2)
 pbar = tqdm.trange(args.epochs)
@@ -188,7 +187,6 @@ for it in pbar:
     pbar.set_description(f'[Loss: {-meta_model().item():.3f}')
     # print('  \__ elbo =', meta_model().item())
 
-print(map_mse)
 if args.plot:
     directory = "./images/{}_d{}_m{}_{}epochs_seed{}/".format("LR_FISHER", args.dim, args.mask, args.max_perm, seed)
    

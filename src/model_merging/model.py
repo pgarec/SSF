@@ -85,6 +85,10 @@ class MLP(nn.Module):
 class CNNMnist(nn.Module):
     def __init__(self, cfg):
         super(CNNMnist, self).__init__()
+        
+        if cfg.train.torch_seed > -1:
+            torch.manual_seed(cfg.train.torch_seed)
+            
         self.num_classes = cfg.data.n_classes
         self.training = cfg.train.training
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)

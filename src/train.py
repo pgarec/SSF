@@ -4,6 +4,7 @@ import torch.optim as optim
 import hydra
 import matplotlib.pyplot as plt
 import numpy as np
+import omegaconf
 
 from model_merging.model import MLP, CNNMnist
 from model_merging.curvature import compute_and_store_fisher_diagonals, compute_and_store_gradients
@@ -21,13 +22,20 @@ plt.rc('text', usetex=True)
 plt.rc('font', **font)
 plt.rc('text.latex', preamble=r'\usepackage{bm}')
 
+# CONFIGURATION
+cfg = omegaconf.OmegaConf.load('./configurations/train.yaml')
+seed = cfg.train.torch_seed
+
+if seed > -1:
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
 
 def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.train()
     y_classes = dict(zip(cfg.data.classes, range(len(cfg.data.classes))))
-
     for epoch in range(cfg.train.epochs):
         train_loss = 0
         for _, (x, y) in enumerate(train_loader):
@@ -145,8 +153,11 @@ def train_subsets(cfg):
 
 @hydra.main(config_path="./configurations", config_name="train.yaml")
 def main(cfg):
-    if cfg.train.torch_seed > -1:
-        torch.manual_seed(cfg.train.torch_seed)
+
+    seed = cfg.train.torch_seed
+    if seed > -1:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
 
     if cfg.data.subset_length > 0:
         train_subsets(cfg)
@@ -156,7 +167,7 @@ def main(cfg):
         train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
         model = CNNMnist(cfg)
         optimizer = optim.SGD(
-            model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay*2, momentum=cfg.train.momentum
+            model.parameters(), lr=cfg.train.lr, weight_decay=cfg.train.weight_decay
         )
         criterion = torch.nn.CrossEntropyLoss()
 
@@ -178,10 +189,10 @@ def main(cfg):
         inference(cfg, model, test_loader, criterion)
 
         if cfg.train.fisher_diagonal:
-            compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, train_loader, cfg.data.n_classes)
+            compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, test_loader, cfg.data.n_classes)
 
         if cfg.train.fisher_gradients:
-            compute_and_store_gradients(model, name, cfg.data.grad_path, train_loader, cfg.data.n_classes)
+            compute_and_store_gradients(model, name, cfg.data.grad_path, test_loader, cfg.data.n_classes)
 
 
 if __name__ == "__main__":
