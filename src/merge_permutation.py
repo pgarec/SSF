@@ -66,11 +66,9 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
     maximum = torch.tensor(cfg.data.maximum).to(device)
 
     loss = 0.0
-    # start_time = time.time()
 
     # Precompute constants
     cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
-    # loss = (1 - (1 / n_models)) * logprob_normal(metatheta[:m], torch.zeros(m).to(device), cond_prior_prec).sum()
 
     for p in range(n_perm):
         perm = torch.randperm(n_dim).to(device)
@@ -98,13 +96,14 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
             P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device) * cfg.train.weight_decay
-
+        
             # Inversion of Soren
             # order of norm is 10e-08, norm4 is 10e-30, alpha is 0
             # norm2 = torch.norm(avg_grad_m)**2
             # norm4 = torch.norm(avg_grad_m)**4
             # alpha = (1/(norm2+norm4)) - (1/norm2)
             # A_inv = torch.eye(m) + alpha * v @ v.T
+            # delta += 0.005
             # P_mm_inv = torch.diag(delta**(-1/2)) @ A_inv @ torch.diag(delta**(-1/2))
 
             # m_pred = theta_m - P_mm_inv @ P_mr @ (metatheta_r - theta_r)
@@ -120,13 +119,6 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             prior = -(1 - (1 / n_models)) * logprob_normal(metatheta_m, torch.zeros(m).to(device), cond_prior_prec).sum()
 
             loss += (posterior + prior) / (m * n_perm)
-            # loss += posterior
-
-
-    # elapsed_time = time.time() - start_time
-    # print("Elapsed time permutation loss {}".format(elapsed_time))
-    # loss_pred = loss/(m *n_perm)
-    # loss += loss_pred.sum()
 
     return -loss
 
@@ -143,22 +135,20 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
 
     perm_loss = []
     inference_loss = []
+    
+    start_time = time.time()
 
     for it in pbar:
-        # start_time = time.time()
+        l = permutation_loss(cfg, metamodel, models, grads, fishers)
+        l.backward()    
+        pbar.set_description(f'[Loss: {-l.item():.3f}')  
+        optimizer.step()
+
         if it % 1000 == 0:
             inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
+            perm_loss.append(-l.item())
         optimizer.zero_grad()
-        
-        l = permutation_loss(cfg, metamodel, models, grads, fishers)
-        l.backward()      
-        optimizer.step()
-        perm_loss.append(-l.item())
-        pbar.set_description(f'[Loss: {-l.item():.3f}')
-
-        # elapsed_time = time.time() - start_time
-        # print("Elapsed time merging loop {}".format(elapsed_time))
 
         if it % 10000 == 0:
             if cfg.data.dataset == "PINWHEEL":
@@ -170,6 +160,9 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
             else:
                 name = "{}metamodel_{}_{}models_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, len(list(cfg.models)), it, cfg.data.m, cfg.data.n_classes)
             torch.save(metamodel.state_dict(), name)
+
+    elapsed_time = time.time() - start_time
+    print("Elapsed time merging {}".format(elapsed_time))
 
     if plot:
         if cfg.data.dataset == "PINWHEEL":
@@ -196,10 +189,12 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         plt.savefig('{}plot.png'.format(directory))
 
     if store:
-        with open('{}inference_loss'.format(directory), 'wb') as f:
-            pickle.dump(inference_loss, f)
+        # with open('{}inference_loss'.format(directory), 'wb') as f:
+        #     pickle.dump(inference_loss, f)
 
-        with open('{}perm_loss'.format(directory), 'wb') as f:
-            pickle.dump(perm_loss, f)
+        # with open('{}perm_loss'.format(directory), 'wb') as f:
+        #     pickle.dump(perm_loss, f)
+        print("Inference losses: {}".format(inference_loss))
+        print("Permutation losses: {}".format(perm_loss))
 
     return metamodel, inference_loss, perm_loss

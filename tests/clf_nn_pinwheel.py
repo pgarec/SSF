@@ -126,6 +126,7 @@ if __name__ == "__main__":
     batch_data = True
     data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25)
 
+    print("Torch seed {}".format(cfg.train.torch_seed))
     print("X data shape {}".format(data.shape))
 
     # define train and validation 
@@ -164,7 +165,7 @@ if __name__ == "__main__":
         plt.show()
 
     num_features = X_train.shape[-1]
-    print(num_features)
+    print("Num features {}".format(num_features))
     num_output = num_clusters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = []
@@ -226,18 +227,17 @@ if __name__ == "__main__":
     print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
 
     output_model = clone_model(models[0], num_features, H, num_output, seed)
-    # fishers = [compute_fisher_diagonals(m, val_loader, num_clusters, cfg.data.n_examples) for m in models]
     fishers = [fim_diag(m, val_loader, cfg.data.n_examples) for m in models]
     fisher_model = merging_models_fisher(output_model, models, fishers)
     print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
     metamodel = isotropic_model
-    # grads = [compute_gradients(m, val_loader, num_clusters, cfg.data.n_examples) for m in models]
     grads = [grad_diag(m, train_loader, cfg.data.n_examples) for m in models]
   
     cfg.train.initialization = "MLP"
     cfg.data.n_classes = num_clusters
     output_model = clone_model(models[0], num_features, H, num_output, seed)
     metamodel = Model(num_features, H, num_output, seed)
-    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, val_loader, criterion, plot=True)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, val_loader, criterion, plot=True, store=True)
     print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+
