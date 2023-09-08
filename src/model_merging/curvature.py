@@ -1,3 +1,7 @@
+"""
+Functions borrowed from https://github.com/tudor-berariu/fisher-information-matrix/blob/master/fim.py
+"""
+
 import torch
 import torch.nn as nn
 import hydra
