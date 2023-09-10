@@ -21,7 +21,7 @@ data:
 
   dataset: "PINWHEEL"
   maximum: 100000
-  m: 200
+  m: 160
   permutations: 10
   plot: False
   grad_samples: 10000

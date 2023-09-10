@@ -1,6 +1,7 @@
 import numpy as np
 
-def make_pinwheel_data(radial_std, tangential_std, num_classes, num_per_class, rate):
+def make_pinwheel_data(radial_std, tangential_std, num_classes, num_per_class, rate, seed):
+    np.random.seed(seed)
     rads = np.linspace(0, 2*np.pi, num_classes, endpoint=False)
 
     features = np.random.randn(num_classes*num_per_class, 2) \

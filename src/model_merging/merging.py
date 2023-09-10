@@ -112,7 +112,7 @@ def merging_models_isotropic(
             s = torch.add(s, m.get_parameter(k))
 
         d[k].data = s / len(mergeable_models)
-
+    
     output_model.load_state_dict(d, strict=False)
 
     return output_model.to(device)

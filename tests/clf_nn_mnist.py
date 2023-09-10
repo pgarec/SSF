@@ -30,7 +30,7 @@ def load_and_prepare_data(cfg):
     models = load_models_cnn(cfg)
     models = [model.to(device) for model in models]
     fishers = load_fishers(cfg)
-    criterion = torch.nn.CrossEntropyLoss(reduction='sum')
+    criterion = torch.nn.CrossEntropyLoss()
     dataset = create_dataset(cfg)
     train_loader,_ = dataset.create_dataloaders()
     test_loader = dataset.create_inference_dataloader()

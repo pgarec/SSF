@@ -84,7 +84,7 @@ def inference(cfg, model, test_loader, criterion):
             batch_onehot = y.apply_(lambda i: y_classes[i]).to(device)
             loss = criterion(out, F.one_hot(batch_onehot, cfg.data.n_classes).to(torch.float))
             avg_loss[y] += loss.item()
-            count[y] += 1
+            count[y] += 1 #x.shape[0]
 
             if batch_idx == 0 and cfg.train.plot_sample:
                 probs = torch.softmax(out[0], dim=-1)

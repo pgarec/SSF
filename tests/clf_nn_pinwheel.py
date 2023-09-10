@@ -49,13 +49,9 @@ class Model(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(num_features, H),
-            # torch.nn.Tanh(),
             torch.nn.ReLU(),
-            # nn.BatchNorm1d(H),  
             nn.Linear(H, H),
-            # torch.nn.Tanh(),
             torch.nn.ReLU(),
-            # nn.BatchNorm1d(H),  
             nn.Linear(H,num_output, bias=False)
         )
 
@@ -91,31 +87,7 @@ def evaluate_model(model, val_loader, criterion):
             loss = criterion(out, y)
             avg_loss += loss
 
-    return avg_loss / len(val_loader)
-
-
-def evaluate_model_in_depth(model, val_loader, criterion, plot=False):
-    avg_loss = [0] * num_clusters
-    count = [0] * num_clusters
-    y_classes = dict(zip(range(num_clusters), range(num_clusters)))
-
-    model.eval()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    with torch.no_grad():
-        for batch_idx, (x, y) in enumerate(val_loader):
-            out = model(x.to(device))
-            loss = criterion(out, y)
-            avg_loss[y] += loss
-            count[y] += 1
-
-    if plot:
-        avg_loss_mean = [x/y for (x,y) in zip(avg_loss,count)]
-        plt.bar(list(y_classes.keys()), avg_loss_mean)
-        plt.xlabel("Number of classes")
-        plt.ylabel("Average Test Loss")
-        plt.xticks(list(y_classes.keys()))
-        plt.show()
+    return avg_loss / (len(val_loader))
 
 
 if __name__ == "__main__":
@@ -124,7 +96,7 @@ if __name__ == "__main__":
     palette = sns.color_palette('colorblind')
 
     batch_data = True
-    data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25)
+    data, labels = make_pinwheel_data(0.3, 0.05, num_clusters, samples_per_cluster, 0.25, seed)
 
     print("Torch seed {}".format(cfg.train.torch_seed))
     print("X data shape {}".format(data.shape))
@@ -169,7 +141,7 @@ if __name__ == "__main__":
     num_output = num_clusters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = []
-    n_models = 3
+    n_models = 2
     max_epoch = 100
 
     for m in range(n_models):
@@ -177,7 +149,7 @@ if __name__ == "__main__":
         lr = cfg.train.lr*((m+1)*0.5)
 
         optimizer = torch.optim.SGD(model.parameters(),  lr=lr, weight_decay=cfg.train.weight_decay)
-        criterion = nn.CrossEntropyLoss(reduction='sum')
+        criterion = nn.CrossEntropyLoss()
 
         best_valid_accuracy = 0
         max = max_epoch*(m+1)
@@ -211,7 +183,7 @@ if __name__ == "__main__":
         models.append(model)
 
     print("m {}".format(cfg.data.m))
-
+    print(val_loader)
     cfg.data.n_examples = 350
 
     parameters = models[0].get_trainable_parameters()
@@ -220,7 +192,6 @@ if __name__ == "__main__":
 
     for n, model in enumerate(models):
         print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
-
 
     output_model = clone_model(models[0], num_features, H, num_output, seed)
     isotropic_model = merging_models_isotropic(output_model, models)
