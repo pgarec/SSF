@@ -79,12 +79,19 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             theta = nn.utils.parameters_to_vector(params).to(device)
             grad = nn.utils.parameters_to_vector(grad).to(device) # *10e05
 
-            theta_r = theta[perm[m:maximum]]
+            if maximum == -1:
+                theta_r = theta[perm[m:]]
+                metatheta_r = metatheta[perm[m:]]
+            else:
+                theta_r = theta[perm[m:maximum]]
+                metatheta_r = metatheta[perm[m:maximum]]
             theta_m = theta[perm[:m]]
-            metatheta_r = metatheta[perm[m:maximum]]
             metatheta_m = metatheta[perm[:m]]
 
-            grads_r = grad[perm[m:maximum]]
+            if maximum == -1:
+                grads_r = grad[perm[m:]]
+            else:
+                grads_r = grad[perm[m:maximum]]
             grads_m = grad[perm[:m]]
 
             avg_grad_m = grads_m / cfg.data.n_examples
