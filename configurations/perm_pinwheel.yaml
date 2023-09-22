@@ -20,8 +20,8 @@ data:
   perm_path: "./src/computed_permutations/"
 
   dataset: "PINWHEEL"
-  maximum: 100000
-  m: 160
+  maximum: 100
+  m: 100
   permutations: 10
   plot: False
   grad_samples: 10000
@@ -42,4 +42,4 @@ train:
   name: ""
   plot_sample: False
   plot: False
-  torch_seed: 606
+  torch_seed: -1

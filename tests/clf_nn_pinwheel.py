@@ -141,7 +141,7 @@ if __name__ == "__main__":
     num_output = num_clusters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = []
-    n_models = 5
+    n_models = 3
     max_epoch = 100
 
     for m in range(n_models):
