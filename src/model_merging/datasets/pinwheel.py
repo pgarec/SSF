@@ -3,8 +3,6 @@ import numpy as np
 def make_pinwheel_data(radial_std, tangential_std, num_classes, num_per_class, rate, seed):
     if seed > -1:
         np.random.seed(seed)
-    else:
-        np.random()
         
     rads = np.linspace(0, 2*np.pi, num_classes, endpoint=False)
 

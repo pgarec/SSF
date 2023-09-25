@@ -164,9 +164,9 @@ if __name__ == "__main__":
                 optimizer.step()
 
                 train_loss += loss
-            print(
-                f"Epoch [{epoch + 1}/{max}], Training Loss: {train_loss/len(train_loader):.4f}"
-            )
+            # print(
+            #     f"Epoch [{epoch + 1}/{max}], Training Loss: {train_loss/len(train_loader):.4f}"
+            # )
 
             val_loss = 0
             with torch.no_grad():
@@ -176,9 +176,9 @@ if __name__ == "__main__":
                     loss = criterion(out, y)
                     val_loss += loss
 
-                print(
-                    f"Epoch [{epoch + 1}/{max}], Validation Loss: {val_loss/len(val_loader):.4f}"
-                )
+                # print(
+                #     f"Epoch [{epoch + 1}/{max}], Validation Loss: {val_loss/len(val_loader):.4f}"
+                # )
         
         models.append(model)
 
@@ -202,9 +202,7 @@ if __name__ == "__main__":
     fisher_model = merging_models_fisher(output_model, models, fishers)
     print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-    metamodel = isotropic_model
     grads = [grad_diag(m, train_loader, cfg.data.n_examples) for m in models]
-  
     cfg.train.initialization = "MLP"
     cfg.data.n_classes = num_clusters
     output_model = clone_model(models[0], num_features, H, num_output, seed)
