@@ -65,6 +65,10 @@ def main_operations(cfg, device, grads, models, fishers, criterion, test_loader,
     avg_loss = inference(cfg, isotropic_model, test_loader, criterion)
     print_average_loss("Isotropic", avg_loss)
 
+    print("m: {}".format(cfg.data.m))
+    print("seed: {}".format(cfg.train.torch_seed))
+    print("permutations: {}".format(cfg.data.permutations))
+
     # Permutation Model
     metamodel = CNNMnist(cfg)
     cfg.data.n_examples = cfg.data.grad_samples
