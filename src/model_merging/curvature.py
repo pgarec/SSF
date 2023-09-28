@@ -27,6 +27,7 @@ sf = 1
 
 def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
 
     def fisher_single_example(single_example_batch):
         logits = model(single_example_batch.to(device))
@@ -75,6 +76,7 @@ def compute_fisher_model(model, dataset, num_classes, fisher_samples=-1):
 
 def compute_empirical_gradients_model(model, dataset, num_classes, grad_samples=-1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
         
     def gradients_single_example(single_example_batch_x, single_example_batch_y):
         logits = model(single_example_batch_x.to(device))
@@ -111,7 +113,8 @@ def compute_empirical_gradients_model(model, dataset, num_classes, grad_samples=
 
 def compute_gradients_model(model, dataset, num_classes, grad_samples=-1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
+    model = model.to(device)
+
     def gradients_single_example(single_example_batch):
         logits = model(single_example_batch.to(device))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
@@ -158,6 +161,8 @@ def fim_diag(model: Module,
              verbose: bool = False,
              every_n: int = None) -> Dict[int, Dict[str, Tensor]]:
     fim = {}
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
 
     for name, param in model.named_parameters():
         if param.requires_grad:
@@ -234,6 +239,8 @@ def grad_diag(model: Module,
              verbose: bool = False,
              every_n: int = None) -> Dict[int, Dict[str, Tensor]]:
     fim = {}
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
 
     for name, param in model.named_parameters():
         if param.requires_grad:
