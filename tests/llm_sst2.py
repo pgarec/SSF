@@ -108,21 +108,21 @@ if __name__ == "__main__":
     # for n, model in enumerate(models):
     #     print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
 
-    # output_model = models[0]
-    # isotropic_model = merging_models_isotropic(output_model, models)
-    # print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
+    output_model = models[0]
+    isotropic_model = merging_models_isotropic(output_model, models)
+    print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
 
-    # output_model = models[0]
-    # fishers = [fim_diag_llm(m, val_loader, cfg.data.n_examples) for m in models]
-    # fisher_model = merging_models_fisher(output_model, models, fishers)
-    # print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
+    output_model = models[0]
+    fishers = [fim_diag_llm(m, val_loader, cfg.data.n_examples) for m in models]
+    fisher_model = merging_models_fisher(output_model, models, fishers)
+    print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-    # grads = [grad_diag_llm(m, train_loader, cfg.data.n_examples) for m in models]
-    # cfg.train.initialization = "MLP"
-    # # output_model = clone_model(models[0], num_features, H, num_output, seed)
-    # output_model = models[0]
-    # config = AutoConfig.from_pretrained("bert-base-uncased")
-    # metamodel = AutoModelForSequenceClassification.from_config(config)
-    # perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader=val_loader, llm=True, criterion=criterion, plot=False, store=False)
-    # print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+    grads = [grad_diag_llm(m, train_loader, cfg.data.n_examples) for m in models]
+    cfg.train.initialization = "MLP"
+    # output_model = clone_model(models[0], num_features, H, num_output, seed)
+    output_model = models[0]
+    config = AutoConfig.from_pretrained("bert-base-uncased")
+    metamodel = AutoModelForSequenceClassification.from_config(config)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader=val_loader, llm=True, criterion=criterion, plot=False, store=False)
+    print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 

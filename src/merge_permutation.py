@@ -170,6 +170,9 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         if it % 10000 == 0:
             if cfg.data.dataset == "PINWHEEL":
                 name = "{}metamodel_{}_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m, cfg.data.n_classes)
+            
+            elif cfg.data.dataset == "SST2":
+                name = "{}metamodel_{}_{}epochs_{}m".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m)
 
             elif cfg.data.dataset == "SNELSON":
                 name = "{}metamodel_{}_{}epochs_{}m".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m)
