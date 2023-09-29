@@ -35,9 +35,9 @@ data:
   m: 500
 
 train:  
-  lr: 0.05
+  lr: 0.025
   hidden_dim: 16
-  epochs: 8
+  epochs: 9
   epochs_perm: 500
   step_size: 212
   weight_decay: 0.01
