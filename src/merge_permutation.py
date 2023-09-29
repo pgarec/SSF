@@ -60,7 +60,6 @@ def evaluate_model(model, val_loader, criterion, llm=False):
 
 def logprob_normal(x, mu, precision):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
     log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - (0.5*precision*(x - mu)**2)
 
     return log_p
@@ -79,15 +78,17 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
 
     # Precompute constants
     cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
+    permuted_indices = [torch.randperm(n_dim).to(device) for _ in range(n_perm)]
+    params_models = [get_mergeable_variables(model) for model in models]
+    theta_models = [nn.utils.parameters_to_vector(params).to(device) for params in params_models]
+    grad_models = [nn.utils.parameters_to_vector(grad).to(device) for grad in grads]
+    fisher_models = [nn.utils.parameters_to_vector(fisher).to(device) for fisher in fishers]
 
-    for p in range(n_perm):
-        perm = torch.randperm(n_dim).to(device)
-        model_grad_fisher = [(models[k].to(device), grads[k], fishers[k]) for k in range(n_models)]
-
-        for model, grad, fisher in model_grad_fisher:
-            params = get_mergeable_variables(model)
-            theta = nn.utils.parameters_to_vector(params).to(device)
-            grad = nn.utils.parameters_to_vector(grad).to(device) # *10e05
+    for perm in permuted_indices:
+        for model in range(n_models):
+            theta = theta_models[model]
+            grad = grad_models[model]
+            fisher = fisher_models[model]
 
             if maximum == -1:
                 theta_r = theta[perm[m:]]
@@ -108,7 +109,7 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             avg_grad_r = grads_r / cfg.data.n_examples
 
             v = avg_grad_m
-            u = nn.utils.parameters_to_vector(fisher).to(device)[perm[:m]]
+            u = fisher[perm[:m]]
             delta = u - v**2
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
@@ -134,7 +135,6 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
 
             # Compute prior
             prior = -(1 - (1 / n_models)) * logprob_normal(metatheta_m, torch.zeros(m).to(device), cond_prior_prec).sum()
-
             loss += (posterior + prior) / (m * n_perm)
 
     return -loss
@@ -186,6 +186,9 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
 
     if plot:
         if cfg.data.dataset == "PINWHEEL":
+            directory = "./images/{}_{}_m{}_{}epochs_seed{}/".format(cfg.data.dataset, cfg.train.initialization, cfg.data.m, cfg.train.epochs_perm, cfg.train.torch_seed)
+        
+        elif cfg.data.dataset == "SST2":
             directory = "./images/{}_{}_m{}_{}epochs_seed{}/".format(cfg.data.dataset, cfg.train.initialization, cfg.data.m, cfg.train.epochs_perm, cfg.train.torch_seed)
         
         elif cfg.data.dataset == "SNELSON":

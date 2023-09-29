@@ -99,8 +99,8 @@ if __name__ == "__main__":
                 cfg.data.dataset,
                 n)
         names.append(name)
-        compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, val_loader, fisher_samples=cfg.data.grad_samples, llm=True)
-        compute_and_store_gradients(model, name, cfg.data.grad_path, val_loader, grad_samples=cfg.data.grad_samples, llm=True)
+        # compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, val_loader, fisher_samples=cfg.data.grad_samples, llm=True)
+        # compute_and_store_gradients(model, name, cfg.data.grad_path, val_loader, grad_samples=cfg.data.grad_samples, llm=True)
 
     grads = load_grads(cfg, names)
     fishers = load_fishers(cfg, names)
@@ -113,11 +113,11 @@ if __name__ == "__main__":
     print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
 
     output_model = models[0]
-    fishers = [fim_diag_llm(m, val_loader, cfg.data.n_examples) for m in models]
+    # fishers = [fim_diag_llm(m, val_loader, cfg.data.n_examples) for m in models]
     fisher_model = merging_models_fisher(output_model, models, fishers)
     print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
 
-    grads = [grad_diag_llm(m, train_loader, cfg.data.n_examples) for m in models]
+    # grads = [grad_diag_llm(m, train_loader, cfg.data.n_examples) for m in models]
     cfg.train.initialization = "MLP"
     # output_model = clone_model(models[0], num_features, H, num_output, seed)
     output_model = models[0]

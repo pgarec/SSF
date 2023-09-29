@@ -207,6 +207,6 @@ if __name__ == "__main__":
     cfg.data.n_classes = num_clusters
     output_model = clone_model(models[0], num_features, H, num_output, seed)
     metamodel = Model(num_features, H, num_output, seed)
-    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, val_loader, criterion, plot=True, store=True)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, val_loader, llm=False, criterion=criterion, plot=True, store=True)
     print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 
