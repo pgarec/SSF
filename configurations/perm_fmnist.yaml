@@ -17,32 +17,34 @@ data:
   n_classes: 10
   image_shape: 784
   unbalanced: []
-  fisher_path: "./fisher/computed_fishers/"
-  grad_path: "./fisher/computed_grads/"
-  model_path: "./fisher/models/"
-  perm_path: "./fisher/computed_permutations/"
+  fisher_path: "./src/computed_fishers/"
+  grad_path: "./src/computed_gradients/"
+  model_path: "./src/models/"
+  perm_path: "./src/computed_permutations/"
 
-  m: 200
-  permutations: 5
-  weight_permutations: 5
-  layer_weight_permutation: 2
-  scaling_perm_min: 1
-  scaling_perm_max: 5
-  number_scalations: 5
-  plot: True
+  max_samples_train: -1
+  max_samples_test: -1
+
+  m: 800
+  maximum: 5000
+  permutations: 50
+  plot: False
   grad_samples: 10000
+  n_examples: 10000
 
 models:
   model0: "FashionMNIST_0123456789_epoch10"
-  model1: "FashionMNIST_0123456789_epoch10"
+  model1: "FashionMNIST_0123456789_epoch9"
+  model2: "FashionMNIST_0123456789_epoch8"
 
 train:
+  training: False
+  initialization: ""
   lr: 0.01
   perm_lr: 0.01
-  weight_decay: 0.01
+  weight_decay: 0.001
   hidden_dim: 16
-  epochs: 50
-  epochs_perm: 5000
+  epochs_perm: 30000 
   step_size: 212
   gamma: 0.1
   momentum: 0.9
@@ -50,4 +52,4 @@ train:
   name: ""
   plot_sample: False
   plot: False
-  torch_seed: 40
+  torch_seed: 42

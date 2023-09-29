@@ -16,7 +16,7 @@ from src.train import inference
 from src.merge_permutation import merging_models_permutation
 
 # CONFIGURATION
-cfg = omegaconf.OmegaConf.load('./configurations/perm_mnist.yaml')
+cfg = omegaconf.OmegaConf.load('./configurations/perm_fmnist.yaml')
 seed = cfg.train.torch_seed
 
 if seed > -1:
@@ -66,6 +66,7 @@ def main_operations(cfg, device, grads, models, fishers, criterion, test_loader,
     print_average_loss("Isotropic", avg_loss)
 
     print("m: {}".format(cfg.data.m))
+    
     print("seed: {}".format(cfg.train.torch_seed))
     print("permutations: {}".format(cfg.data.permutations))
 
@@ -73,12 +74,12 @@ def main_operations(cfg, device, grads, models, fishers, criterion, test_loader,
     metamodel = CNNMnist(cfg)
     cfg.data.n_examples = cfg.data.grad_samples
     cfg.train.initialization = "MLP"
-    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader, criterion, plot=True, store=True)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader, criterion, plot=False, store=False)
     avg_loss = inference(cfg, perm_model, test_loader, criterion)
     print_average_loss("Permutation", avg_loss)
 
 
-@hydra.main(config_path="./configurations", config_name="perm_mnist.yaml")
+@hydra.main(config_path="./configurations", config_name="perm_fmnist.yaml")
 def main(cfg):
     device, grads, models, fishers, criterion, test_loader, train_loader = load_and_prepare_data(cfg)
     main_operations(cfg, device, grads, models, fishers, criterion, test_loader, train_loader)
