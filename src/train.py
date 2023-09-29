@@ -189,10 +189,10 @@ def main(cfg):
         inference(cfg, model, test_loader, criterion)
 
         if cfg.train.fisher_diagonal:
-            compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, test_loader, cfg.data.n_classes)
+            compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, test_loader)
 
         if cfg.train.fisher_gradients:
-            compute_and_store_gradients(model, name, cfg.data.grad_path, test_loader, cfg.data.n_classes)
+            compute_and_store_gradients(model, name, cfg.data.grad_path, test_loader)
 
 
 if __name__ == "__main__":

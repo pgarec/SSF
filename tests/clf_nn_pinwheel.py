@@ -20,7 +20,7 @@ from torch.distributions import MultivariateNormal
 from tqdm import tqdm
 from src.model_merging.datasets.pinwheel import make_pinwheel_data
 import hydra
-from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients, fim_diag, grad_diag
+from src.model_merging.curvature import fim_diag, grad_diag
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.merge_permutation import merging_models_permutation
 import omegaconf

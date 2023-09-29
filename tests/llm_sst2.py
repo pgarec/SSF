@@ -16,7 +16,8 @@ from torch.distributions import MultivariateNormal
 from tqdm import tqdm
 from src.model_merging.datasets.pinwheel import make_pinwheel_data
 import hydra
-from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients, fim_diag, grad_diag
+from src.model_merging.data import load_fishers, load_grads
+from src.model_merging.curvature import fim_diag_llm, grad_diag_llm, compute_and_store_gradients, compute_and_store_fisher_diagonals
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.model_merging.model import get_mergeable_variables
 from src.merge_permutation import merging_models_permutation
@@ -91,26 +92,37 @@ if __name__ == "__main__":
     metatheta = nn.utils.parameters_to_vector(parameters)
     print("Number of parameters: {}".format(len(metatheta)))
 
+    names = []
     for n, model in enumerate(models):
-        print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
+        name = "{}{}_model{}.pt".format(
+                cfg.data.model_path,
+                cfg.data.dataset,
+                n)
+        names.append(name)
+        compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, val_loader, fisher_samples=cfg.data.grad_samples, llm=True)
+        compute_and_store_gradients(model, name, cfg.data.grad_path, val_loader, grad_samples=cfg.data.grad_samples, llm=True)
 
-    # output_model = clone_model(models[0], num_features, H, num_output, seed)
-    output_model = models[0]
-    isotropic_model = merging_models_isotropic(output_model, models)
-    print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
+    grads = load_grads(cfg, names)
+    fishers = load_fishers(cfg, names)
 
-    # output_model = clone_model(models[0], num_features, H, num_output, seed)
-    output_model = models[0]
-    fishers = [fim_diag(m, val_loader, cfg.data.n_examples) for m in models]
-    fisher_model = merging_models_fisher(output_model, models, fishers)
-    print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
+    # for n, model in enumerate(models):
+    #     print("Loss model {}:{}".format(n, evaluate_model(model, val_loader, criterion)))
 
-    grads = [grad_diag(m, train_loader, cfg.data.n_examples) for m in models]
-    cfg.train.initialization = "MLP"
-    # output_model = clone_model(models[0], num_features, H, num_output, seed)
-    output_model = models[0]
-    config = AutoConfig.from_pretrained("bert-base-uncased")
-    metamodel = AutoModelForSequenceClassification.from_config(config)
-    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader=val_loader, llm=True, criterion=criterion, plot=True, store=True)
-    print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
+    # output_model = models[0]
+    # isotropic_model = merging_models_isotropic(output_model, models)
+    # print("Istropic model loss: {}".format(evaluate_model(isotropic_model, val_loader, criterion)))
+
+    # output_model = models[0]
+    # fishers = [fim_diag_llm(m, val_loader, cfg.data.n_examples) for m in models]
+    # fisher_model = merging_models_fisher(output_model, models, fishers)
+    # print("Fisher model loss: {}".format(evaluate_model(fisher_model, val_loader, criterion)))
+
+    # grads = [grad_diag_llm(m, train_loader, cfg.data.n_examples) for m in models]
+    # cfg.train.initialization = "MLP"
+    # # output_model = clone_model(models[0], num_features, H, num_output, seed)
+    # output_model = models[0]
+    # config = AutoConfig.from_pretrained("bert-base-uncased")
+    # metamodel = AutoModelForSequenceClassification.from_config(config)
+    # perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader=val_loader, llm=True, criterion=criterion, plot=False, store=False)
+    # print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 

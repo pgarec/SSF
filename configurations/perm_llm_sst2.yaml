@@ -12,7 +12,7 @@ data:
   batch_size_train: 64
   batch_size_test: 64
   data_path: "./data"
-  dataset: "MNIST"
+  dataset: "SST2"
   classes: [0,1,2,3,4,5,6,7,8,9]
   n_classes: 10
   image_shape: 784
@@ -29,8 +29,8 @@ data:
   maximum: 7000
   permutations: 50
   plot: False
-  grad_samples: 10000
-  n_examples: 10000
+  grad_samples: 2
+  n_examples: 2
 
 
 train:
@@ -48,4 +48,4 @@ train:
   name: ""
   plot_sample: False
   plot: False
-  torch_seed: 42
+  torch_seed: 43
