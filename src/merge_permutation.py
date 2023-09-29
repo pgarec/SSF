@@ -65,12 +65,10 @@ def logprob_normal(x, mu, precision):
     return log_p
 
 
-def permutation_loss(cfg, metamodel, models, constants):
-    start_time = time.time()  # Record the start time
-    
+def permutation_loss(cfg, metamodel, models, constants):    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     metatheta = nn.utils.parameters_to_vector(get_mergeable_variables(metamodel)).to(device)
-    n_dim = len(metatheta)
+
     n_perm = cfg.data.permutations
     n_models = len(models)
     m = torch.tensor(cfg.data.m).to(device)
@@ -79,7 +77,7 @@ def permutation_loss(cfg, metamodel, models, constants):
     loss = 0.0
 
     cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
-    permuted_indices = [torch.randperm(n_dim).to(device) for _ in range(n_perm)]
+    permuted_indices = constants["permuted_indices"]
     theta_models = constants["theta_models"]
     grad_models = constants["grad_models"]
     fisher_models = constants["fisher_models"]
@@ -108,9 +106,7 @@ def permutation_loss(cfg, metamodel, models, constants):
 
             avg_grad_m = grads_m / cfg.data.n_examples
             avg_grad_r = grads_r / cfg.data.n_examples
-            print(f"Permuting time (model {model}): {time.time() - p_time:.2f} seconds")
 
-            op_time = time.time()
             v = avg_grad_m
             u = fisher[perm[:m]]
             delta = u - v**2
@@ -123,17 +119,10 @@ def permutation_loss(cfg, metamodel, models, constants):
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
             
-            # Print time taken for the inversion
-            print(f"Operation time (model {model}): {time.time() - op_time:.2f} seconds")
-
             # Compute prior
             prior = -(1 - (1 / n_models)) * logprob_normal(metatheta_m, torch.zeros(m).to(device), cond_prior_prec).sum()
             loss += (posterior + prior) / (m * n_perm)
-    
-    end_time = time.time()  # Record the end time
-    elapsed_time = end_time - start_time
-    print(f"Total elapsed time: {elapsed_time:.2f} seconds")  # Print the total elapsed time
-    
+        
     return -loss
 
 
@@ -154,16 +143,25 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
 
     # compute constants
     constants={}
+    n_perm = cfg.data.permutations
     params_models = [get_mergeable_variables(model) for model in models]
     constants["theta_models"] = [nn.utils.parameters_to_vector(params).to(device) for params in params_models]
     constants["grad_models"] = [nn.utils.parameters_to_vector(grad).to(device) for grad in grads]
     constants["fisher_models"] = [nn.utils.parameters_to_vector(fisher).to(device) for fisher in fishers]
+    n_dim = len(constants["theta_models"][0])
+    constants["permuted_indices"] = [torch.randperm(n_dim).to(device) for _ in range(n_perm)]
+
 
     for it in pbar:
+        p_time = time.time()
         l = permutation_loss(cfg, metamodel, models, constants)
+        print(f"Permutation loss time: {time.time() - p_time:.2f} seconds")
+
+        b_time = time.time()
         l.backward()    
         pbar.set_description(f'[Loss: {-l.item():.3f}')  
         optimizer.step()
+        print(f"Optimization time: {time.time() - b_time:.2f} seconds")
 
         if it % 1000 == 0:
             inf_loss = evaluate_model(metamodel, test_loader, criterion, llm)
