@@ -29,7 +29,7 @@ import datasets as hfds
 
 
 # CONFIGURATION
-cfg = omegaconf.OmegaConf.load('./configurations/perm_llm.yaml')
+cfg = omegaconf.OmegaConf.load('./configurations/perm_llm_sst2.yaml')
 sequence_length = 128
 seed = cfg.train.torch_seed
 

@@ -32,9 +32,6 @@ data:
   grad_samples: 10000
   n_examples: 10000
 
-models:
-  model0: "MNIST_0123456789_epoch10"
-  model1: "MNIST_0123456789_epoch8"
 
 train:
   training: False
