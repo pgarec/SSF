@@ -15,6 +15,7 @@ from model_merging.data import load_grads
 from model_merging.evaluation import evaluate_metamodel
 from model_merging.permutation import implement_permutation, implement_permutation_grad
 from model_merging.permutation import scaling_permutation, l2_permutation
+from model_merging.model import get_mergeable_variables
 import numpy as np
 import pickle
 import os
@@ -33,11 +34,20 @@ def evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_n
     return avg_loss, count
 
 
-def evaluate_model(model, val_loader, criterion):
+def evaluate_model(model, val_loader, criterion, llm=False):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     avg_loss = 0
     model = model.to(device)
+
+    if llm:
+        for input in val_loader:
+            input_ids = torch.stack(input["input_ids"], dim=-1)
+            attention_mask = torch.stack(input["attention_mask"], dim=-1)
+            model_predictions = model(input_ids, attention_mask=attention_mask).logits
+            model_predictions = torch.argmax(model_predictions, axis=-1)
+            criterion.add_batch(predictions=model_predictions, references=input["label"])
+        return criterion.compute()
 
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(val_loader):
@@ -45,7 +55,7 @@ def evaluate_model(model, val_loader, criterion):
             loss = criterion(out, y.to(device))
             avg_loss += loss
 
-    return avg_loss / len(val_loader)
+    return avg_loss / len(val_loader)    
 
 
 def logprob_normal(x, mu, precision):
@@ -58,7 +68,7 @@ def logprob_normal(x, mu, precision):
 
 def permutation_loss(cfg, metamodel, models, grads, fishers):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    metatheta = nn.utils.parameters_to_vector(metamodel.get_trainable_parameters()).to(device)
+    metatheta = nn.utils.parameters_to_vector(get_mergeable_variables(metamodel)).to(device)
     n_dim = len(metatheta)
     n_perm = cfg.data.permutations
     n_models = len(models)
@@ -75,7 +85,7 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
         model_grad_fisher = [(models[k].to(device), grads[k], fishers[k]) for k in range(n_models)]
 
         for model, grad, fisher in model_grad_fisher:
-            params = model.get_trainable_parameters()
+            params = get_mergeable_variables(model)
             theta = nn.utils.parameters_to_vector(params).to(device)
             grad = nn.utils.parameters_to_vector(grad).to(device) # *10e05
 
@@ -130,10 +140,10 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
     return -loss
 
 
-def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader = "", criterion="", plot=False, store=False):
+def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader = "", llm=False, criterion="", plot=False, store=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     metamodel = metamodel.to(device)
-    optimizer = optim.SGD(metamodel.get_trainable_parameters(), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(get_mergeable_variables(metamodel), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     if torch.cuda.device_count() > 1:
@@ -152,7 +162,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         optimizer.step()
 
         if it % 1000 == 0:
-            inf_loss = evaluate_model(metamodel, test_loader, criterion)
+            inf_loss = evaluate_model(metamodel, test_loader, criterion, llm)
             inference_loss.append(inf_loss)
             perm_loss.append(-l.item())
         optimizer.zero_grad()
