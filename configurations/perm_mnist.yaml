@@ -26,7 +26,7 @@ data:
   max_samples_test: -1
 
   m: 800
-  maximum: 7000
+  maximum: 5000
   permutations: 50
   plot: False
   grad_samples: 10000
@@ -34,7 +34,8 @@ data:
 
 models:
   model0: "MNIST_0123456789_epoch10"
-  model1: "MNIST_0123456789_epoch8"
+  model1: "MNIST_0123456789_epoch9"
+  model2: "MNIST_0123456789_epoch8"
 
 train:
   training: False
