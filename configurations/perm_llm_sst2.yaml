@@ -26,7 +26,7 @@ data:
   max_samples_test: -1
 
   m: 800
-  maximum: 7000
+  maximum: 5000
   permutations: 50
   plot: False
   grad_samples: 2

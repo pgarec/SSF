@@ -65,7 +65,9 @@ def logprob_normal(x, mu, precision):
     return log_p
 
 
-def permutation_loss(cfg, metamodel, models, grads, fishers):
+def permutation_loss(cfg, metamodel, models, constants):
+    start_time = time.time()  # Record the start time
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     metatheta = nn.utils.parameters_to_vector(get_mergeable_variables(metamodel)).to(device)
     n_dim = len(metatheta)
@@ -76,20 +78,19 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
 
     loss = 0.0
 
-    # Precompute constants
     cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
     permuted_indices = [torch.randperm(n_dim).to(device) for _ in range(n_perm)]
-    params_models = [get_mergeable_variables(model) for model in models]
-    theta_models = [nn.utils.parameters_to_vector(params).to(device) for params in params_models]
-    grad_models = [nn.utils.parameters_to_vector(grad).to(device) for grad in grads]
-    fisher_models = [nn.utils.parameters_to_vector(fisher).to(device) for fisher in fishers]
+    theta_models = constants["theta_models"]
+    grad_models = constants["grad_models"]
+    fisher_models = constants["fisher_models"]
 
     for perm in permuted_indices:
         for model in range(n_models):
             theta = theta_models[model]
             grad = grad_models[model]
             fisher = fisher_models[model]
-
+            
+            p_time = time.time()
             if maximum == -1:
                 theta_r = theta[perm[m:]]
                 metatheta_r = metatheta[perm[m:]]
@@ -107,36 +108,32 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
 
             avg_grad_m = grads_m / cfg.data.n_examples
             avg_grad_r = grads_r / cfg.data.n_examples
+            print(f"Permuting time (model {model}): {time.time() - p_time:.2f} seconds")
 
+            op_time = time.time()
             v = avg_grad_m
             u = fisher[perm[:m]]
             delta = u - v**2
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
             P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device) * cfg.train.weight_decay
-        
-            # Inversion of Soren
-            # order of norm is 10e-08, norm4 is 10e-30, alpha is 0
-            # norm2 = torch.norm(avg_grad_m)**2
-            # norm4 = torch.norm(avg_grad_m)**4
-            # alpha = (1/(norm2+norm4)) - (1/norm2)
-            # A_inv = torch.eye(m) + alpha * v @ v.T
-            # delta += 0.005
-            # P_mm_inv = torch.diag(delta**(-1/2)) @ A_inv @ torch.diag(delta**(-1/2))
 
-            # m_pred = theta_m - P_mm_inv @ P_mr @ (metatheta_r - theta_r)
-            # p_pred = torch.diagonal(P_mm)
-            # posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()  
-
-            # Original inversion
+            # Original inversion
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr @ (metatheta_r - theta_r))
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
+            
+            # Print time taken for the inversion
+            print(f"Operation time (model {model}): {time.time() - op_time:.2f} seconds")
 
             # Compute prior
             prior = -(1 - (1 / n_models)) * logprob_normal(metatheta_m, torch.zeros(m).to(device), cond_prior_prec).sum()
             loss += (posterior + prior) / (m * n_perm)
-
+    
+    end_time = time.time()  # Record the end time
+    elapsed_time = end_time - start_time
+    print(f"Total elapsed time: {elapsed_time:.2f} seconds")  # Print the total elapsed time
+    
     return -loss
 
 
@@ -155,8 +152,15 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
     
     start_time = time.time()
 
+    # compute constants
+    constants={}
+    params_models = [get_mergeable_variables(model) for model in models]
+    constants["theta_models"] = [nn.utils.parameters_to_vector(params).to(device) for params in params_models]
+    constants["grad_models"] = [nn.utils.parameters_to_vector(grad).to(device) for grad in grads]
+    constants["fisher_models"] = [nn.utils.parameters_to_vector(fisher).to(device) for fisher in fishers]
+
     for it in pbar:
-        l = permutation_loss(cfg, metamodel, models, grads, fishers)
+        l = permutation_loss(cfg, metamodel, models, constants)
         l.backward()    
         pbar.set_description(f'[Loss: {-l.item():.3f}')  
         optimizer.step()
