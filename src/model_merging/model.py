@@ -17,11 +17,11 @@ def get_featuremap(model):
 
 def get_mergeable_featuremap_variables(model):
     # TODO
-    return model.get_trainable_parameters()
+    return model.get_trainable_parameters()      
 
 
 def get_mergeable_variables(model):
-    return model.get_trainable_parameters()
+    return [param for param in model.parameters() if param.requires_grad]
 
 
 def clone_model(model, cfg):
@@ -70,10 +70,6 @@ class MLP(nn.Module):
     def forward(self, x):
         x = self.model(x)
         
-        return self.clf(x)
-    
-    def get_trainable_parameters(self):
-        return [param for param in self.parameters() if param.requires_grad]
   
     def get_featuremap_trainable_parameters(self):
         return [param for param in self.feature_map.parameters() if param.requires_grad]
@@ -106,9 +102,6 @@ class CNNMnist(nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
         return x
-    
-    def get_trainable_parameters(self):
-        return [param for param in self.parameters() if param.requires_grad]
     
     def get_regressor_trainable_parameters(self):
         return [param for param in self.regressor.parameters() if param.requires_grad]
