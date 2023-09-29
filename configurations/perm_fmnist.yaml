@@ -12,7 +12,7 @@ data:
   batch_size_train: 64
   batch_size_test: 64
   data_path: "./data"
-  dataset: "MNIST"
+  dataset: "FashionMNIST"
   classes: [0,1,2,3,4,5,6,7,8,9]
   n_classes: 10
   image_shape: 784
@@ -26,15 +26,16 @@ data:
   max_samples_test: -1
 
   m: 800
-  maximum: 7000
+  maximum: 5000
   permutations: 50
   plot: False
   grad_samples: 10000
   n_examples: 10000
 
 models:
-  model0: "MNIST_0123456789_epoch10"
-  model1: "MNIST_0123456789_epoch8"
+  model0: "FashionMNIST_0123456789_epoch10"
+  model1: "FashionMNIST_0123456789_epoch9"
+  model2: "FashionMNIST_0123456789_epoch8"
 
 train:
   training: False
@@ -51,4 +52,4 @@ train:
   name: ""
   plot_sample: False
   plot: False
-  torch_seed: 42
+  torch_seed: 43

@@ -20,7 +20,7 @@ data:
   perm_path: "./src/computed_permutations/"
 
   dataset: "PINWHEEL"
-  maximum: 100
+  maximum: -1
   m: 100
   permutations: 10
   plot: False

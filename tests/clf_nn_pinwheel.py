@@ -20,7 +20,7 @@ from torch.distributions import MultivariateNormal
 from tqdm import tqdm
 from src.model_merging.datasets.pinwheel import make_pinwheel_data
 import hydra
-from src.model_merging.curvature import compute_fisher_diagonals, compute_gradients, fim_diag, grad_diag
+from src.model_merging.curvature import fim_diag, grad_diag
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.merge_permutation import merging_models_permutation
 import omegaconf
@@ -207,6 +207,6 @@ if __name__ == "__main__":
     cfg.data.n_classes = num_clusters
     output_model = clone_model(models[0], num_features, H, num_output, seed)
     metamodel = Model(num_features, H, num_output, seed)
-    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, val_loader, criterion, plot=True, store=True)
+    perm_model, _, _ = merging_models_permutation(cfg, metamodel, models, grads, fishers, val_loader, llm=False, criterion=criterion, plot=True, store=True)
     print("Permutation model loss: {}".format(evaluate_model(perm_model, val_loader, criterion)))
 

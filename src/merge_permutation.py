@@ -15,6 +15,7 @@ from model_merging.data import load_grads
 from model_merging.evaluation import evaluate_metamodel
 from model_merging.permutation import implement_permutation, implement_permutation_grad
 from model_merging.permutation import scaling_permutation, l2_permutation
+from model_merging.model import get_mergeable_variables
 import numpy as np
 import pickle
 import os
@@ -33,11 +34,20 @@ def evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_n
     return avg_loss, count
 
 
-def evaluate_model(model, val_loader, criterion):
+def evaluate_model(model, val_loader, criterion, llm=False):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     avg_loss = 0
     model = model.to(device)
+
+    if llm:
+        for input in val_loader:
+            input_ids = torch.stack(input["input_ids"], dim=-1)
+            attention_mask = torch.stack(input["attention_mask"], dim=-1)
+            model_predictions = model(input_ids, attention_mask=attention_mask).logits
+            model_predictions = torch.argmax(model_predictions, axis=-1)
+            criterion.add_batch(predictions=model_predictions, references=input["label"])
+        return criterion.compute()
 
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(val_loader):
@@ -45,21 +55,20 @@ def evaluate_model(model, val_loader, criterion):
             loss = criterion(out, y.to(device))
             avg_loss += loss
 
-    return avg_loss / len(val_loader)
+    return avg_loss / len(val_loader)    
 
 
 def logprob_normal(x, mu, precision):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
     log_p = -0.5*torch.log(2*torch.tensor([math.pi])).to(device) + 0.5*torch.log(precision) - (0.5*precision*(x - mu)**2)
 
     return log_p
 
 
-def permutation_loss(cfg, metamodel, models, grads, fishers):
+def permutation_loss(cfg, metamodel, models, constants):    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    metatheta = nn.utils.parameters_to_vector(metamodel.get_trainable_parameters()).to(device)
-    n_dim = len(metatheta)
+    metatheta = nn.utils.parameters_to_vector(get_mergeable_variables(metamodel)).to(device)
+
     n_perm = cfg.data.permutations
     n_models = len(models)
     m = torch.tensor(cfg.data.m).to(device)
@@ -67,18 +76,19 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
 
     loss = 0.0
 
-    # Precompute constants
     cond_prior_prec = cfg.train.weight_decay * torch.ones(m).to(device)
+    permuted_indices = constants["permuted_indices"]
+    theta_models = constants["theta_models"]
+    grad_models = constants["grad_models"]
+    fisher_models = constants["fisher_models"]
 
-    for p in range(n_perm):
-        perm = torch.randperm(n_dim).to(device)
-        model_grad_fisher = [(models[k].to(device), grads[k], fishers[k]) for k in range(n_models)]
-
-        for model, grad, fisher in model_grad_fisher:
-            params = model.get_trainable_parameters()
-            theta = nn.utils.parameters_to_vector(params).to(device)
-            grad = nn.utils.parameters_to_vector(grad).to(device) # *10e05
-
+    for perm in permuted_indices:
+        for model in range(n_models):
+            theta = theta_models[model]
+            grad = grad_models[model]
+            fisher = fisher_models[model]
+            
+            p_time = time.time()
             if maximum == -1:
                 theta_r = theta[perm[m:]]
                 metatheta_r = metatheta[perm[m:]]
@@ -98,42 +108,28 @@ def permutation_loss(cfg, metamodel, models, grads, fishers):
             avg_grad_r = grads_r / cfg.data.n_examples
 
             v = avg_grad_m
-            u = nn.utils.parameters_to_vector(fisher).to(device)[perm[:m]]
+            u = fisher[perm[:m]]
             delta = u - v**2
 
             P_mr = torch.outer(avg_grad_m, avg_grad_r)
             P_mm = torch.outer(avg_grad_m, avg_grad_m) + torch.diag(delta) + torch.eye(m).to(device) * cfg.train.weight_decay
-        
-            # Inversion of Soren
-            # order of norm is 10e-08, norm4 is 10e-30, alpha is 0
-            # norm2 = torch.norm(avg_grad_m)**2
-            # norm4 = torch.norm(avg_grad_m)**4
-            # alpha = (1/(norm2+norm4)) - (1/norm2)
-            # A_inv = torch.eye(m) + alpha * v @ v.T
-            # delta += 0.005
-            # P_mm_inv = torch.diag(delta**(-1/2)) @ A_inv @ torch.diag(delta**(-1/2))
 
-            # m_pred = theta_m - P_mm_inv @ P_mr @ (metatheta_r - theta_r)
-            # p_pred = torch.diagonal(P_mm)
-            # posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()  
-
-            # Original inversion
+            # Original inversion
             m_pred = theta_m - torch.linalg.solve(P_mm, P_mr @ (metatheta_r - theta_r))
             p_pred = torch.diagonal(P_mm)
             posterior = logprob_normal(metatheta_m, m_pred, p_pred).sum()
-
+            
             # Compute prior
             prior = -(1 - (1 / n_models)) * logprob_normal(metatheta_m, torch.zeros(m).to(device), cond_prior_prec).sum()
-
             loss += (posterior + prior) / (m * n_perm)
-
+        
     return -loss
 
 
-def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader = "", criterion="", plot=False, store=False):
+def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader = "", llm=False, criterion="", plot=False, store=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     metamodel = metamodel.to(device)
-    optimizer = optim.SGD(metamodel.get_trainable_parameters(), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
+    optimizer = optim.SGD(get_mergeable_variables(metamodel), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
     pbar = tqdm.trange(cfg.train.epochs_perm)
 
     if torch.cuda.device_count() > 1:
@@ -145,14 +141,30 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
     
     start_time = time.time()
 
+    # compute constants
+    constants={}
+    n_perm = cfg.data.permutations
+    params_models = [get_mergeable_variables(model) for model in models]
+    constants["theta_models"] = [nn.utils.parameters_to_vector(params).to(device) for params in params_models]
+    constants["grad_models"] = [nn.utils.parameters_to_vector(grad).to(device) for grad in grads]
+    constants["fisher_models"] = [nn.utils.parameters_to_vector(fisher).to(device) for fisher in fishers]
+    n_dim = len(constants["theta_models"][0])
+    constants["permuted_indices"] = [torch.randperm(n_dim).to(device) for _ in range(n_perm)]
+
+
     for it in pbar:
-        l = permutation_loss(cfg, metamodel, models, grads, fishers)
+        p_time = time.time()
+        l = permutation_loss(cfg, metamodel, models, constants)
+        print(f"Permutation loss time: {time.time() - p_time:.2f} seconds")
+
+        b_time = time.time()
         l.backward()    
         pbar.set_description(f'[Loss: {-l.item():.3f}')  
         optimizer.step()
+        print(f"Optimization time: {time.time() - b_time:.2f} seconds")
 
         if it % 1000 == 0:
-            inf_loss = evaluate_model(metamodel, test_loader, criterion)
+            inf_loss = evaluate_model(metamodel, test_loader, criterion, llm)
             inference_loss.append(inf_loss)
             perm_loss.append(-l.item())
         optimizer.zero_grad()
@@ -160,6 +172,9 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         if it % 10000 == 0:
             if cfg.data.dataset == "PINWHEEL":
                 name = "{}metamodel_{}_{}epochs_{}m_{}classes".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m, cfg.data.n_classes)
+            
+            elif cfg.data.dataset == "SST2":
+                name = "{}metamodel_{}_{}epochs_{}m".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m)
 
             elif cfg.data.dataset == "SNELSON":
                 name = "{}metamodel_{}_{}epochs_{}m".format(cfg.data.model_path, cfg.data.dataset, it, cfg.data.m)
@@ -173,6 +188,9 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
 
     if plot:
         if cfg.data.dataset == "PINWHEEL":
+            directory = "./images/{}_{}_m{}_{}epochs_seed{}/".format(cfg.data.dataset, cfg.train.initialization, cfg.data.m, cfg.train.epochs_perm, cfg.train.torch_seed)
+        
+        elif cfg.data.dataset == "SST2":
             directory = "./images/{}_{}_m{}_{}epochs_seed{}/".format(cfg.data.dataset, cfg.train.initialization, cfg.data.m, cfg.train.epochs_perm, cfg.train.torch_seed)
         
         elif cfg.data.dataset == "SNELSON":
