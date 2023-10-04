@@ -1,5 +1,11 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Pol Garcia Recasens
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
+
 """
-Functions borrowed from https://github.com/tudor-berariu/fisher-information-matrix/blob/master/fim.py
+Part of the code is borrowed from https://github.com/tudor-berariu/fisher-information-matrix/blob/master/fim.py
 """
 
 import torch
@@ -338,9 +344,6 @@ def grad_diag(model: Module,
             toc = time.time()
             fps = float(seen_no - last) / (toc - tic)
         sys.stdout.write(f"\rSamples: {seen_no:5d}. Fps: {fps:2.5f} samples/s.\n")
-
-    # for name, grad2 in fim.items():
-    #     grad2 /= float(seen_no)
 
     all_fims[seen_no] = fim
 

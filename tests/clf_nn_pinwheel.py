@@ -1,9 +1,8 @@
-'''
-File with the experiment on the pinwheel dataset.
-Generating plot with confidence, where we plot conf = np.max(preds, axis=1).
-Compare this with Laplace approximation.
-In addition to that, we should measure some classification metrics, like ECE, Brier score, and accuracy.
-'''
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Pol Garcia Recasens
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
 
 import torch
 import numpy as np

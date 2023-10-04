@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 Pol Garcia Recasens
-# CogSys Section  ---  (pgare@dtu.dk)
-# Technical University of Denmark (DTU)
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
 
 import torch
 import torch.nn as nn

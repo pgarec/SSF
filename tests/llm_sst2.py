@@ -1,6 +1,8 @@
-'''
-File with the experiment LLMs.
-'''
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Pol Garcia Recasens
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
 
 import torch
 import numpy as np

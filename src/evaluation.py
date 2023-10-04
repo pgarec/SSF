@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Pol Garcia Recasens
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
+
 import torch
 import hydra
 from model_merging.data import load_models, store_file, create_dataset
