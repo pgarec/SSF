@@ -155,15 +155,15 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
     for it in pbar:
         p_time = time.time()
         l = permutation_loss(cfg, metamodel, models, constants)
-        print(f"Permutation loss time: {time.time() - p_time:.2f} seconds")
+        # print(f"Permutation loss time: {time.time() - p_time:.2f} seconds")
 
         b_time = time.time()
         l.backward()    
         pbar.set_description(f'[Loss: {-l.item():.3f}')  
         optimizer.step()
-        print(f"Optimization time: {time.time() - b_time:.2f} seconds")
+        # print(f"Optimization time: {time.time() - b_time:.2f} seconds")
 
-        if it % 1000 == 0:
+        if it % 100 == 0:
             inf_loss = evaluate_model(metamodel, test_loader, criterion, llm)
             inference_loss.append(inf_loss)
             perm_loss.append(-l.item())
