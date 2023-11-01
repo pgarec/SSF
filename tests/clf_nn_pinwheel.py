@@ -1,25 +1,18 @@
-'''
-File with the experiment on the pinwheel dataset.
-Generating plot with confidence, where we plot conf = np.max(preds, axis=1).
-Compare this with Laplace approximation.
-In addition to that, we should measure some classification metrics, like ECE, Brier score, and accuracy.
-'''
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Pol Garcia Recasens
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
 
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
-
-sys.path.append("stochman")
 
 import matplotlib.colors as colors
 import seaborn as sns
 from torch import nn
 # from manifold import cross_entropy_manifold
-from torch.distributions import MultivariateNormal
-from tqdm import tqdm
 from src.model_merging.datasets.pinwheel import make_pinwheel_data
-import hydra
 from src.model_merging.curvature import fim_diag, grad_diag
 from src.model_merging.merging import merging_models_fisher, merging_models_isotropic
 from src.merge_permutation import merging_models_permutation

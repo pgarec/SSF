@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Pol Garcia Recasens
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
+
 import collections
 import torch
 import torch.nn as nn
@@ -12,7 +18,8 @@ def merging_models_fisher(
         fishers=None,
         fisher_floor=1e-20,
         favor_target_model=True):
-    output_variables = get_mergeable_variables(output_model)
+    output_variables = get_mergeable_variables(output_model
+                                               )
     variables_to_merge = [get_mergeable_variables(m) for m in mergeable_models]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

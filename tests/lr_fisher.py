@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2023 Pablo Moreno-Munoz
-# CogSys Section  ---  (pabmo@dtu.dk)
-# Technical University of Denmark (DTU)
+# Copyright (c) 2023 Pol Garcia Recasens
+# CROMAI  ---  (pol.garcia@bsc.es)
+# Barcelona Supercomputing Center (BSC)
 
 import tqdm
 import torch
@@ -35,8 +35,7 @@ palette_green = ['#99e2b4','#88d4ab','#78c6a3','#67b99a','#56ab91','#469d89','#3
 palette_pink = ["#ea698b","#d55d92","#c05299","#ac46a1","#973aa8","#822faf","#6d23b6","#6411ad","#571089","#47126b"]
 palette_super_red = ["#641220","#6e1423","#85182a","#a11d33","#a71e34","#b21e35","#bd1f36","#c71f37","#da1e37","#e01e37"]
 
-palette = color_palette_2
-meta_color = 'b'
+palette = color_palette_1
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--overlapping', '-over', type=bool, default=True)
