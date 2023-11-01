@@ -1,0 +1,7 @@
+Model 0 - Average loss 0.06306991597300453
+Random untrained - Average loss 2.313389848583085
+Fisher - Average loss 0.06418209574726189
+Isotropic - Average loss 0.07219212536436849
+m: 800
+seed: 42
+permutations: 50
