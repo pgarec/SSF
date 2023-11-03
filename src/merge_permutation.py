@@ -10,14 +10,9 @@ import torch.optim as optim
 import tqdm
 import torch.nn as nn
 import math
-import random
 from model_merging.data import load_grads
 from model_merging.evaluation import evaluate_metamodel
-from model_merging.permutation import implement_permutation, implement_permutation_grad
-from model_merging.permutation import scaling_permutation, l2_permutation
 from model_merging.model import get_mergeable_variables
-import numpy as np
-import pickle
 import os
 import time
 
@@ -213,7 +208,7 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         plt.show()
         plt.savefig('{}plot.png'.format(directory))
 
-    if store:
+    if True:
         # with open('{}inference_loss'.format(directory), 'wb') as f:
         #     pickle.dump(inference_loss, f)
 
@@ -221,5 +216,6 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         #     pickle.dump(perm_loss, f)
         print("Inference losses: {}".format(inference_loss))
         print("Permutation losses: {}".format(perm_loss))
+
 
     return metamodel, inference_loss, perm_loss

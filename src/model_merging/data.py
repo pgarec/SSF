@@ -165,6 +165,6 @@ def create_dataset(cfg):
         dataset = SNELSON(cfg)
 
     else:
-        raise("invalid dataset")
+        raise("Invalid dataset")
     
     return dataset

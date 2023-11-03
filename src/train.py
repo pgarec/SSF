@@ -76,7 +76,7 @@ def train(cfg, name, train_loader, test_loader, model, optimizer, criterion):
     print(name)
 
 
-def inference(cfg, model, test_loader, criterion):
+def evalute_normalize(cfg, model, test_loader, criterion):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -114,49 +114,6 @@ def inference(cfg, model, test_loader, criterion):
     return sum(avg_loss) / len(avg_loss)
 
 
-def train_subsets(cfg):
-    subset_length = cfg.data.subset_length
-    classes = cfg.data.classes
-    assert subset_length < len(classes)
-    subsets = [classes[i:i+subset_length] for i in range(0, len(classes), subset_length)]
-
-    for subset in subsets:
-        cfg_subset = cfg
-        cfg_subset.data.classes = subset
-        cfg_subset.data.n_classes = len(subset)
-        dataset = create_dataset(cfg_subset)
-        train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg_subset.data.unbalanced)
-        
-        model = MLP(cfg_subset)
-        optimizer = optim.SGD(
-            model.parameters(), lr=cfg.train.lr, momentum=cfg_subset.train.momentum
-        )
-        criterion = torch.nn.CrossEntropyLoss()
-
-        if cfg.data.unbalanced == []:
-            name = "{}{}_{}_epoch{}.pt".format(
-                cfg.data.model_path,
-                cfg.data.dataset,
-                "".join(map(str, cfg.data.classes)), cfg.train.epoch
-            )
-        else:
-            name = "{}{}_{}_epoch{}_{}.pt".format(
-                cfg.data.model_path,
-                cfg.data.dataset,
-                "".join(map(str, cfg.data.classes)), cfg.train.epoch,
-                "".join(map(str, cfg.data.unbalanced))
-        )
-
-        train(cfg_subset, name, train_loader, test_loader, model, optimizer, criterion)
-        
-        test_loader = dataset.create_inference_dataloader()
-        inference(cfg_subset, model, test_loader, criterion)
-
-        if cfg_subset.train.fisher:
-            cfg_subset.train.name = name
-            compute_and_store_fisher_diagonals(cfg_subset)
- 
-
 @hydra.main(config_path="./configurations", config_name="train.yaml")
 def main(cfg):
 
@@ -165,9 +122,6 @@ def main(cfg):
         np.random.seed(seed)
         torch.manual_seed(seed)
 
-    if cfg.data.subset_length > 0:
-        train_subsets(cfg)
-    
     else:
         dataset = create_dataset(cfg)   
         train_loader, test_loader = dataset.create_dataloaders(unbalanced=cfg.data.unbalanced)
@@ -192,7 +146,7 @@ def main(cfg):
 
         train(cfg, name, train_loader, test_loader, model, optimizer, criterion)
         test_loader = dataset.create_inference_dataloader()
-        inference(cfg, model, test_loader, criterion)
+        evalute_normalize(cfg, model, test_loader, criterion)
 
         if cfg.train.fisher_diagonal:
             compute_and_store_fisher_diagonals(model, name, cfg.data.fisher_path, test_loader)

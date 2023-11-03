@@ -137,7 +137,7 @@ if __name__ == "__main__":
     n_models = 3
     max_epoch = 100
 
-    for m in range(n_models):
+    for m in range(1,n_models):
         model = Model(num_features, H, num_output, seed)
         lr = cfg.train.lr*((m+1)*0.5)
 
@@ -157,9 +157,7 @@ if __name__ == "__main__":
                 optimizer.step()
 
                 train_loss += loss
-            # print(
-            #     f"Epoch [{epoch + 1}/{max}], Training Loss: {train_loss/len(train_loader):.4f}"
-            # )
+
 
             val_loss = 0
             with torch.no_grad():
