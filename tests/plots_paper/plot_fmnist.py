@@ -10,7 +10,8 @@ import os
 import pickle
 
 font = {'family' : 'serif',
-        'size'   : 20}
+        'size'   : 20,
+        'weight': 'bold'}
 
 plt.rc('text', usetex=True)
 plt.rc('font', **font)
@@ -34,26 +35,22 @@ meta_color = 'r'
 
 if __name__ == "__main__":
     
-    # loss_pinwheel = [(1.5502), (0.0943), (0.0935), (0.0934), (0.0933), (0.0932), (0.0932), (0.0932), (0.0932), (0.0932), (0.0932), (0.0932), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931), (0.0931)]
-    # seed 450, 3 models, 5000 steps, 20 perms
-    # Istropic model loss: 0.40588057041168213, Fisher model loss: 0.2160848379135131
-    loss_pinwheel = [1.5786, 0.4309, 0.3173, 0.2773, 0.2576, 0.2459, 0.2385, 0.2335, 0.2299, 0.2273, 0.2254, 0.2239, 0.2227, 0.2217, 0.2209, 0.2202, 0.2196, 0.2191, 0.2186, 0.2183, 0.2179, 0.2176, 0.2173, 0.2171, 0.2168, 0.2166, 0.2164, 0.2163, 0.2161, 0.2160, 0.2158, 0.2157, 0.2156, 0.2154, 0.2153, 0.2152, 0.2151, 0.2150, 0.2150, 0.2149, 0.2148, 0.2147, 0.2147, 0.2146, 0.2145, 0.2145, 0.2144, 0.2144, 0.2143, 0.2143, 0.2143]
-    n = len(loss_pinwheel)
+    loss_fmnist = [2.3085, 0.7197, 0.5493, 0.4994, 0.4795, 0.4697, 0.4642, 0.4607, 0.4584, 0.4567, 0.4554, 0.4545, 0.4537, 0.4531, 0.4526, 0.4521, 0.4517, 0.4514, 0.4511, 0.4509, 0.4506, 0.4504, 0.4503, 0.4501, 0.4499, 0.4498, 0.4496, 0.4495, 0.4494, 0.4493, 0.4492, 0.4491, 0.4490, 0.4489, 0.4488, 0.4488, 0.4487, 0.4486, 0.4486, 0.4485, 0.4484, 0.4484, 0.4483, 0.4483, 0.4482, 0.4482, 0.4481, 0.4481, 0.4480, 0.4480, 0.44794]
 
     plt.figure(figsize=(8, 6))
-    plt.plot(torch.arange(len(loss_pinwheel)), [0.4059]*(len(loss_pinwheel)),'--', lw=2.0, color=palette_green[3], alpha=0.9, label="Isotropic")
-    plt.plot(torch.arange(len(loss_pinwheel)), [0.2160]*(len(loss_pinwheel)),'--', lw=2.0, color=palette_red[0], alpha=0.9, label="Fisher")
-    plt.plot(loss_pinwheel, lw=3, alpha=0.6, color=palette_red[3+3], label='SSF')
-    plt.xlim(0, len(loss_pinwheel)-20)
+    plt.plot(torch.arange(len(loss_fmnist)), [0.4497138261795044]*(len(loss_fmnist)),'--', lw=2.0, color=palette_green[3], alpha=0.9, label="Isotropic")
+    plt.plot(torch.arange(len(loss_fmnist)), [0.4461183249950409]*(len(loss_fmnist)),'--', lw=2.0, color=palette_red[0], alpha=0.9, label="Fisher")
+    plt.plot(loss_fmnist, lw=3, alpha=0.6, color=palette_red[3+3], label="SSF")
+    plt.xlim(0, len(loss_fmnist)-20)
 
-    plt.ylim(0,max(loss_pinwheel))
-    num_points = len(loss_pinwheel)
+    plt.ylim(0,max(loss_fmnist))
+    num_points = len(loss_fmnist)
+    print(num_points)
     x_ticks = np.arange(0, num_points, num_points // 2)
     x_labels = [str(x * 100) for x in x_ticks]
     plt.xticks(x_ticks, x_labels)
-    plt.xlim(0,len(loss_pinwheel)-1)
     plt.xlabel(r'Epochs')
     plt.ylabel(r'Test loss')
-    plt.title(r'Pinwheel')
+    plt.title(r'Fashion-MNIST')
     plt.legend(loc='upper right') 
     plt.show()

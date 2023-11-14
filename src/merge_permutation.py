@@ -15,6 +15,7 @@ from model_merging.evaluation import evaluate_metamodel
 from model_merging.model import get_mergeable_variables
 import os
 import time
+import pickle
 
 
 def evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_names = []):
@@ -29,23 +30,14 @@ def evaluate_permutation(cfg, metamodel, models, test_loader, criterion, model_n
     return avg_loss, count
 
 
-def evaluate_model(model, val_loader, criterion, llm=False):
+def evaluate_model(model, val_loader, criterion):
     model.eval()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     avg_loss = 0
     model = model.to(device)
 
-    if llm:
-        for input in val_loader:
-            input_ids = torch.stack(input["input_ids"], dim=-1)
-            attention_mask = torch.stack(input["attention_mask"], dim=-1)
-            model_predictions = model(input_ids, attention_mask=attention_mask).logits
-            model_predictions = torch.argmax(model_predictions, axis=-1)
-            criterion.add_batch(predictions=model_predictions, references=input["label"])
-        return criterion.compute()
-
     with torch.no_grad():
-        for batch_idx, (x, y) in enumerate(val_loader):
+        for _, (x, y) in enumerate(val_loader):
             out = model(x.to(device))
             loss = criterion(out, y.to(device))
             avg_loss += loss
@@ -121,7 +113,7 @@ def permutation_loss(cfg, metamodel, models, constants):
     return -loss
 
 
-def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader = "", llm=False, criterion="", plot=False, store=False):
+def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_loader = "", criterion="", plot=False, store=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     metamodel = metamodel.to(device)
     optimizer = optim.SGD(get_mergeable_variables(metamodel), lr=cfg.train.perm_lr, momentum=cfg.train.momentum)
@@ -148,18 +140,13 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
 
 
     for it in pbar:
-        p_time = time.time()
         l = permutation_loss(cfg, metamodel, models, constants)
-        # print(f"Permutation loss time: {time.time() - p_time:.2f} seconds")
-
-        b_time = time.time()
         l.backward()    
         pbar.set_description(f'[Loss: {-l.item():.3f}')  
         optimizer.step()
-        # print(f"Optimization time: {time.time() - b_time:.2f} seconds")
 
         if it % 100 == 0:
-            inf_loss = evaluate_model(metamodel, test_loader, criterion, llm)
+            inf_loss = evaluate_model(metamodel, test_loader, criterion)
             inference_loss.append(inf_loss)
             perm_loss.append(-l.item())
         optimizer.zero_grad()
@@ -208,14 +195,12 @@ def merging_models_permutation(cfg, metamodel, models, grads, fishers, test_load
         plt.show()
         plt.savefig('{}plot.png'.format(directory))
 
-    if True:
-        # with open('{}inference_loss'.format(directory), 'wb') as f:
-        #     pickle.dump(inference_loss, f)
+    if store:
+        with open('{}inference_loss'.format(directory), 'wb') as f:
+            pickle.dump(inference_loss, f)
 
-        # with open('{}perm_loss'.format(directory), 'wb') as f:
-        #     pickle.dump(perm_loss, f)
-        print("Inference losses: {}".format(inference_loss))
-        print("Permutation losses: {}".format(perm_loss))
+        with open('{}perm_loss'.format(directory), 'wb') as f:
+            pickle.dump(perm_loss, f)
 
 
     return metamodel, inference_loss, perm_loss

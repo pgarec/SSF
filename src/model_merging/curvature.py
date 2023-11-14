@@ -5,23 +5,14 @@
 # Barcelona Supercomputing Center (BSC)
 
 """
-Part of the code is borrowed from https://github.com/tudor-berariu/fisher-information-matrix/blob/master/fim.py
+The code is adapted from https://github.com/tudor-berariu/fisher-information-matrix/blob/master/fim.py
 """
 
 import torch
-import torch.nn as nn
-import hydra
-
-from .model import MLP
 from .data import store_file
-from .data import create_dataset
-import random
-import numpy as np
-
 import time
 import sys
 from typing import Dict
-from argparse import Namespace
 
 import torch
 from torch import Tensor
